@@ -1,0 +1,16 @@
+# Session summary file
+cpp_learning_session_summary.md
+dictionary.txt
+
+# Output files
+output.txt
+output_tokens.txt
+
+# Compiled binaries
+rmc7
+*.o
+
+# Build artifacts
+src/**/*.o
+src/Main.o
+src/lexer/Lexer.o

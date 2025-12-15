@@ -1,6 +1,6 @@
 # RMc7 - Level-7 Production C Compiler
 
-A complete C compiler implementation in C++ targeting 95-100% ISO C coverage.
+A complete C compiler implementation in C++ targeting 90-95% ISO C coverage.
 
 ---
 
