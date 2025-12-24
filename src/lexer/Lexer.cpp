@@ -573,6 +573,7 @@ TokenType Lexer::getTokenTypeOf(string data){
     if(data == "auto") return KEYWORD_AUTO;
     if(data == "register") return KEYWORD_REGISTER;
     if(data == "volatile") return KEYWORD_VOLATILE;
+    if(data == "restrict") return KEYWORD_RESTRICT;
     
     // Preprocessor Directives (without #)
     if(data == "include") return PREP_INCLUDE;

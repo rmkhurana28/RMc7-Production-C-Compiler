@@ -1,4 +1,5 @@
 #include "./lexer/Lexer.h"
+#include "./parser/Parser.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -56,6 +57,10 @@ int main()
     outFile.close();
     
     cout << "Tokens written to output.txt\n";
+
+    Parser myParser = Parser(tokens);
+
+    ProgramNode* myRootAST = myParser.startParsing();
     
     return 0;
 }

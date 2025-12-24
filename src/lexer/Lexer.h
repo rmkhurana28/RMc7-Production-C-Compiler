@@ -59,12 +59,12 @@ private:
     void skipWhiteSpaces();    
 
     
-
-
 public:
     Lexer(const string& sourceCode);
 
     vector<Token> startTokenization();
+};  // Utility function - accessible to other components (static)
+    static TokenType getTokenTypeOf(string data);
 };
 
 #endif

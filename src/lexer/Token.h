@@ -43,6 +43,7 @@ enum TokenType {
     KEYWORD_AUTO,          // auto
     KEYWORD_REGISTER,      // register
     KEYWORD_VOLATILE,      // volatile
+    KEYWORD_RESTRICT,      // restrict
     
     // Operators - Arithmetic
     OP_PLUS,               // +
@@ -183,6 +184,7 @@ inline string tokenTypeToString(TokenType type) {
         case KEYWORD_AUTO: return "KEYWORD_AUTO";
         case KEYWORD_REGISTER: return "KEYWORD_REGISTER";
         case KEYWORD_VOLATILE: return "KEYWORD_VOLATILE";
+        case KEYWORD_RESTRICT: return "KEYWORD_RESTRICT";
         
         // Operators - Arithmetic
         case OP_PLUS: return "OP_PLUS";
