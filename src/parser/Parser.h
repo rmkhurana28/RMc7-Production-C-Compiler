@@ -9,13 +9,21 @@
 #include "StatementNode.h"
 #include "DeclarationNode.h"
 
+#include <unordered_map>
+
 using namespace std;
 
 class Parser {
     friend class dataTypeHolder; // allows dataTypeHolder to access private section of this class
 private:
     vector<Token> tokens;
-    size_t currentPos;    
+    size_t currentPos;
+    
+    // type registry for the struct/union/enum data types
+    unordered_map<string, string> typeRegisry;
+
+    // hashmap to store new->old[] typedef alias
+    unordered_map<string, vector<string>> tdMap;
     
     // Add your helper methods here
     DeclarationNode* parseCurrentDecl();
@@ -28,7 +36,14 @@ private:
     bool isThisTokenTypeQualifierToken(Token currToken);
     bool isThisTokenStorageClassToken(Token currToken);
 
+    bool isThisTokenStructUnionEnumToken(Token currToken);
+
     DeclarationNode* parseDataTypeFoundDeclaration();
+
+    bool isThisStringPresentAsKeyInTrHm(string key);
+    bool isThisStringPresentAsKeyInTdMap(string key);
+
+    bool isCurrentIdValidTdAlias();
 
     bool findDataTypePropCombinationAndValidate(Token currToken);
     

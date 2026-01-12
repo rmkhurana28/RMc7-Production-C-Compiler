@@ -114,20 +114,28 @@ A complete C compiler implementation in C++ targeting 90-95% ISO C coverage.
 
 ## 🚀 Current Status
 
-**Phase 1 - Lexical Analysis:** In Development  
-- Token definitions complete (~140 token types)
-- Lexer architecture designed
-- Helper functions implemented
-- Token output system functional
+**Phase 1 - Lexical Analysis:** ✅ COMPLETE
+- Full tokenization for all C syntax (~140 token types)
+- All operators (single & multi-character)
+- String/char literals with escape sequences
+- Number literals (int, float, double)
+- Comments (single & multi-line)
+- Line/column tracking
 
-**Next:** Complete lexer implementation for all token types
+**Phase 2 - Syntax Analysis (Parser):** 🟡 IN PROGRESS (~25-30%)
+- ✅ Type collection algorithm (storage classes, qualifiers, sign/size modifiers)
+- ✅ Type validation system with compatibility rules
+- ✅ Typedef expansion (recursive resolution)
+- ✅ 87 comprehensive test cases (100% pass rate)
+- ⏭️ Next: Declarator parsing (variables, arrays, function pointers)
+- ⏭️ Next: Expression parsing with operator precedence
+- ⏭️ Next: Statement parsing (control flow)
 
 ---
 
 ## 📊 Language Coverage Target
 
-- **Current (RMc4):** ~23% of C language
-- **Target (RMc7):** 95-100% of ISO C core features
+**Target:** 95-100% of ISO C core features
 
 ---
 
@@ -152,9 +160,18 @@ make clean
 RMc7/
 ├── src/
 │   ├── lexer/
-│   │   ├── Token.h          # Token definitions
+│   │   ├── Token.h          # Token definitions (~140 types)
 │   │   ├── Lexer.h          # Lexer interface
-│   │   └── Lexer.cpp        # Lexer implementation
+│   │   └── Lexer.cpp        # Lexer implementation (complete)
+│   ├── parser/
+│   │   ├── Parser.h         # Parser interface
+│   │   ├── Parser.cpp       # Parser implementation (in progress)
+│   │   ├── Helper.h         # Type system utilities
+│   │   ├── Helper.cpp       # Type validation & typedef expansion
+│   │   ├── ASTNode.h/cpp    # Base AST node class
+│   │   ├── DeclarationNode.h/cpp    # Declaration AST nodes
+│   │   ├── ExpressionNode.h/cpp     # Expression AST nodes
+│   │   └── StatementNode.h/cpp      # Statement AST nodes
 │   └── Main.cpp             # Entry point
 ├── tests/
 │   └── test_input.c         # Test C programs
@@ -167,9 +184,32 @@ RMc7/
 
 ## 📝 License
 
-Educational project - Thapar Institute of Engineering & Technology
+**Educational Portfolio License**
+
+Copyright © 2026 Ridham Khurana (RM)
+
+This software is provided as a portfolio demonstration and educational resource.
+
+**Permitted Uses:**
+- View, clone, and run this code for evaluation and review purposes
+- Study the implementation to learn compiler design concepts and techniques
+- Test functionality and modify test cases locally for assessment
+- Use for recruitment, hiring, interview evaluation, and skills assessment
+- Reference specific implementations in technical discussions with proper attribution
+
+**Prohibited Uses:**
+- Incorporating this code into your own projects, products, or portfolio
+- Submitting this code (modified or unmodified) as part of academic coursework
+- Redistributing or publishing this code or derivative works
+- Using this code for commercial purposes without explicit permission
+- Presenting this work as your own or without proper attribution to the author
+
+**Note:** This code is shared to demonstrate the author's technical capabilities 
+and to serve as an educational resource for those learning compiler design. 
+For any use case beyond evaluation and learning, please contact the author.
+
+**Contact:** khurana.ridham222@gmail.com
 
 ---
 
-**Status:** 🚧 Active Development  
-**Last Updated:** 14 December 2025
+**Status:** 🚧 Active Development

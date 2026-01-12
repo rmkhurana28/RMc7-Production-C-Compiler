@@ -1,6 +1,9 @@
 #include "Parser.h"
 #include <vector>
 #include "Helper.h"
+#include <iostream>
+
+using namespace std;
 
 Parser::Parser(const vector<Token>& tokenList) {
     tokens = tokenList;
@@ -28,19 +31,20 @@ ProgramNode* Parser::startParsing() {
     }
 
     // generating program node containing an array of all decl nodes
-    ProgramNode myRootNode = ProgramNode(allDeclNodes);
+    ProgramNode* myRootNode = new ProgramNode(allDeclNodes);
 
     // returning the program node as root node
-    return &myRootNode;
+    return myRootNode;
 }
 
 DeclarationNode* Parser::parseCurrentDecl(){
     // use if else to find the best parser for current node
     if(isThisTokenDataTypeOrPropToken(this->tokens[this->currentPos])){ // found some data type or prop
         // call the parser fucntion with data type as first token
-        this->parseDataTypeFoundDeclaration();
+        return this->parseDataTypeFoundDeclaration();
         
     }
+    return nullptr;
 }
 
 bool Parser::isThisTokenDataTypeOrPropToken(Token currToken){
@@ -139,6 +143,54 @@ bool Parser::isThisTokenStorageClassToken(Token currToken){
     }
 }
 
+bool Parser::isThisTokenStructUnionEnumToken(Token currToken){
+    switch(currToken.type){
+        case KEYWORD_STRUCT:
+        case KEYWORD_UNION:
+        case KEYWORD_ENUM:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool  Parser::isThisStringPresentAsKeyInTrHm(string key){
+    // check if the given string is present as a key in type registry hashmap
+    auto search = this->typeRegisry.find(key);
+    if(search != this->typeRegisry.end()){
+        return true; // found
+    }
+    return false; // not found
+}
+
+bool Parser::isThisStringPresentAsKeyInTdMap(string key){
+    // check if the given string is present as a key in typedef hashmap
+    auto search = this->tdMap.find(key);
+    if(search != this->tdMap.end()){
+        return true; // found
+    }
+    return false; // not found
+}
+
+bool Parser::isCurrentIdValidTdAlias(){
+    // check if the current Id is valid TD alias in that specific position or just a ID that is variable/function name
+    // if next token is ; [ = , :  then return false
+
+    Token nextToken = this->tokens[this->currentPos + 1];
+    switch(nextToken.type){
+        case SEMICOLON:
+        case LBRACKET:
+        case OP_ASSIGN:
+        case COMMA:
+        case OP_COLON:
+            return false; // just an ID 
+        default:
+            return true; // valid TD alias
+    }
+    
+
+}
+
 DeclarationNode* Parser::parseDataTypeFoundDeclaration(){    
 
     // generate an object to store the current data type
@@ -147,8 +199,11 @@ DeclarationNode* Parser::parseDataTypeFoundDeclaration(){
     // evaluate the data type
     currType.getDataType();
 
+    cout << "Data type collected properly\n";
+
+    // validate this data type (true if valid either for function/var , else false)
     if(!currType.isCurrentTypeValid()){
-        // error mechanism
+        cout << "Type is invalid\n";
     }
     // now, the type decl is valid
 
@@ -169,4 +224,6 @@ DeclarationNode* Parser::parseDataTypeFoundDeclaration(){
     
 
     // generate all the AST and return accordignly
+    return nullptr;
 }
+

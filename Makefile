@@ -2,7 +2,14 @@ CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -g -I src
 TARGET = rmc7
 
-SOURCES = src/lexer/Lexer.cpp src/Main.cpp
+SOURCES = src/lexer/Lexer.cpp \
+          src/parser/Parser.cpp \
+          src/parser/Helper.cpp \
+          src/parser/ASTNode.cpp \
+          src/parser/DeclarationNode.cpp \
+          src/parser/ExpressionNode.cpp \
+          src/parser/StatementNode.cpp \
+          src/Main.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 
 all: $(TARGET)

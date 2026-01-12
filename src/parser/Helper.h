@@ -27,15 +27,21 @@ private:
     vector<TokenType> typeQualifiersArray;
     vector<TokenType> storageClassArray;
     vector<starData> starDataArray;
+    
+    vector<TokenType> trKeywordArray; // array to store keyword for the type registry 
+    vector<string> trBaseArray; // array to store the new base type
+    vector<string> tdNew; // array to store the new name of keywords used
 
     bool isPrevTokenValidForCurrentStar(TokenType prevTokenType);
+
+    
     
 
 public:
     dataTypeHolder(Parser& parser);
     void getDataType();
 
-    bool isCurrentTypeValid();
+    int isCurrentTypeValid();
 };
 
 #endif
