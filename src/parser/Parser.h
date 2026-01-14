@@ -15,6 +15,7 @@ using namespace std;
 
 class Parser {
     friend class dataTypeHolder; // allows dataTypeHolder to access private section of this class
+    friend class varNameHolder; // allows varNameHolder to access private section of this class
 private:
     vector<Token> tokens;
     size_t currentPos;
@@ -53,6 +54,8 @@ public:
     
     // Main parsing method
     ProgramNode* startParsing();
+
+    Token getCurrentToken();
 
     vector<Token> getTokenArray(){
         return tokens;

@@ -191,32 +191,59 @@ bool Parser::isCurrentIdValidTdAlias(){
 
 }
 
+Token Parser::getCurrentToken(){
+    if(this->currentPos < this->tokens.size()){
+        return this->tokens[this->currentPos];
+    } else{
+        // return an invalid token if out of bounds
+        return Token{ERROR, "", -1, -1};
+    }
+}
+
 DeclarationNode* Parser::parseDataTypeFoundDeclaration(){    
 
     // generate an object to store the current data type
     dataTypeHolder currType = dataTypeHolder(*this);
 
-    // evaluate the data type
+    // collect the data type and props
     currType.getDataType();
 
     cout << "Data type collected properly\n";
 
-    // validate this data type (true if valid either for function/var , else false)
-    if(!currType.isCurrentTypeValid()){
+    // validate this data type (0 if valid for both, 1 if valid ONLY for var , 2 if valid ONLY for func , -1 if invalid)
+    short retCode = currType.isCurrentTypeValid();
+    if(retCode == -1){
         cout << "Type is invalid\n";
+        exit(1);
     }
     // now, the type decl is valid
 
     
+    
+    if(retCode == 2){ // valid ONLY for func (void*)
+        //
+    } else if(retCode == 1){ // valid ONLY for var
+        varNameHolder currName = varNameHolder(*this);
+        currName.getVarName(currType);
+    } else{ // can be valid for both var or func
+        // lookup algo to check if it is var or func decl
+        
+        // if(var) proceed var decl
+        varNameHolder currName = varNameHolder(*this);
+        currName.getVarName(currType);
+        
+        // if(func) proceed func decl
+    }
+
 
     // decide if this is a fucntion decl or varibale decl
     
-    // check if the data type and props are valid
-
     // if function, check if defined and proceed accordingly
     // function part finished here
 
-    // if variable, check if initialized
+    // if variable
+    
+    // check if initialized
 
     // check if multi-declratations
 

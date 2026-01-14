@@ -12,11 +12,31 @@ typedef struct starData{
     TokenType typeBeforeStar;
 } starData;
 
+// enum for name validaiton type
+enum nameTypeSpecifier{
+    VAR_NAME, // var name
+    POINTOR, // pointor
+    ARRAY, // array
+    FUNC, // func
+};
+
+// struct for storing the var name data
+typedef struct varNameProp{
+    nameTypeSpecifier type;
+    
+    string varName; // to store var name
+    short unsigned numPointor; // to store number of pointors
+    ASTNode* astData; // to store the params if func or to store the arrSize
+} varNameProp;
+
 // Helper classes for parsing declarations
 
 class Parser;  // Forward declaration
+class varNameHolder;  // Forward declaration
 
 class dataTypeHolder{
+    friend class varNameHolder;  // Allow varNameHolder to access private members
+    
 private:
     Parser& parser; // reference to main parser object
 
@@ -42,6 +62,23 @@ public:
     void getDataType();
 
     int isCurrentTypeValid();
+};
+
+
+class varNameHolder{
+private:
+    Parser& parser; // reference to main parser object
+
+    vector<varNameProp> namePropArray; // to store the name properties
+
+    bool isArray; // is array or not
+    short arrayDimensions = 0; // number of dimensions if array
+    
+public:
+    varNameHolder(Parser& parser);
+    void getVarName(dataTypeHolder& typeHolder);
+
+    
 };
 
 #endif

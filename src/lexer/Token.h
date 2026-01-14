@@ -133,7 +133,9 @@ enum TokenType {
     
     // Special
     END_OF_FILE,           // EOF marker
-    ERROR                  // Error token
+    ERROR,                 // Error token
+
+    HELPER_TOKEN           // helper to deal with starData
 };
 
 struct Token {

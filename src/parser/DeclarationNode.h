@@ -21,8 +21,14 @@ protected:
 // ============================================================================
 
 class VariableDeclarationNode : public DeclarationNode {
+private:
+    dataTypeHolder varDeclType; // to store the decl type of the var
+    varNameHolder varName; // to store the var name of the var
+    bool isInit; // true if init, else false
+    ExpressionNode initExpr; // init expression
+
 public:
-    VariableDeclarationNode() {}
+    VariableDeclarationNode();
     ~VariableDeclarationNode() {}
 };
 
