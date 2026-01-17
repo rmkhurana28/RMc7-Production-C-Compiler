@@ -122,7 +122,7 @@ A complete C compiler implementation in C++ targeting 90-95% ISO C coverage.
 - Comments (single & multi-line)
 - Line/column tracking
 
-**Phase 2 - Syntax Analysis (Parser):** 🟡 IN PROGRESS (~10%)
+**Phase 2 - Syntax Analysis (Parser):** 🟡 IN PROGRESS (~35%)
 - ✅ Type collection algorithm (storage classes, qualifiers, sign/size modifiers)
 - ✅ Type validation system with compatibility rules (87 test cases, 100% pass rate)
 - ✅ Typedef expansion (recursive resolution)
