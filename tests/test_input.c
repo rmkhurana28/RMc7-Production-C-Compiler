@@ -1,1 +1,2 @@
-int x;
+int x , ** num3;
+int **num2;

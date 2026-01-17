@@ -1005,9 +1005,9 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             // Create node for this variable
             VariableDeclarationNode* temp = new VariableDeclarationNode(&typeHolder , this , isInit , initExpr , this->isArray , this->arrayDimensions);
 
-            // resetDataTypeAndNameObjectForNext(typeHolder);
+            resetDataTypeAndNameObjectForNext(typeHolder);
 
-            isFirstVar = false;
+            isFirstVar = true;
             isInit = false;
             initExpr = NULL;
 
@@ -1022,9 +1022,9 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             // proceed with func decl
             FunctionDeclarationNode* temp = new FunctionDeclarationNode(&typeHolder , this , paramList , isVariad);
 
-            // resetDataTypeAndNameObjectForNext(typeHolder);
+            resetDataTypeAndNameObjectForNext(typeHolder);
 
-            isFirstVar = false;
+            isFirstVar = true;
             isInit = false;
             initExpr = NULL;
 
