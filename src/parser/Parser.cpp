@@ -204,7 +204,7 @@ Token Parser::getCurrentToken(){
 
 DeclarationNode* Parser::parseDataTypeFoundDeclaration(){    
 
-    VariableDeclarationNode* temp;
+    DeclarationNode* temp;
 
     // generate an object to store the current data type
     dataTypeHolder currType = dataTypeHolder(*this);

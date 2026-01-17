@@ -18,6 +18,14 @@ ParameterNode::ParameterNode(dataTypeHolder* type, varNameHolder* name)
     : paramType(*type), paramName(*name) {
 }
 
+ParameterNode& ParameterNode::operator=(const ParameterNode& other) {
+    if (this != &other) {
+        paramType = other.paramType;
+        paramName = other.paramName;
+    }
+    return *this;
+}
+
 
 vector<ParameterNode> ParameterNode::evaluateParams(Parser& parser){
     vector<ParameterNode> myParamArray;
@@ -36,11 +44,32 @@ vector<ParameterNode> ParameterNode::evaluateParams(Parser& parser){
     paramType.getDataType();
 
     // validate data type
-    paramType.isCurrentTypeValid();
+    short check = paramType.isCurrentTypeValid();
+    if(check == -1){
+        cout << "Param data type invalid\n";
+        exit(1);
+    }
+    if(check == 2){
+        cout << "Param data type not valid for variable\n";
+        exit(1);
+    }
+
+    
 
     if(parser.tokens[parser.currentPos].type != COMMA && parser.tokens[parser.currentPos].type != RPAREN){ // evaluate ONYL if names are available after data type
         // get name
         paramName.getVarName(paramType , true);
+
+        // validate name prop
+        short check = paramName.checkValidity();
+        if(check == -1){
+            cout << "Param name invalid\n";
+            exit(1);
+        }
+        if(check == 2){
+            cout << "Param name not valid for variable\n";
+            exit(1);
+        }
     }
     
 

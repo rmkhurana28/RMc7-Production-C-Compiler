@@ -4,8 +4,8 @@
 #include "ASTNode.h"
 #include <vector>
 #include <fstream>
-#include "Helper.h"
 #include "ExpressionNode.h"
+#include "Helper.h"
 using namespace std;
 
 // ============================================================================
@@ -61,6 +61,7 @@ private:
 public:
     FunctionDeclarationNode(dataTypeHolder* retType, varNameHolder* name, vector<ParameterNode> params, bool isVar);
     ~FunctionDeclarationNode() {}
+    void print(ofstream& out) override;
 };
 
 class FunctionDefinitionNode : public DeclarationNode {
@@ -103,6 +104,7 @@ public:
     varNameHolder paramName;   
 
     ParameterNode(dataTypeHolder* type, varNameHolder* name);
+    ParameterNode& operator=(const ParameterNode& other);
 
     static vector<ParameterNode> evaluateParams(Parser& parser);
 

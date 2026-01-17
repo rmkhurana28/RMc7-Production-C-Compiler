@@ -4,7 +4,7 @@
 #include "../lexer/Token.h"
 #include <vector>
 #include <string>
-#include "ASTNode.h"    
+#include "ASTNode.h"
 using namespace std;
 
 // struct to store the star data
@@ -23,6 +23,8 @@ enum nameTypeSpecifier{
 
 // Forward declarations for circular dependency
 class ParameterNode;
+class DeclarationNode;
+
 
 // struct for storing the var name data
 typedef struct varNameProp{
@@ -45,9 +47,11 @@ class Parser;  // Forward declaration
 class varNameHolder;  // Forward declaration
 class VariableDeclarationNode;  // Forward declaration
 
+
 class dataTypeHolder{
     friend class varNameHolder;  // Allow varNameHolder to access private members
     friend class VariableDeclarationNode;  // Allow VariableDeclarationNode to print
+    friend class FunctionDeclarationNode;  // Allow FunctionDeclarationNode to print
     friend class ParameterNode;  // Allow ParameterNode access for recursive printing
     friend void printParametersRecursive(ofstream&, const vector<ParameterNode>&, const string&);  // Allow helper function
     
@@ -74,6 +78,7 @@ private:
 public:
     dataTypeHolder(Parser& parser);
     dataTypeHolder(const dataTypeHolder& other);
+    dataTypeHolder& operator=(const dataTypeHolder& other);
     void getDataType();
 
     int isCurrentTypeValid();
@@ -82,6 +87,7 @@ public:
 
 class varNameHolder{
     friend class VariableDeclarationNode;  // Allow VariableDeclarationNode to print
+    friend class FunctionDeclarationNode;  // Allow FunctionDeclarationNode to print
     friend class ParameterNode;  // Allow ParameterNode access for recursive printing
     friend void printParametersRecursive(ofstream&, const vector<ParameterNode>&, const string&);  // Allow helper function
 private:
@@ -89,13 +95,19 @@ private:
 
     vector<varNameProp> namePropArray; // to store the name properties
 
-    bool isArray; // is array or not
+    bool isArray = false; // is array or not
     short arrayDimensions = 0; // number of dimensions if array
     
 public:
     varNameHolder(Parser& parser);
     varNameHolder(const varNameHolder& other);
-    VariableDeclarationNode* getVarName(dataTypeHolder& typeHolder , bool isFuncParam);
+
+    varNameHolder& operator=(const varNameHolder& other);
+
+    DeclarationNode* getVarName(dataTypeHolder& typeHolder , bool isFuncParam);
+    
+    int checkValidity();
+    void resetDataTypeAndNameObjectForNext(dataTypeHolder& typeHolder);
 
     
 };

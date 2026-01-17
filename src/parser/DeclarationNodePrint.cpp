@@ -94,15 +94,12 @@ void VariableDeclarationNode::print(ofstream& out) {
     
     out << "\n";
     
-    // Print variable name with stars
+    // Print variable name only (no stars)
     out << "      Var Name: ";
     for(const auto& prop : varName.namePropArray) {
         if(prop.type == VAR_NAME) {
             out << prop.varName;
-        } else if(prop.type == POINTOR) {
-            for(int i = 0; i < prop.numPointor; i++) {
-                out << "*";
-            }
+            break; // Only print the name, nothing else
         }
     }
     
@@ -234,15 +231,59 @@ void VariableDeclarationNode::printParameters(ofstream& out) {
     }
 }
 
+void FunctionDeclarationNode::print(ofstream& out) {
+    out << "      Return Type: ";
+    
+    // Print return type
+    for(auto bt : funcDeclType.baseTypeArray) {
+        out << tokenToReadable(bt) << " ";
+    }
+    
+    // Print function name
+    out << "\n      Function Name: ";
+    for(const auto& prop : funcName.namePropArray) {
+        if(prop.type == VAR_NAME) {
+            out << prop.varName;
+        }
+    }
+    
+    // Print parameters
+    out << "\n      Parameters: ";
+    if(paramsArray.empty()) {
+        out << "()";
+    } else {
+        out << "(" << paramsArray.size() << ")";
+        if(isVariadic) {
+            out << " [variadic]";
+        }
+        out << "\n";
+        printParametersRecursive(out, paramsArray, "        ");
+    }
+    out << "\n";
+}
+
 void ProgramNode::printAST(ofstream& out) {
     out << "\n========================================\n";
-    out << "       VARIABLE DECLARATIONS AST       \n";
+    out << "            DECLARATIONS AST           \n";
     out << "========================================\n\n";
     out << "Total Declarations: " << declarations.size() << "\n\n";
     out << "----------------------------------------\n\n";
     
     for(size_t i = 0; i < declarations.size(); i++) {
-        out << "declaration #" << (i + 1) << " (Variable Declaration):\n";
+        out << "declaration #" << (i + 1) << " (";
+        
+        // Determine declaration type
+        if(dynamic_cast<VariableDeclarationNode*>(declarations[i])) {
+            out << "Variable Declaration";
+        } else if(dynamic_cast<FunctionDeclarationNode*>(declarations[i])) {
+            out << "Function Declaration";
+        } else if(dynamic_cast<FunctionDefinitionNode*>(declarations[i])) {
+            out << "Function Definition";
+        } else {
+            out << "Unknown Declaration";
+        }
+        
+        out << "):\n";
         declarations[i]->print(out);
         out << "\n";
     }

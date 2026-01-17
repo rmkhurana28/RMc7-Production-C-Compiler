@@ -28,6 +28,33 @@ dataTypeHolder::dataTypeHolder(const dataTypeHolder& other) : parser(other.parse
 varNameHolder::varNameHolder(const varNameHolder& other) : parser(other.parser),
     namePropArray(other.namePropArray), isArray(other.isArray), arrayDimensions(other.arrayDimensions) {}
 
+// Assignment operators
+dataTypeHolder& dataTypeHolder::operator=(const dataTypeHolder& other) {
+    if (this != &other) {
+        // Note: parser reference cannot be reassigned, it stays the same
+        baseTypeArray = other.baseTypeArray;
+        signModifiersArray = other.signModifiersArray;
+        sizeModifiersArray = other.sizeModifiersArray;
+        typeQualifiersArray = other.typeQualifiersArray;
+        storageClassArray = other.storageClassArray;
+        starDataArray = other.starDataArray;
+        trKeywordArray = other.trKeywordArray;
+        trBaseArray = other.trBaseArray;
+        tdNew = other.tdNew;
+    }
+    return *this;
+}
+
+varNameHolder& varNameHolder::operator=(const varNameHolder& other) {
+    if (this != &other) {
+        // Note: parser reference cannot be reassigned, it stays the same
+        namePropArray = other.namePropArray;
+        isArray = other.isArray;
+        arrayDimensions = other.arrayDimensions;
+    }
+    return *this;
+}
+
 void dataTypeHolder::getDataType(){
     bool firstStarFound = false;
     bool isBaseTypeFound = false;
@@ -444,7 +471,7 @@ bool dataTypeHolder::isPrevTokenValidForCurrentStar(TokenType prevTokenType){
     return false;
 }
 
-VariableDeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isFuncParam){
+DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isFuncParam){
 
     // cout << "[NAME] Current token is : " << this->parser.tokens[this->parser.currentPos].data << "\n";
     
@@ -473,9 +500,12 @@ VariableDeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , 
     Token current = this->parser.getCurrentToken(); // set the current properly
         
     short indexIfExist; // helper flag 
+
+    bool isVariad = false;
+    vector<ParameterNode> paramList;
     
 
-    while(current.type != SEMICOLON && current.type != OP_ASSIGN && current.type != COMMA){ // var name ends when next token is ; or = or ,
+    while(current.type != SEMICOLON && current.type != OP_ASSIGN && current.type != COMMA && current.type != RBRACE){ // var name ends when next token is ; or = or ,
         if(current.type == ID){ // actaul var name
 
             cameFromPointorSide: // label used when jumping from pointor to ID
@@ -585,7 +615,7 @@ VariableDeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , 
 
                         current = this->parser.tokens[++this->parser.currentPos]; // skip ] and go to ) now
                         
-                    } else if(this->parser.tokens[this->parser.currentPos+1].type == SEMICOLON || this->parser.tokens[this->parser.currentPos+1].type == OP_ASSIGN || this->parser.tokens[this->parser.currentPos+1].type == COMMA){ // token next to ] is ; = ,
+                    } else if(this->parser.tokens[this->parser.currentPos+1].type == SEMICOLON || this->parser.tokens[this->parser.currentPos+1].type == OP_ASSIGN || this->parser.tokens[this->parser.currentPos+1].type == COMMA || this->parser.tokens[this->parser.currentPos+1].type != RBRACE){ // token next to ] is ; = ,
                         // we can safely evaluate pointor at this point, but dont advance the current 2 times (required to end the parent while loop)
                         varNameProp temp;
                         temp.type = POINTOR;
@@ -607,7 +637,7 @@ VariableDeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , 
                     exit(1);
                 }
             } 
-            else if(current.type == SEMICOLON || current.type == OP_ASSIGN || current.type == COMMA){ // next token is either ; = ,
+            else if(current.type == SEMICOLON || current.type == OP_ASSIGN || current.type == COMMA ||  current.type == RBRACE){ // next token is either ; = , }
                             
                 if(gotoHelper2 && !gotoHelper){ // error coz we found [ , but NOT varName so far
                     // error
@@ -719,7 +749,9 @@ VariableDeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , 
                 varNameProp temp;
                 temp.type = FUNC;
                 temp.funcParams = ParameterNode::evaluateParams(this->parser); // parsing the params
+                paramList = temp.funcParams;
                 if(this->parser.tokens[this->parser.currentPos-1].type == OP_DOT){ // check if varaidic func
+                    isVariad = true;
                     temp.isVariadic = true;
                 } else{
                     temp.isVariadic = false;
@@ -865,72 +897,164 @@ VariableDeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , 
 
     comeAfterInit:
     
-    // Create node for this variable
-    VariableDeclarationNode* temp = new VariableDeclarationNode(&typeHolder , this , isInit , initExpr , this->isArray , this->arrayDimensions);
+    
+
+    // now, have to put the algo to decide if this is var decl or func decl or func def
 
     if(current.type == COMMA){ // if multiple decl
+
         
-
-        // reset the name prop array
-        vector<varNameProp>().swap(namePropArray);
-
-        // resset isArray and arrDim also
-        this->isArray = false;
-        this->arrayDimensions = 0;
-
-        // reset data type star data
-        TokenType baseType;
-        if(typeHolder.baseTypeArray.size() == 1){
-            baseType = typeHolder.baseTypeArray.front();
-        } else if(typeHolder.trBaseArray.size() == 1){
-            baseType = HELPER_TOKEN;
-        } else{
-            cout << "Unknown error of base type\n";
+        // it is variable multi decl
+        
+        // validate if varName is syntactical valid for variable
+        // if invalid, stop for now
+        short check = this->checkValidity();
+        if(check == -1){
             exit(1);
-        }
-
-        // check if base type alr has some stars in starData (Valid only for first variable decl)
-        short indexIfExist = -1;
-        for(size_t i=0 ; i<typeHolder.starDataArray.size() ; i++){
-            if(typeHolder.starDataArray[i].typeBeforeStar == baseType && typeHolder.starDataArray[i].numOfStars > 0){
-                indexIfExist = i;
-                break;
+        } else if(check == 2){ // func 
+            // validate data type to make sure it supports func
+            if(typeHolder.isCurrentTypeValid() == 1){
+                cout << "Data Type NOT valid for function\n";
+                exit(1);
             }
+
+            // proceed with func decl
+            FunctionDeclarationNode* temp = new FunctionDeclarationNode(&typeHolder , this , paramList , isVariad);
+
+            resetDataTypeAndNameObjectForNext(typeHolder);
+
+            isFirstVar = false;
+            isInit = false;
+            initExpr = NULL;
+
+            return temp;
+
+            
+        } else if(check == 1){ // var
+            // validity check to make sure data type is valid for var
+            if(typeHolder.isCurrentTypeValid() == 2){
+                cout << "Data Type NOT valid for vaiable\n";
+                exit(1);
+            }
+
+            // proceed with var decl
+            // Create node for this variable
+            VariableDeclarationNode* temp = new VariableDeclarationNode(&typeHolder , this , isInit , initExpr , this->isArray , this->arrayDimensions);
+
+            resetDataTypeAndNameObjectForNext(typeHolder);
+
+            isFirstVar = false;
+            isInit = false;
+            initExpr = NULL;
+
+            return temp;
         }
-
-        if(indexIfExist != -1){ // if it exists, then reset
-            typeHolder.starDataArray[indexIfExist].numOfStars = 0;
-        }
-
-        isFirstVar = false; // false since we found ,
-
-        isInit = false; // reset static value for next var
-        initExpr = NULL; // reset static value for next var
-
-        return temp;
+                        
 
         // proceed to next one
         
     } else if(current.type == OP_ASSIGN){ // initialized
+
+        // it is variable decl
+        // it is initialized
+
+        // validate if varName is syntactical valid for variable
+        if(this->checkValidity() == -1){
+            exit(1);
+        } else if(this->checkValidity() == 2){ // valid for func
+            cout << "Name NOT valid for var\n";
+            exit(1);
+        }        
+        // if invalid, stop for now
+        // if valid, proceed to evalute rhs
+        
+        // check validity of data type for var
+        if(typeHolder.isCurrentTypeValid() == 2){ // valid only for func
+            cout << "Data Type NOT valid for vaiable\n";
+            exit(1);
+        }
+
+        // set isInit flag to true
         isInit = true;
         
         current = this->parser.tokens[++this->parser.currentPos]; // advance 1 position, skip =
 
         // initExpr = evaluate
 
+        // Create node for this variable
+        // VariableDeclarationNode* temp = new VariableDeclarationNode(&typeHolder , this , isInit , initExpr , this->isArray , this->arrayDimensions);
+
         goto comeAfterInit; // check the next token again (can be , or ; or ERROR)
         
         // proceed accordingly
 
     } else if(current.type == SEMICOLON){ // end
-        // end this decl
+
+        short check = this->checkValidity();
+
+        if(check == -1){
+            exit(1);
+        } else if(check == 1){ // var
+            // validity check to make sure data type is valid for var
+            if(typeHolder.isCurrentTypeValid() == 2){
+                cout << "Data Type NOT valid for vaiable\n";
+                exit(1);
+            }
+
+            // proceed with var decl
+            // Create node for this variable
+            VariableDeclarationNode* temp = new VariableDeclarationNode(&typeHolder , this , isInit , initExpr , this->isArray , this->arrayDimensions);
+
+            // resetDataTypeAndNameObjectForNext(typeHolder);
+
+            isFirstVar = false;
+            isInit = false;
+            initExpr = NULL;
+
+            return temp;
+        } else if(check == 2){ // func
+            // validate data type to make sure it supports func
+            if(typeHolder.isCurrentTypeValid() == 1){
+                cout << "Data Type NOT valid for function\n";
+                exit(1);
+            }
+
+            // proceed with func decl
+            FunctionDeclarationNode* temp = new FunctionDeclarationNode(&typeHolder , this , paramList , isVariad);
+
+            // resetDataTypeAndNameObjectForNext(typeHolder);
+
+            isFirstVar = false;
+            isInit = false;
+            initExpr = NULL;
+
+            return temp;
+        }
+
         
-        isInit = false; // reset static var for next variable
-        initExpr = NULL; // reset static value for next var
+        
+    } else if(current.type == RBRACE){ // func definition
+        
+        // validate if varName is syntactical valid for variable
+        if(this->checkValidity() == -1){
+            exit(1);
+        } else if(this->checkValidity() == 1){ // valid for var
+            cout << "Name NOT valid for func\n";
+            exit(1);
+        }
 
-        isFirstVar = true; // reset static var for the next call
+        // check validity of data type for func
+        if(typeHolder.isCurrentTypeValid() == 1){ // valid only for var
+            cout << "Data Type NOT valid for func\n";
+            exit(1);
+        }
 
-        return temp;
+        // evaluate block inside func for func definitiuon
+        // evaluate block here
+
+        // generate func defi node 
+
+        // return definition node
     } else{
         cout << "Causing the error\n";
         exit(1);
@@ -941,3 +1065,69 @@ VariableDeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , 
     
 }
 
+int varNameHolder::checkValidity(){
+    // -1 if invalid
+    // 1 if valid for var
+    // 2 if valid for func
+
+    if(this->namePropArray.front().type != VAR_NAME){ // VAR_NAME has highest precedence, so it is always the first
+        return -1;
+    }
+
+    for(size_t i=0 ; i<this->namePropArray.size()-1 ; i++){
+        if(this->namePropArray[i].type == FUNC){
+            if(this->namePropArray[i+1].type == FUNC){
+                cout << "F + F\n";
+                return -1;
+            } else if(this->namePropArray[i+1].type == ARRAY){
+                cout << "F + A\n";
+                return -1;
+            }
+        } else if(this->namePropArray[i].type == ARRAY){
+            if(this->namePropArray[i+1].type == FUNC){
+                cout << "A + F\n";
+                return -1;
+            }
+        }
+    }
+
+    if(this->namePropArray.size() > 1 && this->namePropArray[1].type == FUNC){
+        return 2; // valid only for func
+    } else {
+        return 1; // valid only for var
+    }
+
+}
+
+void varNameHolder::resetDataTypeAndNameObjectForNext(dataTypeHolder& typeHolder){
+    // reset the name prop array
+    vector<varNameProp>().swap(namePropArray);
+
+    // reset isArray and arrDim also
+    this->isArray = false;
+    this->arrayDimensions = 0;
+
+    // reset data type star data
+    TokenType baseType;
+    if(typeHolder.baseTypeArray.size() == 1){
+        baseType = typeHolder.baseTypeArray.front();
+    } else if(typeHolder.trBaseArray.size() == 1){
+        baseType = HELPER_TOKEN;
+    } else{
+        cout << "Unknown error of base type\n";
+        exit(1);
+    }
+
+    // check if base type alr has some stars in starData (Valid only for first variable decl)
+    short indexIfExist = -1;
+    for(size_t i=0 ; i<typeHolder.starDataArray.size() ; i++){
+        if(typeHolder.starDataArray[i].typeBeforeStar == baseType && typeHolder.starDataArray[i].numOfStars > 0){
+            indexIfExist = i;
+            break;
+        }
+    }
+
+    if(indexIfExist != -1){ // if it exists, then reset
+        typeHolder.starDataArray[indexIfExist].numOfStars = 0;
+    }
+}

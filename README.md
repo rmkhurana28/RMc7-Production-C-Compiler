@@ -129,7 +129,7 @@ A complete C compiler implementation in C++ targeting 90-95% ISO C coverage.
 - ✅ Declarator parsing (variables, arrays, pointers, function pointers)
 - ✅ Complex declarator patterns (multi-level nesting, deferred star application)
 - ✅ Function parameter evaluation (named/unnamed, variadic functions)
-- ⏭️ Next: Syntax validation (name and func params)
+- ✅ Syntax validation (variable vs function classification, invalid pattern detection)
 - ⏭️ Next: Expression parsing with operator precedence
 - ⏭️ Next: Statement parsing (control flow)
 
