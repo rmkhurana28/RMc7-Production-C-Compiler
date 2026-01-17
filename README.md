@@ -122,12 +122,14 @@ A complete C compiler implementation in C++ targeting 90-95% ISO C coverage.
 - Comments (single & multi-line)
 - Line/column tracking
 
-**Phase 2 - Syntax Analysis (Parser):** 🟡 IN PROGRESS (~25-30%)
+**Phase 2 - Syntax Analysis (Parser):** 🟡 IN PROGRESS (~10%)
 - ✅ Type collection algorithm (storage classes, qualifiers, sign/size modifiers)
-- ✅ Type validation system with compatibility rules
+- ✅ Type validation system with compatibility rules (87 test cases, 100% pass rate)
 - ✅ Typedef expansion (recursive resolution)
-- ✅ 87 comprehensive test cases (100% pass rate)
-- ⏭️ Next: Declarator parsing (variables, arrays, function pointers)
+- ✅ Declarator parsing (variables, arrays, pointers, function pointers)
+- ✅ Complex declarator patterns (multi-level nesting, deferred star application)
+- ✅ Function parameter evaluation (named/unnamed, variadic functions)
+- ⏭️ Next: Syntax validation (name and func params)
 - ⏭️ Next: Expression parsing with operator precedence
 - ⏭️ Next: Statement parsing (control flow)
 
