@@ -22,12 +22,14 @@ ProgramNode* Parser::startParsing() {
 
     // generate all relavent AST
     // keep parsing untill tokens are finished
-    DeclarationNode* temp;
     while(this->currentPos < tokens.size()){
-        temp = this->parseCurrentDecl(); // call the perfect parser fucntion detector
-        if(temp != nullptr){ // if returned decl node is NOT null , add to the array
-            allDeclNodes.push_back(temp);
+        this->parseCurrentDecl(); // parse declaration(s)
+        
+        // Add all nodes from allAST to allDeclNodes
+        for(auto node : this->allAST) {
+            allDeclNodes.push_back(static_cast<DeclarationNode*>(node));
         }
+        this->allAST.clear(); // clear for next declaration
     }
 
     // generating program node containing an array of all decl nodes
@@ -41,8 +43,8 @@ DeclarationNode* Parser::parseCurrentDecl(){
     // use if else to find the best parser for current node
     if(isThisTokenDataTypeOrPropToken(this->tokens[this->currentPos])){ // found some data type or prop
         // call the parser fucntion with data type as first token
-        return this->parseDataTypeFoundDeclaration();
-        
+        this->parseDataTypeFoundDeclaration();
+        return nullptr; // allAST now contains all nodes
     }
     return nullptr;
 }
@@ -202,13 +204,13 @@ Token Parser::getCurrentToken(){
 
 DeclarationNode* Parser::parseDataTypeFoundDeclaration(){    
 
+    VariableDeclarationNode* temp;
+
     // generate an object to store the current data type
     dataTypeHolder currType = dataTypeHolder(*this);
 
     // collect the data type and props
     currType.getDataType();
-
-    cout << "Data type collected properly\n";
 
     // validate this data type (0 if valid for both, 1 if valid ONLY for var , 2 if valid ONLY for func , -1 if invalid)
     short retCode = currType.isCurrentTypeValid();
@@ -218,19 +220,43 @@ DeclarationNode* Parser::parseDataTypeFoundDeclaration(){
     }
     // now, the type decl is valid
 
-    
+    varNameHolder currName = varNameHolder(*this);
     
     if(retCode == 2){ // valid ONLY for func (void*)
-        //
+        temp = currName.getVarName(currType , false);
+        this->allAST.push_back(temp);
+        
+        if(this->tokens[this->currentPos].type == COMMA){ // multiple decl
+            this->currentPos++;
+            goto multiDecl;
+        } else if(this->tokens[this->currentPos].type == SEMICOLON){ // line closed
+            this->currentPos++;
+        }
     } else if(retCode == 1){ // valid ONLY for var
-        varNameHolder currName = varNameHolder(*this);
-        currName.getVarName(currType);
+        multiDecl:
+        temp = currName.getVarName(currType , false);
+        
+        this->allAST.push_back(temp);
+
+        if(this->tokens[this->currentPos].type == COMMA){ // multiple decl
+            this->currentPos++;
+            goto multiDecl;
+        } else if(this->tokens[this->currentPos].type == SEMICOLON){ // line closed
+            this->currentPos++;
+        }
     } else{ // can be valid for both var or func
         // lookup algo to check if it is var or func decl
         
-        // if(var) proceed var decl
-        varNameHolder currName = varNameHolder(*this);
-        currName.getVarName(currType);
+        // if(var) proceed var decl        
+        temp = currName.getVarName(currType , false);
+        this->allAST.push_back(temp);
+        
+        if(this->tokens[this->currentPos].type == COMMA){ // multiple decl
+            this->currentPos++;
+            goto multiDecl;
+        } else if(this->tokens[this->currentPos].type == SEMICOLON){ // line closed
+            this->currentPos++;
+        }
         
         // if(func) proceed func decl
     }
@@ -251,6 +277,6 @@ DeclarationNode* Parser::parseDataTypeFoundDeclaration(){
     
 
     // generate all the AST and return accordignly
-    return nullptr;
+    return nullptr; // nodes stored in this->allAST
 }
 

@@ -1,0 +1,15 @@
+int x;
+int *p;
+int **pp;
+int ***ppp;
+char ****pppp;
+int *****ppppp;
+const int ci;
+volatile int vi;
+const volatile int cvi;
+int * const pc;
+static int si;
+extern int ei;
+register int ri;
+auto int ai;
+unsigned int ui;

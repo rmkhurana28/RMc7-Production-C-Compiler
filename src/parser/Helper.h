@@ -4,6 +4,7 @@
 #include "../lexer/Token.h"
 #include <vector>
 #include <string>
+#include "ASTNode.h"    
 using namespace std;
 
 // struct to store the star data
@@ -20,22 +21,35 @@ enum nameTypeSpecifier{
     FUNC, // func
 };
 
+// Forward declarations for circular dependency
+class ParameterNode;
+
 // struct for storing the var name data
 typedef struct varNameProp{
     nameTypeSpecifier type;
     
     string varName; // to store var name
     short unsigned numPointor; // to store number of pointors
-    ASTNode* astData; // to store the params if func or to store the arrSize
+    
+    // For ARRAY:
+    ASTNode* arrayExpr; // to store the array size expression
+    
+    // For FUNC:
+    vector<ParameterNode> funcParams; // to store function parameters
+    bool isVariadic; // true if function has ...
 } varNameProp;
 
 // Helper classes for parsing declarations
 
 class Parser;  // Forward declaration
 class varNameHolder;  // Forward declaration
+class VariableDeclarationNode;  // Forward declaration
 
 class dataTypeHolder{
     friend class varNameHolder;  // Allow varNameHolder to access private members
+    friend class VariableDeclarationNode;  // Allow VariableDeclarationNode to print
+    friend class ParameterNode;  // Allow ParameterNode access for recursive printing
+    friend void printParametersRecursive(ofstream&, const vector<ParameterNode>&, const string&);  // Allow helper function
     
 private:
     Parser& parser; // reference to main parser object
@@ -59,6 +73,7 @@ private:
 
 public:
     dataTypeHolder(Parser& parser);
+    dataTypeHolder(const dataTypeHolder& other);
     void getDataType();
 
     int isCurrentTypeValid();
@@ -66,6 +81,9 @@ public:
 
 
 class varNameHolder{
+    friend class VariableDeclarationNode;  // Allow VariableDeclarationNode to print
+    friend class ParameterNode;  // Allow ParameterNode access for recursive printing
+    friend void printParametersRecursive(ofstream&, const vector<ParameterNode>&, const string&);  // Allow helper function
 private:
     Parser& parser; // reference to main parser object
 
@@ -76,7 +94,8 @@ private:
     
 public:
     varNameHolder(Parser& parser);
-    void getVarName(dataTypeHolder& typeHolder);
+    varNameHolder(const varNameHolder& other);
+    VariableDeclarationNode* getVarName(dataTypeHolder& typeHolder , bool isFuncParam);
 
     
 };

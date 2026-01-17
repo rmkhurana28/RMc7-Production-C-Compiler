@@ -16,9 +16,13 @@ using namespace std;
 class Parser {
     friend class dataTypeHolder; // allows dataTypeHolder to access private section of this class
     friend class varNameHolder; // allows varNameHolder to access private section of this class
+    friend class ParameterNode;
 private:
     vector<Token> tokens;
     size_t currentPos;
+
+    // array to store all the AST
+    vector<ASTNode*> allAST;
     
     // type registry for the struct/union/enum data types
     unordered_map<string, string> typeRegisry;

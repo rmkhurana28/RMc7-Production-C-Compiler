@@ -6,6 +6,8 @@
 
 using namespace std;
 
+class ParameterNode;
+
 // Implementation of helper classes
 dataTypeHolder::dataTypeHolder(Parser& p) : parser(p) {
     // Reference initialized in initialization list
@@ -16,9 +18,21 @@ varNameHolder::varNameHolder(Parser& p) : parser(p) {
     // Reference initialized in initialization list
 }
 
+// used for deep copy
+dataTypeHolder::dataTypeHolder(const dataTypeHolder& other) : parser(other.parser),
+    baseTypeArray(other.baseTypeArray), signModifiersArray(other.signModifiersArray),
+    sizeModifiersArray(other.sizeModifiersArray), typeQualifiersArray(other.typeQualifiersArray),
+    storageClassArray(other.storageClassArray), starDataArray(other.starDataArray),
+    trKeywordArray(other.trKeywordArray), trBaseArray(other.trBaseArray), tdNew(other.tdNew) {}
+
+varNameHolder::varNameHolder(const varNameHolder& other) : parser(other.parser),
+    namePropArray(other.namePropArray), isArray(other.isArray), arrayDimensions(other.arrayDimensions) {}
+
 void dataTypeHolder::getDataType(){
     bool firstStarFound = false;
     bool isBaseTypeFound = false;
+
+    bool isShortLongSignUnsignFound = false;
     
     TokenType latestType;
 
@@ -31,6 +45,7 @@ void dataTypeHolder::getDataType(){
             this->baseTypeArray.push_back(this->parser.tokens[this->parser.currentPos].type);
             latestType = this->parser.tokens[this->parser.currentPos].type;
         } else if(this->parser.isThisTokenSignModifierToken(this->parser.tokens[this->parser.currentPos])){ // sign
+            isShortLongSignUnsignFound = true;
             if(firstStarFound){ // sign modifier token not allowed after first * is found
                 cout << "Error: Sign modifier not allowed after pointer (*) declaration" << endl;
                 exit(1);
@@ -38,6 +53,7 @@ void dataTypeHolder::getDataType(){
             this->signModifiersArray.push_back(this->parser.tokens[this->parser.currentPos].type);
             latestType = this->parser.tokens[this->parser.currentPos].type;
         } else if(this->parser.isThisTokenSizeModifierToken(this->parser.tokens[this->parser.currentPos])){ // size
+            isShortLongSignUnsignFound = true;
             if(firstStarFound){ // size modifier token not allowed after first * is found
                 cout << "Error: Size modifier not allowed after pointer (*) declaration" << endl;
                 exit(1);
@@ -55,7 +71,7 @@ void dataTypeHolder::getDataType(){
             this->storageClassArray.push_back(this->parser.tokens[this->parser.currentPos].type);
             latestType = this->parser.tokens[this->parser.currentPos].type;
         } else if(this->parser.tokens[this->parser.currentPos].type == OP_STAR){ // *
-            if(!isBaseTypeFound){ // * found before base type was specified
+            if(!isBaseTypeFound && !isShortLongSignUnsignFound){ // * found before base type was specified
                 cout << "Error: Pointer (*) found before base type declaration" << endl;
                 exit(1);
             }
@@ -368,7 +384,7 @@ int dataTypeHolder::isCurrentTypeValid(){
         if(this->signModifiersArray.size() > 0 || this->sizeModifiersArray.size() > 0) return -1; // sign and size modifiers NOT allowed for void base data type
 
         bool withPointor = false;
-        for(int i=0 ; i<this->starDataArray.size() ; i++){
+        for(size_t i=0 ; i<this->starDataArray.size() ; i++){
             if(this->starDataArray[i].typeBeforeStar == KEYWORD_VOID){
                 withPointor = true;
                 break;
@@ -428,16 +444,31 @@ bool dataTypeHolder::isPrevTokenValidForCurrentStar(TokenType prevTokenType){
     return false;
 }
 
-void varNameHolder::getVarName(dataTypeHolder& typeHolder){
+VariableDeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isFuncParam){
+
+    // cout << "[NAME] Current token is : " << this->parser.tokens[this->parser.currentPos].data << "\n";
+    
     bool static idFound = false; // flag to check if first id is found
+    if(isFuncParam){
+        idFound = false;
+    }
     short static unsigned bracketStackCount = 0; // breacket stack counter
+
     short static initBrackCount = -1; // used for evaluating pointors
+
+    short unsigned tempInitBrack = initBrackCount;
+
     short addStarCount = 0; // pointor numbers
+    
+    bool static isInit = false;
+    static ExpressionNode* initExpr = NULL;
+
 
     bool static isFirstVar = true; // flag if the var is first in multiple decl
 
     bool gotoHelper = false; // helper flag
     bool gotoHelper2 = false; // helper flag2
+    bool gotoHelper3 = false;
 
     Token current = this->parser.getCurrentToken(); // set the current properly
         
@@ -481,7 +512,7 @@ void varNameHolder::getVarName(dataTypeHolder& typeHolder){
 
             // check if base type alr has some stars in starData (Valid only for first variable decl)
             indexIfExist = -1;
-            for(int i=0 ; i<typeHolder.starDataArray.size() ; i++){
+            for(size_t i=0 ; i<typeHolder.starDataArray.size() ; i++){
                 if(typeHolder.starDataArray[i].typeBeforeStar == baseType && typeHolder.starDataArray[i].numOfStars > 0){
                     indexIfExist = i;
                     break;
@@ -496,19 +527,20 @@ void varNameHolder::getVarName(dataTypeHolder& typeHolder){
             }
             
             if(indexIfExist == -1){ // base type doesnt alr exist in starData array
-                starData tempStarData({addStarCount , baseType}); // generate a starData object 
-                typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array
+                // starData tempStarData({addStarCount , baseType}); // generate a starData object 
+                // typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array
             } else{ // base type alr exist in starData array
-                typeHolder.starDataArray[indexIfExist].numOfStars += addStarCount; // update the number of stars in the starData
-                addStarCount = typeHolder.starDataArray[indexIfExist].numOfStars;
-            }            
+                //typeHolder.starDataArray[indexIfExist].numOfStars += addStarCount; // update the number of stars in the starData
+                //addStarCount = typeHolder.starDataArray[indexIfExist].numOfStars;
+            }
             
             // updation is done on the data type side
             // now need to update on the name side
 
-            checkAgain: // label used for pointor evaluatin jumps
+            checkAgain: // label used for pointor evaluatin jumps            
 
             if(current.type == LPAREN){ // ( present after *
+                //cout << "DEBUG: Setting initBrackCount=" << bracketStackCount << endl;
                 initBrackCount = bracketStackCount; // store the number of nested brackets 
             } else if(current.type == ID){ // var name after *
 
@@ -550,6 +582,8 @@ void varNameHolder::getVarName(dataTypeHolder& typeHolder){
                         temp.numPointor = addStarCount;
                         this->namePropArray.push_back(temp);
                         addStarCount = -1; // reset the addStarCounter 
+
+                        current = this->parser.tokens[++this->parser.currentPos]; // skip ] and go to ) now
                         
                     } else if(this->parser.tokens[this->parser.currentPos+1].type == SEMICOLON || this->parser.tokens[this->parser.currentPos+1].type == OP_ASSIGN || this->parser.tokens[this->parser.currentPos+1].type == COMMA){ // token next to ] is ; = ,
                         // we can safely evaluate pointor at this point, but dont advance the current 2 times (required to end the parent while loop)
@@ -588,14 +622,26 @@ void varNameHolder::getVarName(dataTypeHolder& typeHolder){
                     continue; // NOT advancing so that the parent while loop can end with current token
                 }
             } else if(current.type == RPAREN) { // next token is )
-                // will put the stars but not advance , so tha it doesnt brek the next section of the code
-                if(gotoHelper){ // if ID is alr found and we jumped in order to evalute stars
+
+
+                if(gotoHelper && addStarCount>0){
+                    // function parameter ) - add deferred star!
                     varNameProp temp;
                     temp.type = POINTOR;
                     temp.numPointor = addStarCount;
                     this->namePropArray.push_back(temp);
-                    addStarCount = -1; // reset addStarCount
+                    addStarCount = -1;
                 }
+
+                // Stars already added when ID was processed (in gotoHelper flow)
+                // Don't add them again here - would cause double addition
+                
+                
+                //if(gotoHelper && addStarCount != -1 && addStarCount != 0) {
+                    // This case is for function parameters, not regular declarations
+                    // For regular declarations with (**name), stars were already added
+                    // Only add if this is a deferred star scenario
+                //}
             }
             else{
                 cout << "Unknown token error in star\n";
@@ -609,6 +655,8 @@ void varNameHolder::getVarName(dataTypeHolder& typeHolder){
         } else if(current.type == LBRACKET){ // index [
 
             cameAgainFromPointor: // label used to jump from pointor section to here
+
+            myNewHelperAgain:
 
             // generating data to add in the array
             varNameProp temp;
@@ -626,57 +674,122 @@ void varNameHolder::getVarName(dataTypeHolder& typeHolder){
                 this->arrayDimensions++;     
                 
                 goto cameBackFromLbrakSide;
-            }
+            }            
 
             
-            if(this->parser.tokens[this->parser.currentPos+1].type != RBRACKET){ // closing token must be present as ]
+            if(this->parser.tokens[this->parser.currentPos].type != RBRACKET){ // closing token must be present as ]
                 cout << "expected ]\n";
                 exit(1);
             }
-            current = this->parser.tokens[++this->parser.currentPos]; // advance 1 token , skip ]            
+            current = this->parser.tokens[++this->parser.currentPos]; // advance 1 token , skip ]       
+            
+            if(gotoHelper3 && initBrackCount != -1 && initBrackCount == bracketStackCount && addStarCount > 0){
+                varNameProp temp;
+                temp.type = POINTOR;
+                temp.numPointor = addStarCount;
+                this->namePropArray.push_back(temp);
+                addStarCount = -1;
+                // initBrackCount = -1;
+                initBrackCount = tempInitBrack;
+            }
 
             // for O(1) check in future 
             this->isArray = true;
-            this->arrayDimensions++;            
+            this->arrayDimensions++;
+            continue;            
             
         } else if(current.type == LPAREN){ // found ( ,  need to call same function recursively
-            if(idFound){ // if ID alr found, then it has to be params opening PAREN                
-                this->parser.currentPos++; // advance 1 token , skip (
+
+            myNewHelper:
+
+            if(idFound){ // if ID alr found, then it has to be params opening PAREN
                 
-                // evaluate params 
-                // add parameter evaluation code
-                
-                current = this->parser.getCurrentToken(); // set current to )
-                continue; 
-            } else{ // ID alr not found, ( found before ID, then call the function recursively to handle precedence rules
-                this->parser.currentPos++; // advance 1 token , skip ()                
-                bracketStackCount++; // increase current bracket stack count by 1
-                this->getVarName(typeHolder); // recursive call
-                
-                // used to evaluate stars when recursion ends
-                if(bracketStackCount == initBrackCount && addStarCount != -1){
+                if(this->parser.tokens[this->parser.currentPos-1].type == RPAREN && initBrackCount == bracketStackCount && addStarCount>0 && !gotoHelper3){
                     varNameProp temp;
                     temp.type = POINTOR;
                     temp.numPointor = addStarCount;
                     this->namePropArray.push_back(temp);
                     addStarCount = -1;
-                    initBrackCount = -1;
-                }                
-            }            
-            
-        } else if(current.type == RPAREN){ // found )
-            if(bracketStackCount > 0){ // for recursion case
-                bracketStackCount--; // reduce bracket stack count by 1
-                if(bracketStackCount == initBrackCount && addStarCount != -1){ // evaluate stars 
+                    // initBrackCount = -1;
+                    initBrackCount = tempInitBrack;
+                }
+                
+                this->parser.currentPos++; // advance 1 token , skip (
+
+                varNameProp temp;
+                temp.type = FUNC;
+                temp.funcParams = ParameterNode::evaluateParams(this->parser); // parsing the params
+                if(this->parser.tokens[this->parser.currentPos-1].type == OP_DOT){ // check if varaidic func
+                    temp.isVariadic = true;
+                } else{
+                    temp.isVariadic = false;
+                }
+                this->namePropArray.push_back(temp);
+                
+                if(initBrackCount == bracketStackCount && addStarCount>0){
                     varNameProp temp;
                     temp.type = POINTOR;
                     temp.numPointor = addStarCount;
                     this->namePropArray.push_back(temp);
-
-                    addStarCount = -1; // to reset it
+                    addStarCount = -1;
+                    // initBrackCount = -1;
+                    initBrackCount = tempInitBrack;
                 }
-                return;
-            } else if(gotoHelper && addStarCount != -1 && addStarCount != 0) { // goto * case , for params
+
+                
+                
+                // current = this->parser.getCurrentToken(); // set current to )
+                
+                // after parameter evaluation, it will come at ), skip )
+                current = this->parser.tokens[++this->parser.currentPos]; 
+                continue; 
+            } else{ // ID alr not found, ( found before ID, then call the function recursively to handle precedence rules
+                this->parser.currentPos++; // advance 1 token , skip (
+                bracketStackCount++; // increase current bracket stack count by 1
+                this->getVarName(typeHolder , isFuncParam); // recursive call
+                // used to evaluate stars when recursion ends
+                // Only apply if stars were deferred (init Brack was set AND stars exist)
+                //cout << "DEBUG after recursion: initBrackCount=" << initBrackCount 
+                //     << " bracketStackCount=" << bracketStackCount 
+                //     << " addStarCount=" << addStarCount 
+                //     << " gotoHelper2=" << gotoHelper2 << endl;                
+                if(initBrackCount != -1 && bracketStackCount == initBrackCount && addStarCount > 0 && !gotoHelper2){
+                    // goto checkAgain;
+                //    cout << "DEBUG: Adding deferred pointer with " << addStarCount << " stars" << endl;
+                    // cout << "Here\n";
+
+                    if(this->parser.tokens[this->parser.currentPos+1].type == LPAREN){
+                        this->parser.currentPos++; // skip )
+                        gotoHelper3 = true;
+                        goto myNewHelper;
+                    }
+                    if(this->parser.tokens[this->parser.currentPos+1].type == LBRACKET){
+                        this->parser.currentPos++; // skip )
+                        gotoHelper3 = true;
+                        goto myNewHelperAgain;
+                    }
+
+                    varNameProp temp;
+                    temp.type = POINTOR;
+                    temp.numPointor = addStarCount;
+                    this->namePropArray.push_back(temp);
+                    addStarCount = -1;
+                    // initBrackCount = -1;
+                    initBrackCount = tempInitBrack;
+                }                
+
+                current = this->parser.tokens[++this->parser.currentPos]; // advance token by 1
+                continue;
+            }            
+            
+        } else if(current.type == RPAREN){ // found )
+            if(isFuncParam){ // for function parameters - check THIS FIRST!                
+                return nullptr;
+            } else if(bracketStackCount > 0){ // for recursion case
+                bracketStackCount--; // reduce bracket stack count by 1
+                // Don't add stars here - they're handled after recursion returns (line 677-682)
+                return nullptr;
+            } else if(gotoHelper && addStarCount > 0) { // goto * case , for params
                 // function parameter ) - add deferred star!
                 varNameProp temp;
                 temp.type = POINTOR;
@@ -689,7 +802,7 @@ void varNameHolder::getVarName(dataTypeHolder& typeHolder){
                 exit(1);
             }
         } else{
-            cout << "Error\n";
+            cout << "Error this one\n";
             exit(1);
         }
 
@@ -712,7 +825,7 @@ void varNameHolder::getVarName(dataTypeHolder& typeHolder){
 
         // check if base type alr has some stars in starData (Valid only for first variable decl)
         short indexIfExist = -1;
-        for(int i=0 ; i<typeHolder.starDataArray.size() ; i++){
+        for(size_t i=0 ; i<typeHolder.starDataArray.size() ; i++){
             if(typeHolder.starDataArray[i].typeBeforeStar == baseType && typeHolder.starDataArray[i].numOfStars > 0){
                 indexIfExist = i;
                 break;
@@ -728,20 +841,42 @@ void varNameHolder::getVarName(dataTypeHolder& typeHolder){
             temp.type = POINTOR;
             temp.numPointor = typeHolder.starDataArray[indexIfExist].numOfStars;
             this->namePropArray.push_back(temp);
+
+            
         }
     }
 
     // reseting static vars
-    idFound = false;
-    bracketStackCount = 0;
-    initBrackCount = -1;
+    if(!isFuncParam){
+        idFound = false;
+        bracketStackCount = 0;
+        // initBrackCount = -1;
+        initBrackCount = tempInitBrack;
+    }
+    
+
+    if(isFuncParam){ 
+        isInit = false; // reset static value for next var
+        initExpr = NULL; // reset static value for next var
+        isFirstVar = true; // reset static var for the next call
+        idFound = true;
+        return nullptr;
+    }
+
+    comeAfterInit:
+    
+    // Create node for this variable
+    VariableDeclarationNode* temp = new VariableDeclarationNode(&typeHolder , this , isInit , initExpr , this->isArray , this->arrayDimensions);
 
     if(current.type == COMMA){ // if multiple decl
-
-        // deep copy this object for the decl node properly and reset the data 
+        
 
         // reset the name prop array
         vector<varNameProp>().swap(namePropArray);
+
+        // resset isArray and arrDim also
+        this->isArray = false;
+        this->arrayDimensions = 0;
 
         // reset data type star data
         TokenType baseType;
@@ -756,7 +891,7 @@ void varNameHolder::getVarName(dataTypeHolder& typeHolder){
 
         // check if base type alr has some stars in starData (Valid only for first variable decl)
         short indexIfExist = -1;
-        for(int i=0 ; i<typeHolder.starDataArray.size() ; i++){
+        for(size_t i=0 ; i<typeHolder.starDataArray.size() ; i++){
             if(typeHolder.starDataArray[i].typeBeforeStar == baseType && typeHolder.starDataArray[i].numOfStars > 0){
                 indexIfExist = i;
                 break;
@@ -768,17 +903,40 @@ void varNameHolder::getVarName(dataTypeHolder& typeHolder){
         }
 
         isFirstVar = false; // false since we found ,
+
+        isInit = false; // reset static value for next var
+        initExpr = NULL; // reset static value for next var
+
+        return temp;
+
+        // proceed to next one
         
     } else if(current.type == OP_ASSIGN){ // initialized
+        isInit = true;
+        
+        current = this->parser.tokens[++this->parser.currentPos]; // advance 1 position, skip =
+
+        // initExpr = evaluate
+
+        goto comeAfterInit; // check the next token again (can be , or ; or ERROR)
+        
         // proceed accordingly
 
     } else if(current.type == SEMICOLON){ // end
         // end this decl
+        
+        isInit = false; // reset static var for next variable
+        initExpr = NULL; // reset static value for next var
 
         isFirstVar = true; // reset static var for the next call
+
+        return temp;
     } else{
-        // some error
+        cout << "Causing the error\n";
+        exit(1);
     }
+
+    return nullptr;
 
     
 }

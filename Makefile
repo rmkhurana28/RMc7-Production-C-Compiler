@@ -7,21 +7,26 @@ SOURCES = src/lexer/Lexer.cpp \
           src/parser/Helper.cpp \
           src/parser/ASTNode.cpp \
           src/parser/DeclarationNode.cpp \
+          src/parser/DeclarationNodePrint.cpp \
           src/parser/ExpressionNode.cpp \
           src/parser/StatementNode.cpp \
+          src/OutputWriter.cpp \
           src/Main.cpp
 OBJECTS = $(SOURCES:.cpp=.o)
 
 all: $(TARGET)
 
 $(TARGET): $(OBJECTS)
-	$(CXX) $(CXXFLAGS) $(OBJECTS) -o $(TARGET)
+	@echo "[LD] $(TARGET)"
+	@$(CXX) $(CXXFLAGS) $(OBJECTS) -o $(TARGET)
 
 %.o: %.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+	@echo "[CC] $<"
+	@$(CXX) $(CXXFLAGS) -c $< -o $@
 
 clean:
-	rm -f $(OBJECTS) $(TARGET)
+	@echo "[CLEAN]"
+	@rm -f $(OBJECTS) $(TARGET)
 
 run: all
 	./$(TARGET)

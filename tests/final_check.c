@@ -1,0 +1,16 @@
+int x;
+int *x1;
+int **x2;
+int ***x3;
+int ****x4;
+int *****x5;
+int (*p1);
+int *(*p2);
+int **(*p3);
+int ***(*p4);
+int (**p5);
+int ***(**p6);
+int* (**bug_case);
+int a, *b, **c;
+unsigned *d, e;
+long **f, ***g, h;
