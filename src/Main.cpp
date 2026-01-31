@@ -23,7 +23,7 @@ int main()
     ofstream outFile("output.txt");
     if (!outFile.is_open()) return 1;
     
-    OutputWriter::writeTokensToFile(tokens, outFile);
+    // OutputWriter::writeTokensToFile(tokens, outFile);
     
     Parser myParser = Parser(tokens);
     ProgramNode* myRootAST = myParser.startParsing();

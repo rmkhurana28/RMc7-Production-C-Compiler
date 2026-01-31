@@ -46,6 +46,7 @@ typedef struct varNameProp{
 class Parser;  // Forward declaration
 class varNameHolder;  // Forward declaration
 class VariableDeclarationNode;  // Forward declaration
+class ExpressionNode;  // Forward declaration
 
 
 class dataTypeHolder{
@@ -110,6 +111,16 @@ public:
     void resetDataTypeAndNameObjectForNext(dataTypeHolder& typeHolder);
 
     
+
+    
 };
+
+// Static function to get operator precedence (15 = highest, 1 = lowest)
+static int getOperatorPrecedence(TokenType op);
+
+// Static function to generate current left expression node
+static ExpressionNode* generateCurrentLeftExpressionNode(Parser& parser);
+
+static bool isThisTokenUnaryOp(TokenType op);
 
 #endif

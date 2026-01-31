@@ -51,6 +51,10 @@ private:
     bool isCurrentIdValidTdAlias();
 
     bool findDataTypePropCombinationAndValidate(Token currToken);
+
+
+    // Expression parsing method
+    ExpressionNode* parseExpression(short initPrec , bool stopAtComma);
     
 public:
     Parser(const vector<Token>& tokenList);

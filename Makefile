@@ -9,6 +9,7 @@ SOURCES = src/lexer/Lexer.cpp \
           src/parser/DeclarationNode.cpp \
           src/parser/DeclarationNodePrint.cpp \
           src/parser/ExpressionNode.cpp \
+          src/parser/ExpressionNodePrint.cpp \
           src/parser/StatementNode.cpp \
           src/OutputWriter.cpp \
           src/Main.cpp

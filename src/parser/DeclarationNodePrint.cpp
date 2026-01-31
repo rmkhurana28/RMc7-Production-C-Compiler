@@ -150,7 +150,14 @@ void VariableDeclarationNode::print(ofstream& out) {
     out << "      IsInit: " << (isInit ? "true" : "false") << "\n";
     
     // Print AST (initialization expression)
-    out << "      AST: " << (initExpr ? "<AST>" : "NULL") << "\n";
+    out << "      AST: ";
+    if (initExpr) {
+        out << "\n";
+        initExpr->print(out, "        ");
+        out << "\n";
+    } else {
+        out << "NULL\n";
+    }
     
     // Print function parameters recursively
     printParameters(out);

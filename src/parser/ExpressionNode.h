@@ -1,8 +1,13 @@
 #ifndef EXPRESSIONNODE_H
 #define EXPRESSIONNODE_H
 
+#include <string>
+#include <vector>
+#include <fstream>
 #include "ASTNode.h"
 #include "../lexer/Token.h"
+
+using namespace std;
 
 // ============================================================================
 // Abstract base class for all expression nodes
@@ -10,6 +15,7 @@
 class ExpressionNode : public ASTNode {
 public:
     virtual ~ExpressionNode() {}
+    virtual void print(ofstream& out, const string& indent = "") const = 0;
     
 protected:
     ExpressionNode() {}
@@ -33,39 +39,58 @@ private:
     int numLiteralValue;
 
 public:
-    IntLiteralNode(int value) {
-        this->numLiteralValue = value;
-    }
+    IntLiteralNode(int value);
     ~IntLiteralNode() {}
+    void print(ofstream& out, const string& indent = "") const override;
 };
 
 class FloatLiteralNode : public LiteralNode {
+private:
+    float floatLiteralValue;
+
 public:
-    FloatLiteralNode() {}
+    FloatLiteralNode(float value);
     ~FloatLiteralNode() {}
+    void print(ofstream& out, const string& indent = "") const override;
 };
 
 class DoubleLiteralNode : public LiteralNode {
+private:
+    double doubleLiteralValue;
+
 public:
-    DoubleLiteralNode() {}
+    DoubleLiteralNode(double value);
+    void print(ofstream& out, const string& indent = "") const override;
     ~DoubleLiteralNode() {}
 };
 
 class CharLiteralNode : public LiteralNode {
+private:
+    char charLiteralValue;
+
 public:
-    CharLiteralNode() {}
+    CharLiteralNode(char value);
+    void print(ofstream& out, const string& indent = "") const override;
     ~CharLiteralNode() {}
 };
 
 class StringLiteralNode : public LiteralNode {
+private:
+    string stringLiteralValue;
+
 public:
-    StringLiteralNode() {}
+    StringLiteralNode(string value);
+    void print(ofstream& out, const string& indent = "") const override;
     ~StringLiteralNode() {}
 };
 
 class BoolLiteralNode : public LiteralNode {
+private:
+    bool boolLiteralValue;
+
 public:
-    BoolLiteralNode() {}
+    void print(ofstream& out, const string& indent = "") const override;
+    BoolLiteralNode(bool value);
     ~BoolLiteralNode() {}
 };
 
@@ -74,83 +99,127 @@ public:
 // ============================================================================
 
 class IdentifierNode : public ExpressionNode {
+private:
+    string identifierName;
+
 public:
-    IdentifierNode() {}
+    void print(ofstream& out, const string& indent = "") const override;
+    IdentifierNode(string name);
     ~IdentifierNode() {}
 };
 
 class BinaryOpNode : public ExpressionNode {
 private:
-    TokenType binopToken; // to store token type of operator
+    TokenType binOpType; // to store token type of binary operator
     ExpressionNode* left; // to store left AST expression node
     ExpressionNode* right; // to store right AST expression node    
 
+    void print(ofstream& out, const string& indent = "") const override;
 public:
     BinaryOpNode(TokenType opToken ,ExpressionNode* left ,ExpressionNode* right);
-    ~BinaryOpNode() {}
+    ~BinaryOpNode();
 };
 
 class UnaryOpNode : public ExpressionNode {
+private:
+    TokenType unOpType; // to store token type of unary operator
+    ExpressionNode* operand; // to store the operand AST expression node
+    bool isPrefix; // true for ++x, false for x++
+
+    void print(ofstream& out, const string& indent = "") const override;
 public:
-    UnaryOpNode() {}
-    ~UnaryOpNode() {}
+    UnaryOpNode(TokenType opToken, ExpressionNode* operand, bool isPrefix);
+    ~UnaryOpNode();
 };
 
 class TernaryOpNode : public ExpressionNode {
-public:
-    TernaryOpNode() {}
-    ~TernaryOpNode() {}
-};
-
-class AssignmentNode : public ExpressionNode {
 private:
-    TokenType assignOpToken; // store assignment operator
-    ExpressionNode* var; // store left side of assignment
-    ExpressionNode* expr; // store right side experssion
+    ExpressionNode* condition; // to store the condition of ternary operator
+    ExpressionNode* trueExpr; // to store the value if condition is true
+    ExpressionNode* falseExpr; // to store the value if condition is false
 
+    void print(ofstream& out, const string& indent = "") const override;
 public:
-    AssignmentNode(TokenType opToken ,ExpressionNode* var ,ExpressionNode* expr){
-        this->assignOpToken = opToken;
-        this->var = var;
-        this->expr = expr;
-    }
-    ~AssignmentNode() {}
+    TernaryOpNode(ExpressionNode* cond, ExpressionNode* trueExpr, ExpressionNode* falseExpr);
+    ~TernaryOpNode();
 };
 
 class FunctionCallNode : public ExpressionNode {
+private:
+    ExpressionNode* functionExpr; // to store function expression (can be identifier, member access, etc.)
+    vector<ExpressionNode*> arguments; // to store argument expressions
+    void print(ofstream& out, const string& indent = "") const override;
+
 public:
-    FunctionCallNode() {}
-    ~FunctionCallNode() {}
+    FunctionCallNode(ExpressionNode* func, vector<ExpressionNode*> args);
+    ~FunctionCallNode();
 };
 
 class ArrayAccessNode : public ExpressionNode {
+private:
+    ExpressionNode* arrayExpr; // to store array expression (can be identifier, member access, etc.)
+    ExpressionNode* indexExpr; // to store index expression
+    void print(ofstream& out, const string& indent = "") const override;
+
 public:
-    ArrayAccessNode() {}
-    ~ArrayAccessNode() {}
+    ArrayAccessNode(ExpressionNode* array, ExpressionNode* index);
+    ~ArrayAccessNode();
 };
 
 class MemberAccessNode : public ExpressionNode {
+private:
+    ExpressionNode* objectExpr; // to store the struct/union expression (can be nested!)
+    void print(ofstream& out, const string& indent = "") const override;
+    string memberName; // to store the member name (identifier, NOT expression)
+
 public:
-    MemberAccessNode() {}
-    ~MemberAccessNode() {}
+    MemberAccessNode(ExpressionNode* obj, string member);
+    ~MemberAccessNode();
 };
 
 class PointerMemberAccessNode : public ExpressionNode {
+private:
+    ExpressionNode* pointerExpr; // to store the pointer expression (can be nested!)
+    void print(ofstream& out, const string& indent = "") const override;
+    string memberName; // to store the member name (identifier, NOT expression)
+
 public:
-    PointerMemberAccessNode() {}
-    ~PointerMemberAccessNode() {}
+    PointerMemberAccessNode(ExpressionNode* ptr, string member);
+    ~PointerMemberAccessNode();
 };
 
 class CastNode : public ExpressionNode {
+private:
+    void print(ofstream& out, const string& indent = "") const override;
+    string targetTypeName; // to store the type name as string (e.g., "int", "char*", "struct Point")
+    ExpressionNode* expression; // to store the expression being cast
+
 public:
-    CastNode() {}
-    ~CastNode() {}
+    CastNode(string typeName, ExpressionNode* expr);
+    ~CastNode();
 };
 
 class SizeofNode : public ExpressionNode {
+private:
+    bool isType; // true if sizeof(type), false if sizeof(expr)
+    string typeName; // to store type name if isType=true
+    void print(ofstream& out, const string& indent = "") const override;
+    ExpressionNode* expression; // to store expression if isType=false
+
 public:
-    SizeofNode() {}
-    ~SizeofNode() {}
+    SizeofNode(string typeName); // for sizeof(type)
+    SizeofNode(ExpressionNode* expr); // for sizeof(expr)
+    ~SizeofNode();
+};
+
+class BlockExpressionNode : public ExpressionNode {
+private:
+    vector<ExpressionNode*> expressions; // to store block of expressions (e.g., {1, 2, 3})
+    void print(ofstream& out, const string& indent = "") const override;
+
+public:
+    BlockExpressionNode(vector<ExpressionNode*> exprs);
+    ~BlockExpressionNode();
 };
 
 #endif

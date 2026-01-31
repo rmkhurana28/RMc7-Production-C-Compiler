@@ -279,4 +279,3 @@ DeclarationNode* Parser::parseDataTypeFoundDeclaration(){
     // generate all the AST and return accordignly
     return nullptr; // nodes stored in this->allAST
 }
-

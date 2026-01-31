@@ -1,5 +1,6 @@
 #include "Helper.h"
 #include "DeclarationNode.h"
+#include "ExpressionNode.h"
 #include "Parser.h"
 #include <iostream>
 #include <cstdlib>
@@ -979,7 +980,15 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
         
         current = this->parser.tokens[++this->parser.currentPos]; // advance 1 position, skip =
 
+        // cout << "Data before parsing expessions is " << current.data << "\n";
+
         // initExpr = evaluate
+        initExpr = this->parser.parseExpression(2 , true);
+        
+
+        current = this->parser.tokens[this->parser.currentPos]; // update current
+
+        // cout << "Data after parsing expessions is " << current.data << "\n";
 
         // Create node for this variable
         // VariableDeclarationNode* temp = new VariableDeclarationNode(&typeHolder , this , isInit , initExpr , this->isArray , this->arrayDimensions);
@@ -1056,7 +1065,8 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
         // return definition node
     } else{
-        cout << "Causing the error\n";
+        
+        cout << this->parser.tokens[this->parser.currentPos].data << " || Causing the error\n";
         exit(1);
     }
 
@@ -1129,5 +1139,414 @@ void varNameHolder::resetDataTypeAndNameObjectForNext(dataTypeHolder& typeHolder
 
     if(indexIfExist != -1){ // if it exists, then reset
         typeHolder.starDataArray[indexIfExist].numOfStars = 0;
+    }
+}
+
+
+// Static function to get operator precedence (15 = highest, 1 = lowest)
+int getOperatorPrecedence(TokenType op) {
+    switch(op) {
+        // Precedence 15 (HIGHEST) - Postfix
+        case LPAREN:        // () function call
+        case LBRACKET:      // [] array subscript
+        case OP_DOT:        // . member access
+        case OP_ARROW:      // -> pointer member access
+            return 15;
+        
+        // Precedence 13 - Multiplicative
+        case OP_STAR:       // * multiplication (also unary dereference at prec 14)
+        case OP_SLASH:      // / division
+        case OP_PERCENT:    // % modulo
+            return 13;
+        
+        // Precedence 12 - Additive
+        case OP_PLUS:       // + addition (also unary at prec 14)
+        case OP_MINUS:      // - subtraction (also unary at prec 14)
+            return 12;
+        
+        // Precedence 11 - Shift
+        case OP_LSHIFT:     // <<
+        case OP_RSHIFT:     // >>
+            return 11;
+        
+        // Precedence 10 - Relational
+        case OP_LESS:       // <
+        case OP_LESS_EQ:    // <=
+        case OP_GREATER:    // >
+        case OP_GREATER_EQ: // >=
+            return 10;
+        
+        // Precedence 9 - Equality
+        case OP_EQ_EQ:      // ==
+        case OP_NOT_EQ:     // !=
+            return 9;
+        
+        // Precedence 8 - Bitwise AND
+        case OP_AND:        // & (also unary address-of at prec 14)
+            return 8;
+        
+        // Precedence 7 - Bitwise XOR
+        case OP_XOR:        // ^
+            return 7;
+        
+        // Precedence 6 - Bitwise OR
+        case OP_OR:         // |
+            return 6;
+        
+        // Precedence 5 - Logical AND
+        case OP_AND_AND:    // &&
+            return 5;
+        
+        // Precedence 4 - Logical OR
+        case OP_OR_OR:      // ||
+            return 4;
+        
+        // Precedence 3 - Ternary
+        case OP_QUESTION:   // ? :
+            return 3;
+        
+        // Precedence 2 - Assignment
+        case OP_ASSIGN:         // =
+        case OP_PLUS_EQ:        // +=
+        case OP_MINUS_EQ:       // -=
+        case OP_STAR_EQ:        // *=
+        case OP_SLASH_EQ:       // /=
+        case OP_PERCENT_EQ:     // %=
+        case OP_LSHIFT_EQ:      // <<=
+        case OP_RSHIFT_EQ:      // >>=
+        case OP_AND_EQ:         // &=
+        case OP_XOR_EQ:         // ^=
+        case OP_OR_EQ:          // |=
+            return 2;
+        
+        // Precedence 1 (LOWEST) - Comma
+        case COMMA:         // ,
+            return 1;        
+        
+        // Not a binary operator or unknown
+        default:
+            return 0;
+    }
+}
+
+
+// ============================================================================
+// Expression Parsing Implementation
+// ============================================================================
+
+ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma) {    
+
+    static vector<TokenType> expectedStack;
+
+    // static ExpressionNode* temp = nullptr;
+
+    ExpressionNode* left = nullptr;
+    ExpressionNode* right = nullptr;
+
+    Token currToken = tokens[currentPos];
+
+    
+    if(currToken.type == INT_LITERAL){ // int
+        left = new IntLiteralNode(stoi(currToken.data));        
+    } else if(currToken.type == CHAR_LITERAL){ // char
+        left = new CharLiteralNode(currToken.data[0]);
+    } else if(currToken.type == STRING_LITERAL){ // string
+        left = new StringLiteralNode(currToken.data);
+    } else if(currToken.type == FLOAT_LITERAL){ // float
+        left = new FloatLiteralNode(stof(currToken.data));
+    } else if(currToken.type == DOUBLE_LITERAL){ // double
+        left = new DoubleLiteralNode(stod(currToken.data));
+    } else if(currToken.type == ID){ // ID
+        left = new IdentifierNode(currToken.data);
+    } else if(isThisTokenUnaryOp(currToken.type)){ // unary operand found 
+        if(currToken.type == KEYWORD_SIZEOF){ // sizeof()
+            //
+        } else if(currToken.type == OP_AND){ // & referencing to address
+            if(tokens[currentPos+1].type == OP_AND){ // only 1 allowed
+                cout << "ONLY 1 & is allowed\n"; 
+                exit(1);
+            }
+            TokenType op = currToken.type;
+            currentPos++;  // skip unary operator
+            left = parseExpression(14 , false);
+            left = new UnaryOpNode(op , left , true);
+            goto skipAdvance;
+        } else { // ++ -- ! ~ * + -
+            TokenType op = currToken.type;
+            currentPos++; // skip unary operator
+            left = parseExpression(14 , false);
+            left = new UnaryOpNode(op , left , true);
+            goto skipAdvance;
+            //
+        }
+    }
+    else if(currToken.type == LPAREN){ // found (
+        currToken = tokens[++currentPos]; // skip ( 
+        expectedStack.push_back(RPAREN);
+        left = parseExpression(0 , false);
+        currToken = tokens[currentPos]; // update token 
+        if(currToken = tokens[currentPos] , currToken.type != RPAREN){
+            cout << "Expected closing )\n";
+            exit(1);
+        }
+        expectedStack.pop_back();
+        // currentPos++;
+    } else if(currToken.type == LBRACE){ // found {
+        currToken = tokens[++currentPos]; // skip {
+        expectedStack.push_back(RBRACE);
+        vector<ExpressionNode*> myData;
+            if(currToken.type != RBRACE){                
+
+                multiData:
+                left = parseExpression(0 , true);
+                myData.push_back(left);
+
+                if(tokens[currentPos].type == COMMA){
+                    currentPos++; // skip comma
+                    goto multiData;
+                }
+            }
+        
+        currToken = tokens[currentPos]; // update token 
+
+        if(currToken = tokens[currentPos] , currToken.type != RBRACE){
+            cout << "Expected closing }\n";
+            exit(1);
+        }
+
+        expectedStack.pop_back();
+        left = new BlockExpressionNode(myData);
+
+        // currentPos++;
+    } else if(currToken.type == LBRACKET){ // found [
+        currToken = tokens[++currentPos]; // skip [
+        expectedStack.push_back(RBRACKET);
+        left = parseExpression(0 , false);
+        expectedStack.pop_back();
+        if(currToken = tokens[currentPos] , currToken.type != RBRACKET){
+            cout << "Expected closing ]\n";
+            exit(1);
+        }
+        currToken = tokens[currentPos]; // update token 
+        // currentPos++;
+    }
+    else if(currToken.type == RPAREN || currToken.type == RBRACE || currToken.type == RBRACKET){ // ) or } or ]  
+        return left; 
+    } 
+    else{
+        cout << "Error: Unsupported expression token: " << currToken.data << endl;
+        exit(1);
+        //
+    }
+
+    currToken = tokens[++currentPos]; // move to next token and update current
+    
+    skipAdvance:
+
+    while(1){
+        
+        currToken = tokens[currentPos];
+
+        if(currToken.type == SEMICOLON){
+            return left;
+        }
+
+        if(currToken.type == COMMA){
+            if(stopAtComma){
+                return left;
+            }
+        }
+
+        if(currToken.type == OP_ARROW){ // -> 
+
+            if(tokens[currentPos+1].type != ID){
+                cout << "Expected ID after ->\n";
+                exit(1);
+            }
+
+            left = new PointerMemberAccessNode(left , tokens[currentPos+1].data);
+
+            currentPos += 2; // skip -> and ID
+            continue;
+        } 
+
+        if(currToken.type == OP_DOT){ // .
+
+            if(tokens[currentPos+1].type != ID){
+                cout << "Expected ID after .\n";
+                exit(1);
+            }
+
+            left = new MemberAccessNode(left , tokens[currentPos+1].data);
+
+            currentPos += 2; // skip . and ID
+            continue;
+        }
+
+        if(currToken.type == LPAREN){ // func call
+            ExpressionNode* temp = left;
+            currToken = tokens[++currentPos]; // skip ( 
+            expectedStack.push_back(RPAREN);
+            vector<ExpressionNode*> params;
+            if(currToken.type != RPAREN){
+
+                multiParams:
+                left = parseExpression(0 , true); // function call (stop at ,)
+                params.push_back(left);
+
+                if(tokens[currentPos].type == COMMA){ // multi params
+                    currToken = tokens[++currentPos]; // skip ,
+                    goto multiParams;
+                }
+            }
+            currToken = tokens[currentPos]; // update token 
+            
+            if(currToken = tokens[currentPos] , currToken.type != RPAREN){
+                cout << "Expected closing ) func call\n";
+                exit(1);
+            }
+            expectedStack.pop_back();
+
+            currToken = tokens[++currentPos]; // skip )
+
+            left = new FunctionCallNode(temp , params);
+            continue;
+
+            // generate func call node
+        }
+
+        if(currToken.type == RPAREN){
+            if(!expectedStack.empty() &&  expectedStack.back() == RPAREN){
+                return left;
+            }
+            
+            cout << "Unexpected ) Found\n";
+            exit(1);
+        }
+
+        if(currToken.type == RBRACE){
+            if(!expectedStack.empty() &&  expectedStack.back() == RBRACE){
+                return left;
+            }            
+            cout << "Unexpected } Found\n";
+            exit(1);
+        }
+
+        if(currToken.type == LBRACKET){ // array indexing
+            ExpressionNode* temp = left;
+            currToken = tokens[++currentPos]; // skip [
+            expectedStack.push_back(RBRACKET);
+            left = parseExpression(0 , false);
+            expectedStack.pop_back();
+            if(currToken = tokens[currentPos] , currToken.type != RBRACKET){
+                cout << "Expected closing ] array index\n";
+                exit(1);
+            }
+            currToken = tokens[++currentPos]; // update token 
+
+            left = new ArrayAccessNode(temp , left);
+            continue;
+
+        }
+
+        if(currToken.type == RBRACKET){
+            if(!expectedStack.empty() &&  expectedStack.back() == RBRACKET){
+                return left;
+            }            
+            cout << "Unexpected ] Found\n";
+            exit(1);
+        }
+
+
+        if(currToken.type == OP_PLUS_PLUS || currToken.type == OP_MINUS_MINUS){ // postfix ++ or --
+            TokenType op = currToken.type;
+
+            left = new UnaryOpNode(op , left , false);
+
+            currToken = tokens[++currentPos]; // skip ++ or --
+            continue;
+        }
+        
+        
+
+        short nextPred = getOperatorPrecedence(currToken.type);
+        
+        if(nextPred == 3){ // terneray operator ?
+            // 
+        } else if((nextPred > initPrec) || (nextPred == initPrec && nextPred == 2)){ // precedence of next operator is greater than the initPred for this call
+        // 2nd if condition is for right associativity operators like + += -= etc            
+
+            TokenType op = currToken.type;
+
+
+            currentPos++; // skip operator as it is alr stored in op
+
+
+            right = parseExpression(nextPred , stopAtComma);
+
+            left = new BinaryOpNode(op , left , right);
+
+            
+        } else { // precedence of next operator is less than or equal to the initPred for this call
+                 // if same, we follow L->R order
+            return left;
+        }
+    }
+
+        
+        
+        
+    
+
+    
+
+    // if precedence of next token is lower, then jsut return left, recursive decent will automatically handle this
+    if(getOperatorPrecedence(currToken.type) < initPrec){
+        return left;
+    } 
+
+    // if same
+    
+
+    
+
+    
+
+    // generate current node and advance 1 token
+
+    // save precedence of this operator(op1) in currPrec
+
+    // check next operator(op2), 
+        // if next(op2) operator has lower or same precedence as op1, evaluate the op1 and update left to be it's result , advance 1 token , and do it again
+
+        // if next(op2) operator has higher precedence than op1, then we evaluate op2 before op1 using recursive decent approach
+    
+
+    // evalauting completed, advance 1 token
+    this->currentPos++;
+    
+    return nullptr; // placeholder
+}
+
+
+ExpressionNode* generateCurrentLeftNode(Parser& parser){
+    //
+}
+
+bool isThisTokenUnaryOp(TokenType op){
+    switch(op){
+        case OP_PLUS_PLUS:
+        case OP_MINUS_MINUS:
+        case OP_NOT:
+        case OP_TILDE:
+        case KEYWORD_SIZEOF:
+        case OP_STAR:
+        case OP_AND:
+        case OP_MINUS:
+        case OP_PLUS:
+            return true;        
+
+        default:
+            return false;
     }
 }
