@@ -1,4 +1,5 @@
 #include "DeclarationNode.h"
+#include "StatementNode.h"
 #include "../lexer/Token.h"
 
 // Helper function to convert token type to readable C keyword
@@ -145,6 +146,29 @@ void VariableDeclarationNode::print(ofstream& out) {
     // Print array information
     out << "      IsArray: " << (isArray ? "true" : "false") << "\n";
     out << "      ArrayDim: " << arrDim << "\n";
+    
+    // Print array size expressions
+    if(isArray) {
+        out << "      Array Sizes:\n";
+        int arrayCount = 0;
+        for(const auto& prop : varName.namePropArray) {
+            if(prop.type == ARRAY) {
+                arrayCount++;
+                out << "        [Dimension " << arrayCount << "]: ";
+                if(prop.arrayExpr) {
+                    out << "\n";
+                    ExpressionNode* exprNode = dynamic_cast<ExpressionNode*>(prop.arrayExpr);
+                    if(exprNode) {
+                        exprNode->print(out, "          ");
+                    } else {
+                        out << "          ERROR: Not an ExpressionNode\n";
+                    }
+                } else {
+                    out << "NULL\n";
+                }
+            }
+        }
+    }
     
     // Print initialization status
     out << "      IsInit: " << (isInit ? "true" : "false") << "\n";
@@ -296,4 +320,23 @@ void ProgramNode::printAST(ofstream& out) {
     }
     
     out << "----------------------------------------\n";
+}
+
+// Function to print expression statements
+void printStatementsToFile(ofstream& out, const vector<ExpressionStatementNode*>& statements) {
+    if(statements.empty()) return;
+    
+    out << "\n========================================\n";
+    out << "        EXPRESSION STATEMENTS       \n";
+    out << "========================================\n\n";
+    out << "Total Statements: " << statements.size() << "\n\n";
+    
+    for(size_t i = 0; i < statements.size(); i++) {
+        out << "statement #" << (i+1) << ":\n";
+        statements[i]->print(out);
+        if(i < statements.size() - 1) {
+            out << "\n"; // Add gap between statements
+        }
+    }
+    out << "\n----------------------------------------\n";
 }

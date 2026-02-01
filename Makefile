@@ -11,6 +11,7 @@ SOURCES = src/lexer/Lexer.cpp \
           src/parser/ExpressionNode.cpp \
           src/parser/ExpressionNodePrint.cpp \
           src/parser/StatementNode.cpp \
+          src/parser/StatementNodePrint.cpp \
           src/OutputWriter.cpp \
           src/Main.cpp
 OBJECTS = $(SOURCES:.cpp=.o)

@@ -694,8 +694,9 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             temp.type = ARRAY;
             
             current = this->parser.tokens[++this->parser.currentPos]; // advance 1 token , skip [         
+            // current = this->parser.tokens[this->parser.currentPos]; // update current   
 
-            /* temp.astData = expr; */ // evaluate the index in the brackets
+            temp.arrayExpr = this->parser.parseExpression(0, false , true); // evaluate the index in the brackets
             this->namePropArray.push_back(temp);
 
             // if came from pointor section using goto, go back there
@@ -709,7 +710,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
             
             if(this->parser.tokens[this->parser.currentPos].type != RBRACKET){ // closing token must be present as ]
-                cout << "expected ]\n";
+                cout << "expected ] here\n";
                 exit(1);
             }
             current = this->parser.tokens[++this->parser.currentPos]; // advance 1 token , skip ]       
@@ -983,7 +984,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
         // cout << "Data before parsing expessions is " << current.data << "\n";
 
         // initExpr = evaluate
-        initExpr = this->parser.parseExpression(2 , true);
+        initExpr = this->parser.parseExpression(2 , true , false);
         
 
         current = this->parser.tokens[this->parser.currentPos]; // update current
@@ -1234,9 +1235,13 @@ int getOperatorPrecedence(TokenType op) {
 // Expression Parsing Implementation
 // ============================================================================
 
-ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma) {    
+ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , bool needManualPushOfRBracket) {    
 
     static vector<TokenType> expectedStack;
+
+    if(needManualPushOfRBracket){
+        expectedStack.push_back(RBRACKET);
+    }
 
     // static ExpressionNode* temp = nullptr;
 
@@ -1268,13 +1273,13 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma) {
             }
             TokenType op = currToken.type;
             currentPos++;  // skip unary operator
-            left = parseExpression(14 , false);
+            left = parseExpression(14 , false , false);
             left = new UnaryOpNode(op , left , true);
             goto skipAdvance;
         } else { // ++ -- ! ~ * + -
             TokenType op = currToken.type;
             currentPos++; // skip unary operator
-            left = parseExpression(14 , false);
+            left = parseExpression(14 , false , false);
             left = new UnaryOpNode(op , left , true);
             goto skipAdvance;
             //
@@ -1283,7 +1288,7 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma) {
     else if(currToken.type == LPAREN){ // found (
         currToken = tokens[++currentPos]; // skip ( 
         expectedStack.push_back(RPAREN);
-        left = parseExpression(0 , false);
+        left = parseExpression(0 , false , false);
         currToken = tokens[currentPos]; // update token 
         if(currToken = tokens[currentPos] , currToken.type != RPAREN){
             cout << "Expected closing )\n";
@@ -1298,7 +1303,7 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma) {
             if(currToken.type != RBRACE){                
 
                 multiData:
-                left = parseExpression(0 , true);
+                left = parseExpression(0 , true , false);
                 myData.push_back(left);
 
                 if(tokens[currentPos].type == COMMA){
@@ -1321,7 +1326,7 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma) {
     } else if(currToken.type == LBRACKET){ // found [
         currToken = tokens[++currentPos]; // skip [
         expectedStack.push_back(RBRACKET);
-        left = parseExpression(0 , false);
+        left = parseExpression(0 , false , false);
         expectedStack.pop_back();
         if(currToken = tokens[currentPos] , currToken.type != RBRACKET){
             cout << "Expected closing ]\n";
@@ -1350,11 +1355,21 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma) {
         if(currToken.type == SEMICOLON){
             return left;
         }
+        
 
         if(currToken.type == COMMA){
             if(stopAtComma){
                 return left;
             }
+        }
+
+        if(currToken.type == OP_COLON){
+            if(!expectedStack.empty() && expectedStack.back() == OP_COLON){
+                return left;
+            }
+
+            cout << "Unexpected :\n";
+            exit(1);
         }
 
         if(currToken.type == OP_ARROW){ // -> 
@@ -1391,7 +1406,7 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma) {
             if(currToken.type != RPAREN){
 
                 multiParams:
-                left = parseExpression(0 , true); // function call (stop at ,)
+                left = parseExpression(0 , true , false); // function call (stop at ,)
                 params.push_back(left);
 
                 if(tokens[currentPos].type == COMMA){ // multi params
@@ -1436,7 +1451,7 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma) {
             ExpressionNode* temp = left;
             currToken = tokens[++currentPos]; // skip [
             expectedStack.push_back(RBRACKET);
-            left = parseExpression(0 , false);
+            left = parseExpression(0 , false , false);
             expectedStack.pop_back();
             if(currToken = tokens[currentPos] , currToken.type != RBRACKET){
                 cout << "Expected closing ] array index\n";
@@ -1449,8 +1464,11 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma) {
 
         }
 
-        if(currToken.type == RBRACKET){
+        if(currToken.type == RBRACKET){            
             if(!expectedStack.empty() &&  expectedStack.back() == RBRACKET){
+                if(needManualPushOfRBracket){
+                    expectedStack.pop_back();
+                }
                 return left;
             }            
             cout << "Unexpected ] Found\n";
@@ -1472,6 +1490,22 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma) {
         short nextPred = getOperatorPrecedence(currToken.type);
         
         if(nextPred == 3){ // terneray operator ?
+            if(3 <= initPrec){  // Ternary precedence too low for current context
+                return left;     // Stop parsing, let outer level handle it
+            }
+            currentPos++; // skip ?
+            expectedStack.push_back(OP_COLON);
+            ExpressionNode* ifTrue = parseExpression(0 , false , false);
+            
+            if(tokens[currentPos].type != OP_COLON){
+                cout << "Expected :\n";
+                exit(1);
+            }
+            currentPos++; // skip :
+            expectedStack.pop_back();
+            ExpressionNode* ifFalse = parseExpression(0 , false , false);
+            
+            left = new TernaryOpNode(left , ifTrue , ifFalse);
             // 
         } else if((nextPred > initPrec) || (nextPred == initPrec && nextPred == 2)){ // precedence of next operator is greater than the initPred for this call
         // 2nd if condition is for right associativity operators like + += -= etc            
@@ -1482,7 +1516,7 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma) {
             currentPos++; // skip operator as it is alr stored in op
 
 
-            right = parseExpression(nextPred , stopAtComma);
+            right = parseExpression(nextPred , stopAtComma , false);
 
             left = new BinaryOpNode(op , left , right);
 
@@ -1543,7 +1577,7 @@ bool isThisTokenUnaryOp(TokenType op){
         case OP_STAR:
         case OP_AND:
         case OP_MINUS:
-        case OP_PLUS:
+        case OP_PLUS:        
             return true;        
 
         default:

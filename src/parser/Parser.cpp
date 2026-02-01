@@ -23,13 +23,21 @@ ProgramNode* Parser::startParsing() {
     // generate all relavent AST
     // keep parsing untill tokens are finished
     while(this->currentPos < tokens.size()){
-        this->parseCurrentDecl(); // parse declaration(s)
+        Token current = this->tokens[this->currentPos];
         
-        // Add all nodes from allAST to allDeclNodes
-        for(auto node : this->allAST) {
-            allDeclNodes.push_back(static_cast<DeclarationNode*>(node));
+        // Check if it's a declaration (starts with type/storage class)
+        if(isThisTokenDataTypeOrPropToken(current)) {
+            this->parseCurrentDecl(); // parse declaration(s)
+            
+            // Add all nodes from allAST to allDeclNodes
+            for(auto node : this->allAST) {
+                allDeclNodes.push_back(static_cast<DeclarationNode*>(node));
+            }
+            this->allAST.clear(); // clear for next declaration
+        } else {
+            // Otherwise it's an expression statement
+            this->parseExpressionStatement();
         }
-        this->allAST.clear(); // clear for next declaration
     }
 
     // generating program node containing an array of all decl nodes
@@ -45,7 +53,7 @@ DeclarationNode* Parser::parseCurrentDecl(){
         // call the parser fucntion with data type as first token
         this->parseDataTypeFoundDeclaration();
         return nullptr; // allAST now contains all nodes
-    }
+    } 
     return nullptr;
 }
 
@@ -278,4 +286,20 @@ DeclarationNode* Parser::parseDataTypeFoundDeclaration(){
 
     // generate all the AST and return accordignly
     return nullptr; // nodes stored in this->allAST
+}
+
+void Parser::parseExpressionStatement() {
+    // Parse the expression
+    ExpressionNode* expr = parseExpression(0, false, false);
+    
+    // Expect semicolon
+    if(this->tokens[this->currentPos].type != SEMICOLON) {
+        cout << "Expected ; after expression statement\n";
+        exit(1);
+    }
+    this->currentPos++; // skip ;
+    
+    // Create ExpressionStatementNode and store it
+    ExpressionStatementNode* stmt = new ExpressionStatementNode(expr);
+    this->allStmts.push_back(stmt);
 }

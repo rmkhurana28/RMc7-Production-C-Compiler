@@ -3,6 +3,9 @@
 
 #include "ASTNode.h"
 
+// Forward declaration
+class ExpressionNode;
+
 // ============================================================================
 // Abstract base class for all statement nodes
 // ============================================================================
@@ -26,8 +29,11 @@ public:
 
 class ExpressionStatementNode : public StatementNode {
 public:
-    ExpressionStatementNode() {}
-    ~ExpressionStatementNode() {}
+    ExpressionNode* expression;
+    
+    ExpressionStatementNode(ExpressionNode* expr) : expression(expr) {}
+    ~ExpressionStatementNode() { delete expression; }
+    void print(ofstream& out);
 };
 
 class IfStatementNode : public StatementNode {

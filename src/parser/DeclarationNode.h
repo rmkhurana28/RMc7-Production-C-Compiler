@@ -8,6 +8,9 @@
 #include "Helper.h"
 using namespace std;
 
+// Forward declarations
+class ExpressionStatementNode;
+
 // ============================================================================
 // Abstract base class for all declaration nodes
 // ============================================================================
@@ -139,5 +142,8 @@ public:
     ArrayDeclaratorNode() {}
     ~ArrayDeclaratorNode() {}
 };
+
+// Helper function to print statements - declared here
+void printStatementsToFile(ofstream& out, const vector<ExpressionStatementNode*>& statements);
 
 #endif

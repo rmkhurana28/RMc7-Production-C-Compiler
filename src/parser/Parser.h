@@ -24,6 +24,9 @@ private:
     // array to store all the AST
     vector<ASTNode*> allAST;
     
+    // array to store expression statements
+    vector<ExpressionStatementNode*> allStmts;
+    
     // type registry for the struct/union/enum data types
     unordered_map<string, string> typeRegisry;
 
@@ -32,6 +35,7 @@ private:
     
     // Add your helper methods here
     DeclarationNode* parseCurrentDecl();
+    void parseExpressionStatement();
 
     // check
     bool isThisTokenDataTypeOrPropToken(Token currToken);
@@ -54,7 +58,7 @@ private:
 
 
     // Expression parsing method
-    ExpressionNode* parseExpression(short initPrec , bool stopAtComma);
+    ExpressionNode* parseExpression(short initPrec , bool stopAtComma, bool needManualPushOfRBracket);
     
 public:
     Parser(const vector<Token>& tokenList);
@@ -67,6 +71,10 @@ public:
 
     vector<Token> getTokenArray(){
         return tokens;
+    }
+    
+    vector<ExpressionStatementNode*> getStatements(){
+        return allStmts;
     }
 
     
