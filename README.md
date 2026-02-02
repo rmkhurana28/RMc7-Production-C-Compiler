@@ -135,7 +135,7 @@ A complete C compiler implementation in C++ targeting 90-95% ISO C coverage.
 - ✅ Precedence climbing algorithm (15 precedence levels, correct associativity)
 - ✅ Expression statements (standalone expressions outside declarations)
 - ✅ Added sizeof operator and type cast expressions
-- ⏭️ Next: ternary operator bug fixed
+- ⏭️ Next: ternary operator bug fix
 - ⏭️ Next: Statement parsing (if/else, goto/labels, for, switch, return, etc.)
 
 ---
