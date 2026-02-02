@@ -111,29 +111,33 @@ FunctionCallNode::~FunctionCallNode() {
 }
 
 // CastNode constructor and destructor
-CastNode::CastNode(string typeName, ExpressionNode* expr) {
-    this->targetTypeName = typeName;
+CastNode::CastNode(dataTypeHolder* typeData, ExpressionNode* expr) {
+    this->typeHolder = typeData;
     this->expression = expr;
 }
 
 CastNode::~CastNode() {
+    delete typeHolder;
     delete expression;
 }
 
 // SizeofNode constructors and destructor
-SizeofNode::SizeofNode(string typeName) {
+SizeofNode::SizeofNode(dataTypeHolder* typeData) {
     this->isType = true;
-    this->typeName = typeName;
+    this->typeHolder = typeData;
     this->expression = nullptr;
 }
 
 SizeofNode::SizeofNode(ExpressionNode* expr) {
     this->isType = false;
-    this->typeName = "";
+    this->typeHolder = nullptr;
     this->expression = expr;
 }
 
 SizeofNode::~SizeofNode() {
+    if (typeHolder != nullptr) {
+        delete typeHolder;
+    }
     if (expression != nullptr) {
         delete expression;
     }

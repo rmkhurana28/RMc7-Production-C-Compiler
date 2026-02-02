@@ -58,7 +58,7 @@ private:
 
 
     // Expression parsing method
-    ExpressionNode* parseExpression(short initPrec , bool stopAtComma, bool needManualPushOfRBracket);
+    ExpressionNode* parseExpression(short initPrec , bool stopAtComma, int needManualPushOfBrackets);
     
 public:
     Parser(const vector<Token>& tokenList);
@@ -77,6 +77,8 @@ public:
         return allStmts;
     }
 
+
+    bool isThisParenForTypeCast();
     
     
     // Add your parsing methods here (parseExpression, parseStatement, etc.)

@@ -290,7 +290,7 @@ DeclarationNode* Parser::parseDataTypeFoundDeclaration(){
 
 void Parser::parseExpressionStatement() {
     // Parse the expression
-    ExpressionNode* expr = parseExpression(0, false, false);
+    ExpressionNode* expr = parseExpression(0, false, -1);
     
     // Expect semicolon
     if(this->tokens[this->currentPos].type != SEMICOLON) {

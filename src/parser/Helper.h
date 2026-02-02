@@ -54,6 +54,8 @@ class dataTypeHolder{
     friend class VariableDeclarationNode;  // Allow VariableDeclarationNode to print
     friend class FunctionDeclarationNode;  // Allow FunctionDeclarationNode to print
     friend class ParameterNode;  // Allow ParameterNode access for recursive printing
+    friend class CastNode;  // Allow CastNode to print type information
+    friend class SizeofNode;  // Allow SizeofNode to print type information
     friend void printParametersRecursive(ofstream&, const vector<ParameterNode>&, const string&);  // Allow helper function
     
 private:
@@ -71,7 +73,7 @@ private:
     vector<string> trBaseArray; // array to store the new base type
     vector<string> tdNew; // array to store the new name of keywords used
 
-    bool isPrevTokenValidForCurrentStar(TokenType prevTokenType);
+    bool isPrevTokenValidForCurrentStar(TokenType prevTokenType);    
 
     
     
@@ -83,6 +85,10 @@ public:
     void getDataType();
 
     int isCurrentTypeValid();
+
+    void evaluateTypeCast();
+    bool validateTypeCast();
+    void rejectOnlyVoid();
 };
 
 
@@ -122,6 +128,7 @@ static int getOperatorPrecedence(TokenType op);
 static ExpressionNode* generateCurrentLeftExpressionNode(Parser& parser);
 
 static bool isThisTokenUnaryOp(TokenType op);
+
 
 
 

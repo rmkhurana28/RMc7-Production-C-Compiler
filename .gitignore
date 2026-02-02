@@ -17,3 +17,10 @@ rmc7
 src/**/*.o
 src/Main.o
 src/lexer/Lexer.o
+
+
+insights/
+insights/rmc7_clones.json
+insights/rmc7_traffic.json
+insights/rmc7_visitors.json
+insights/rmc7_views.json

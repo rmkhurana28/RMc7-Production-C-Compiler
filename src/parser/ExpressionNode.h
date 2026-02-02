@@ -9,6 +9,9 @@
 
 using namespace std;
 
+// Forward declaration
+class dataTypeHolder;
+
 // ============================================================================
 // Abstract base class for all expression nodes
 // ============================================================================
@@ -191,23 +194,23 @@ public:
 class CastNode : public ExpressionNode {
 private:
     void print(ofstream& out, const string& indent = "") const override;
-    string targetTypeName; // to store the type name as string (e.g., "int", "char*", "struct Point")
+    dataTypeHolder* typeHolder; // to store the type information
     ExpressionNode* expression; // to store the expression being cast
 
 public:
-    CastNode(string typeName, ExpressionNode* expr);
+    CastNode(dataTypeHolder* typeData, ExpressionNode* expr);
     ~CastNode();
 };
 
 class SizeofNode : public ExpressionNode {
 private:
     bool isType; // true if sizeof(type), false if sizeof(expr)
-    string typeName; // to store type name if isType=true
+    dataTypeHolder* typeHolder; // to store type information if isType=true
     void print(ofstream& out, const string& indent = "") const override;
     ExpressionNode* expression; // to store expression if isType=false
 
 public:
-    SizeofNode(string typeName); // for sizeof(type)
+    SizeofNode(dataTypeHolder* typeData); // for sizeof(type)
     SizeofNode(ExpressionNode* expr); // for sizeof(expr)
     ~SizeofNode();
 };

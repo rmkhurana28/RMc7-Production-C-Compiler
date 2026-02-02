@@ -1,4 +1,5 @@
 #include "ExpressionNode.h"
+#include "Helper.h"
 #include "../lexer/Token.h"
 #include <fstream>
 
@@ -245,7 +246,97 @@ void PointerMemberAccessNode::print(ofstream& out, const string& indent) const {
 // ============================================================================
 
 void CastNode::print(ofstream& out, const string& indent) const {
-    out << indent << "Cast(" << targetTypeName << ")\n";
+    out << indent << "Cast(";
+    if (typeHolder) {
+        // Print type qualifiers with their stars
+        for (const auto& tq : typeHolder->typeQualifiersArray) {
+            if (tq == KEYWORD_CONST) out << "const";
+            else if (tq == KEYWORD_VOLATILE) out << "volatile";
+            else if (tq == KEYWORD_RESTRICT) out << "restrict";
+            
+            // Print stars that come after this qualifier
+            for (const auto& starData : typeHolder->starDataArray) {
+                if (starData.typeBeforeStar == tq && starData.numOfStars > 0) {
+                    for (int i = 0; i < starData.numOfStars; i++) {
+                        out << "*";
+                    }
+                }
+            }
+            out << " ";
+        }
+        
+        // Print sign modifiers with their stars
+        for (const auto& sm : typeHolder->signModifiersArray) {
+            if (sm == KEYWORD_SIGNED) out << "signed";
+            else if (sm == KEYWORD_UNSIGNED) out << "unsigned";
+            
+            // Print stars that come after this sign modifier
+            for (const auto& starData : typeHolder->starDataArray) {
+                if (starData.typeBeforeStar == sm && starData.numOfStars > 0) {
+                    for (int i = 0; i < starData.numOfStars; i++) {
+                        out << "*";
+                    }
+                }
+            }
+            out << " ";
+        }
+        
+        // Print size modifiers with their stars
+        for (const auto& szm : typeHolder->sizeModifiersArray) {
+            if (szm == KEYWORD_SHORT) out << "short";
+            else if (szm == KEYWORD_LONG) out << "long";
+            
+            // Print stars that come after this size modifier
+            for (const auto& starData : typeHolder->starDataArray) {
+                if (starData.typeBeforeStar == szm && starData.numOfStars > 0) {
+                    for (int i = 0; i < starData.numOfStars; i++) {
+                        out << "*";
+                    }
+                }
+            }
+            out << " ";
+        }
+        
+        // Print base type with stars
+        if (!typeHolder->baseTypeArray.empty()) {
+            TokenType bt = typeHolder->baseTypeArray[0];
+            if (bt == KEYWORD_INT) out << "int";
+            else if (bt == KEYWORD_CHAR) out << "char";
+            else if (bt == KEYWORD_VOID) out << "void";
+            else if (bt == KEYWORD_FLOAT) out << "float";
+            else if (bt == KEYWORD_DOUBLE) out << "double";
+            
+            // Print stars that come after this base type
+            for (const auto& starData : typeHolder->starDataArray) {
+                if (starData.typeBeforeStar == bt && starData.numOfStars > 0) {
+                    for (int i = 0; i < starData.numOfStars; i++) {
+                        out << "*";
+                    }
+                }
+            }
+            out << " ";
+        }
+        
+        // Print struct/union/enum if present
+        if (!typeHolder->trKeywordArray.empty()) {
+            TokenType trk = typeHolder->trKeywordArray[0];
+            if (trk == KEYWORD_STRUCT) out << "struct ";
+            else if (trk == KEYWORD_UNION) out << "union ";
+            else if (trk == KEYWORD_ENUM) out << "enum ";
+            
+            if (!typeHolder->trBaseArray.empty()) {
+                out << typeHolder->trBaseArray[0] << " ";
+            }
+        }
+        
+        // Print typedef names if present
+        if (!typeHolder->tdNew.empty()) {
+            out << typeHolder->tdNew[0] << " ";
+        }
+    } else {
+        out << "NULL";
+    }
+    out << ")\n";
     out << indent << "  Expression:\n";
     if (expression) {
         expression->print(out, indent + "    ");
@@ -260,7 +351,93 @@ void CastNode::print(ofstream& out, const string& indent) const {
 
 void SizeofNode::print(ofstream& out, const string& indent) const {
     if (isType) {
-        out << indent << "Sizeof(type: " << typeName << ")";
+        out << indent << "Sizeof(";
+        if (typeHolder) {
+            // Print type qualifiers with their stars
+            for (const auto& tq : typeHolder->typeQualifiersArray) {
+                if (tq == KEYWORD_CONST) out << "const";
+                else if (tq == KEYWORD_VOLATILE) out << "volatile";
+                else if (tq == KEYWORD_RESTRICT) out << "restrict";
+                
+                for (const auto& starData : typeHolder->starDataArray) {
+                    if (starData.typeBeforeStar == tq && starData.numOfStars > 0) {
+                        for (int i = 0; i < starData.numOfStars; i++) {
+                            out << "*";
+                        }
+                    }
+                }
+                out << " ";
+            }
+            
+            // Print sign modifiers with their stars
+            for (const auto& sm : typeHolder->signModifiersArray) {
+                if (sm == KEYWORD_SIGNED) out << "signed";
+                else if (sm == KEYWORD_UNSIGNED) out << "unsigned";
+                
+                for (const auto& starData : typeHolder->starDataArray) {
+                    if (starData.typeBeforeStar == sm && starData.numOfStars > 0) {
+                        for (int i = 0; i < starData.numOfStars; i++) {
+                            out << "*";
+                        }
+                    }
+                }
+                out << " ";
+            }
+            
+            // Print size modifiers with their stars
+            for (const auto& szm : typeHolder->sizeModifiersArray) {
+                if (szm == KEYWORD_SHORT) out << "short";
+                else if (szm == KEYWORD_LONG) out << "long";
+                
+                for (const auto& starData : typeHolder->starDataArray) {
+                    if (starData.typeBeforeStar == szm && starData.numOfStars > 0) {
+                        for (int i = 0; i < starData.numOfStars; i++) {
+                            out << "*";
+                        }
+                    }
+                }
+                out << " ";
+            }
+            
+            // Print base type with stars
+            if (!typeHolder->baseTypeArray.empty()) {
+                TokenType bt = typeHolder->baseTypeArray[0];
+                if (bt == KEYWORD_INT) out << "int";
+                else if (bt == KEYWORD_CHAR) out << "char";
+                else if (bt == KEYWORD_VOID) out << "void";
+                else if (bt == KEYWORD_FLOAT) out << "float";
+                else if (bt == KEYWORD_DOUBLE) out << "double";
+                
+                for (const auto& starData : typeHolder->starDataArray) {
+                    if (starData.typeBeforeStar == bt && starData.numOfStars > 0) {
+                        for (int i = 0; i < starData.numOfStars; i++) {
+                            out << "*";
+                        }
+                    }
+                }
+                out << " ";
+            }
+            
+            // Print struct/union/enum if present
+            if (!typeHolder->trKeywordArray.empty()) {
+                TokenType trk = typeHolder->trKeywordArray[0];
+                if (trk == KEYWORD_STRUCT) out << "struct ";
+                else if (trk == KEYWORD_UNION) out << "union ";
+                else if (trk == KEYWORD_ENUM) out << "enum ";
+                
+                if (!typeHolder->trBaseArray.empty()) {
+                    out << typeHolder->trBaseArray[0] << " ";
+                }
+            }
+            
+            // Print typedef names if present
+            if (!typeHolder->tdNew.empty()) {
+                out << typeHolder->tdNew[0] << " ";
+            }
+        } else {
+            out << "NULL";
+        }
+        out << ")";
     } else {
         out << indent << "Sizeof(expr)\n";
         out << indent << "  Expression:\n";

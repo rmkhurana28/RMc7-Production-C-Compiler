@@ -134,14 +134,15 @@ A complete C compiler implementation in C++ targeting 90-95% ISO C coverage.
 - ✅ All operators: arithmetic, bitwise, logical, comparison, assignment, ternary, comma
 - ✅ Precedence climbing algorithm (15 precedence levels, correct associativity)
 - ✅ Expression statements (standalone expressions outside declarations)
-- ⏭️ Next: sizeof operator and type cast expressions
+- ✅ Added sizeof operator and type cast expressions
+- ⏭️ Next: ternary operator bug fixed
 - ⏭️ Next: Statement parsing (if/else, goto/labels, for, switch, return, etc.)
 
 ---
 
 ## 📊 Language Coverage Target
 
-**Target:** 95-100% of ISO C core features
+**Target:** 90-95% of ISO C core features
 
 ---
 
