@@ -19,7 +19,7 @@ A complete C compiler implementation in C++ targeting 90-95% ISO C coverage.
 
 A complete reference for all supported syntax, declarators, types, operators, and parser rules:
 
-👉 **[RMc7 Syntax Reference](./docs/RMc7_Syntax_Reference.md)**
+👉 **[RMc7 Syntax Reference](./RMc7_Syntax_Reference.md)**
 
 ---
 
