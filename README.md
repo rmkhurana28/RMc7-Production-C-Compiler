@@ -15,6 +15,14 @@ A complete C compiler implementation in C++ targeting 90-95% ISO C coverage.
 
 ---
 
+## 📑 Syntax Reference
+
+A complete reference for all supported syntax, declarators, types, operators, and parser rules:
+
+👉 **[RMc7 Syntax Reference](./docs/RMc7_Syntax_Reference.md)**
+
+---
+
 ## 📋 Supported Features
 
 ### **Data Types**
@@ -135,7 +143,7 @@ A complete C compiler implementation in C++ targeting 90-95% ISO C coverage.
 - ✅ Precedence climbing algorithm (15 precedence levels, correct associativity)
 - ✅ Expression statements (standalone expressions outside declarations)
 - ✅ Added sizeof operator and type cast expressions
-- ✅ Expression parsing testing (~370 test cases, 100% pass rate , except comples ternary)
+- ✅ Expression parsing testing (~370 test cases, 100% pass rate , except complex ternary)
 - ⏭️ Next: ternary operator bug fix
 - ⏭️ Next: Statement parsing (if/else, goto/labels, for, switch, return, etc.)
 
