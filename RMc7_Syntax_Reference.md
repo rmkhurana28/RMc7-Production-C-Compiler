@@ -43,14 +43,13 @@ double pi = 3.14159;
 ✅ `register`  
 ✅ `static`  
 ✅ `extern`  
-✅ `typedef`
+➡️ `typedef`
 
 **Examples:**
 ```c
 static int counter;
 extern double global_var;
 register int fast_var;
-typedef unsigned long size_t;
 ```
 
 ### 1.3 Type Qualifiers
