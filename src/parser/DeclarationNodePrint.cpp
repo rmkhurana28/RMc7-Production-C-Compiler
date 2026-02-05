@@ -31,44 +31,19 @@ string tokenToReadable(TokenType type) {
 void VariableDeclarationNode::print(ofstream& out) {
     out << "      Data Type: ";
     
-    // Print storage class with stars
+    // Print storage class (NO stars - they're in Var Name modifiers)
     for(auto sc : varDeclType.storageClassArray) {
-        out << tokenToReadable(sc);
-        // Check if this storage class has stars
-        for(const auto& starData : varDeclType.starDataArray) {
-            if(starData.typeBeforeStar == sc && starData.numOfStars > 0) {
-                for(int i = 0; i < starData.numOfStars; i++) {
-                    out << "*";
-                }
-            }
-        }
-        out << " ";
+        out << tokenToReadable(sc) << " ";
     }
     
-    // Print sign modifiers with stars
+    // Print sign modifiers (NO stars - they're in Var Name modifiers)
     for(auto sm : varDeclType.signModifiersArray) {
-        out << tokenToReadable(sm);
-        for(const auto& starData : varDeclType.starDataArray) {
-            if(starData.typeBeforeStar == sm && starData.numOfStars > 0) {
-                for(int i = 0; i < starData.numOfStars; i++) {
-                    out << "*";
-                }
-            }
-        }
-        out << " ";
+        out << tokenToReadable(sm) << " ";
     }
     
-    // Print size modifiers with stars
+    // Print size modifiers (NO stars - they're in Var Name modifiers)
     for(auto szm : varDeclType.sizeModifiersArray) {
-        out << tokenToReadable(szm);
-        for(const auto& starData : varDeclType.starDataArray) {
-            if(starData.typeBeforeStar == szm && starData.numOfStars > 0) {
-                for(int i = 0; i < starData.numOfStars; i++) {
-                    out << "*";
-                }
-            }
-        }
-        out << " ";
+        out << tokenToReadable(szm) << " ";
     }
     
     // Print base type (NO stars here as per requirement)
@@ -80,9 +55,10 @@ void VariableDeclarationNode::print(ofstream& out) {
         out << varDeclType.tdNew[0] << " ";
     }
     
-    // Print type qualifiers with stars
+    // Print type qualifiers WITH their stars (only for first var in multi-decl)
     for(auto tq : varDeclType.typeQualifiersArray) {
         out << tokenToReadable(tq);
+        // Print stars associated with this qualifier
         for(const auto& starData : varDeclType.starDataArray) {
             if(starData.typeBeforeStar == tq && starData.numOfStars > 0) {
                 for(int i = 0; i < starData.numOfStars; i++) {
@@ -200,7 +176,52 @@ void printParametersRecursive(ofstream& out, const vector<ParameterNode>& params
             for(const auto& qual : param.paramType.typeQualifiersArray) {
                 out << tokenToReadable(qual) << " ";
             }
+            
+            // Print sign and size modifiers
+            for(const auto& sm : param.paramType.signModifiersArray) {
+                out << tokenToReadable(sm) << " ";
+            }
+            for(const auto& szm : param.paramType.sizeModifiersArray) {
+                out << tokenToReadable(szm) << " ";
+            }
+            
             out << tokenToReadable(param.paramType.baseTypeArray[0]);
+            
+            // For anonymous parameters, print stars from starDataArray
+            bool isAnonymous = param.paramName.namePropArray.empty() || 
+                              (param.paramName.namePropArray.size() == 1 && param.paramName.namePropArray[0].type != VAR_NAME);
+            if(isAnonymous) {
+                // Find stars - check base type first, then size/sign modifiers (for multi-word types like unsigned long)
+                int starsFound = 0;
+                TokenType baseType = param.paramType.baseTypeArray[0];
+                
+                // First check if base type has stars directly
+                for(const auto& starData : param.paramType.starDataArray) {
+                    if(starData.typeBeforeStar == baseType && starData.numOfStars > 0) {
+                        starsFound = starData.numOfStars;
+                        break;
+                    }
+                }
+                
+                // If no stars found with base type, check size/sign modifiers (for cases like "unsigned long ****")
+                if(starsFound == 0) {
+                    for(const auto& starData : param.paramType.starDataArray) {
+                        TokenType t = starData.typeBeforeStar;
+                        if((t == KEYWORD_SHORT || t == KEYWORD_LONG || t == KEYWORD_SIGNED || t == KEYWORD_UNSIGNED) 
+                           && starData.numOfStars > 0) {
+                            starsFound = starData.numOfStars;
+                            break;
+                        }
+                    }
+                }
+                
+                if(starsFound > 0) {
+                    out << " ";
+                    for(int j = 0; j < starsFound; j++) {
+                        out << "*";
+                    }
+                }
+            }
         } else if(!param.paramType.trBaseArray.empty()) {
             out << param.paramType.trBaseArray[0];
         }
@@ -231,11 +252,51 @@ void printParametersRecursive(ofstream& out, const vector<ParameterNode>& params
             }
         }
         
+        // For named params with simple pointers, check if stars are in starDataArray but not in namePropArray
+        // This happens for declarations like "int ***_ppp" where stars are stored with base type
+        int starsFromStarData = 0;
+        bool hasPointorInNameProp = false;
+        for(const auto& nameProp : param.paramName.namePropArray) {
+            if(nameProp.type == POINTOR) {
+                hasPointorInNameProp = true;
+                break;
+            }
+        }
+        if(!hasPointorInNameProp && !paramName.empty()) {
+            // Check starDataArray for stars
+            TokenType baseType = param.paramType.baseTypeArray.empty() ? HELPER_TOKEN : param.paramType.baseTypeArray[0];
+            for(const auto& starData : param.paramType.starDataArray) {
+                if(starData.typeBeforeStar == baseType && starData.numOfStars > 0) {
+                    starsFromStarData = starData.numOfStars;
+                    break;
+                }
+            }
+            // If no stars with base type, check size/sign modifiers
+            if(starsFromStarData == 0) {
+                for(const auto& starData : param.paramType.starDataArray) {
+                    TokenType t = starData.typeBeforeStar;
+                    if((t == KEYWORD_SHORT || t == KEYWORD_LONG || t == KEYWORD_SIGNED || t == KEYWORD_UNSIGNED) 
+                       && starData.numOfStars > 0) {
+                        starsFromStarData = starData.numOfStars;
+                        break;
+                    }
+                }
+            }
+            // Print the stars if found
+            if(starsFromStarData > 0) {
+                for(int j = 0; j < starsFromStarData; j++) {
+                    out << "*";
+                }
+            }
+        }
+        
         // Show declarator sequence in brackets
-        if(!param.paramName.namePropArray.empty()) {
+        if(!param.paramName.namePropArray.empty() || starsFromStarData > 0) {
             out << " [";
+            bool first = true;
             for(size_t j = 0; j < param.paramName.namePropArray.size(); j++) {
-                if(j > 0) out << ", ";
+                if(!first) out << ", ";
+                first = false;
                 const auto& nameProp = param.paramName.namePropArray[j];
                 switch(nameProp.type) {
                     case VAR_NAME: 
@@ -251,6 +312,11 @@ void printParametersRecursive(ofstream& out, const vector<ParameterNode>& params
                         out << "FUNC(" << nameProp.funcParams.size() << ")";
                         break;
                 }
+            }
+            // Add POINTOR from starDataArray if not already in namePropArray
+            if(starsFromStarData > 0) {
+                if(!first) out << ", ";
+                out << "POINTOR(" << starsFromStarData << ")";
             }
             out << "]";
         }
@@ -328,17 +394,35 @@ void FunctionDeclarationNode::print(ofstream& out) {
     }
     out << "]";
     
-    // Print main function parameters
+    // Print main function parameters - find the first FUNC in the declarator sequence
     out << "\n      Parameters: ";
-    if(paramsArray.empty()) {
+    
+    // Find the first FUNC modifier which contains the actual parameters
+    vector<ParameterNode> actualParams;
+    bool foundParams = false;
+    for(const auto& prop : funcName.namePropArray) {
+        if(prop.type == FUNC) {
+            actualParams = prop.funcParams;
+            foundParams = true;
+            break;
+        }
+    }
+    
+    // If no FUNC found in modifiers, fall back to paramsArray
+    if(!foundParams && !paramsArray.empty()) {
+        actualParams = paramsArray;
+        foundParams = true;
+    }
+    
+    if(!foundParams || actualParams.empty()) {
         out << "()";
     } else {
-        out << "(" << paramsArray.size() << ")";
+        out << "(" << actualParams.size() << ")";
         if(isVariadic) {
             out << " [variadic]";
         }
         out << "\n";
-        printParametersRecursive(out, paramsArray, "        ");
+        printParametersRecursive(out, actualParams, "        ");
     }
     
     // Print return type modifiers (like pointer-to-function)

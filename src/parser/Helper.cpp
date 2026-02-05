@@ -603,6 +603,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 if(gotoHelper2){ // came from the [ evaluation section jump , to evaluate pointor
                     // check next token
 
+
                     if(this->parser.tokens[this->parser.currentPos+1].type == LBRACKET){ // token next to ] is [
                         current = this->parser.tokens[++this->parser.currentPos]; // skip ] and proceed
                         goto cameAgainFromPointor; // go to evaluate [ token first
@@ -716,7 +717,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             }
             current = this->parser.tokens[++this->parser.currentPos]; // advance 1 token , skip ]       
             
-            if(gotoHelper3 && initBrackCount != -1 && initBrackCount == bracketStackCount && addStarCount > 0){
+            if(gotoHelper3 && initBrackCount != -1 && initBrackCount == bracketStackCount && addStarCount > 0 && current.type != LBRACKET){
                 varNameProp temp;
                 temp.type = POINTOR;
                 temp.numPointor = addStarCount;
@@ -854,6 +855,32 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
         TokenType baseType;
         if(typeHolder.baseTypeArray.size() == 1){
             baseType = typeHolder.baseTypeArray.front();
+            
+            // If baseType is INT (possibly auto-added when short/long/signed/unsigned present without explicit int)
+            // Check if INT has 0 stars but short/long/signed/unsigned have stars - transfer them
+            if(baseType == KEYWORD_INT){
+                // First check if INT already has stars
+                bool intHasStars = false;
+                for(size_t i=0 ; i<typeHolder.starDataArray.size() ; i++){
+                    if(typeHolder.starDataArray[i].typeBeforeStar == KEYWORD_INT && typeHolder.starDataArray[i].numOfStars > 0){
+                        intHasStars = true;
+                        break;
+                    }
+                }
+                
+                // If INT has no stars, check if size/sign modifiers have stars and transfer them
+                if(!intHasStars){
+                    for(size_t i=0 ; i<typeHolder.starDataArray.size() ; i++){
+                        TokenType t = typeHolder.starDataArray[i].typeBeforeStar;
+                        if((t == KEYWORD_SHORT || t == KEYWORD_LONG || t == KEYWORD_SIGNED || t == KEYWORD_UNSIGNED) 
+                           && typeHolder.starDataArray[i].numOfStars > 0){
+                            // Transfer these stars to KEYWORD_INT
+                            typeHolder.starDataArray[i].typeBeforeStar = KEYWORD_INT;
+                            break;
+                        }
+                    }
+                }
+            }
         } else if(typeHolder.trBaseArray.size() == 1){
             baseType = HELPER_TOKEN;
         } else{

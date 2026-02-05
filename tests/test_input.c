@@ -1,111 +1,128 @@
-// === BASIC TERNARY ===
-int _t1 = 1 ? 10 : 20;
-int _t2 = 0 ? 100 : 200;
-int _t3 = 5 > 3 ? 1 : 0;
-int _t4 = 10 < 5 ? 999 : 111;
-int _t5 = 10 == 10 ? 50 : 60;
-int _t6 = 10 != 10 ? 70 : 80;
+// ============================================================================
+// RMc7 STRESS TEST - VALID COMPLEX CASES ONLY
+// ============================================================================
 
-// === NESTED TERNARY - RIGHT ASSOCIATIVE ===
-int _n1 = 1 ? 2 ? 3 : 4 : 5;
-int _n2 = 0 ? 2 ? 3 : 4 : 5;
-int _n3 = 1 ? 0 ? 3 : 4 : 5;
-int _n4 = 1 ? 2 : 3 ? 4 : 5;
-int _n5 = 0 ? 2 : 3 ? 4 : 5;
-int _n6 = 0 ? 2 : 0 ? 4 : 5;
+// --- Multi-level Pointers (up to 6 levels) ---
+int ******_p6;
+const volatile unsigned long long ******_extreme_ptr;
+static const int *****_scp5;
 
-// === DEEP NESTED TERNARY ===
-int _d1 = 1 ? 1 ? 1 ? 1 ? 100 : 99 : 98 : 97 : 96;
-int _d2 = 0 ? 1 ? 1 ? 1 ? 100 : 99 : 98 : 97 : 96;
-int _d3 = 1 ? 0 ? 1 ? 1 ? 100 : 99 : 98 : 97 : 96;
-int _d4 = 1 ? 1 ? 0 ? 1 ? 100 : 99 : 98 : 97 : 96;
-int _d5 = 1 ? 1 ? 1 ? 0 ? 100 : 99 : 98 : 97 : 96;
-int _d6 = 1 ? 1 ? 1 ? 1 ? 1 ? 1 ? 1 ? 1 : 2 : 3 : 4 : 5 : 6 : 7 : 8;
+// --- Complex Arrays ---
+int _arr5d[2][3][4][5][6];
+unsigned long long _big[10][20][30];
+static const int _sca[5][5][5][5];
 
-// === TERNARY WITH ARITHMETIC ===
-int _a1 = 10 + 5 > 12 ? 100 + 50 : 200 - 50;
-int _a2 = 10 * 2 == 20 ? 5 * 5 * 5 : 6 / 2 / 1;
-int _a3 = 100 / 10 % 3 ? 1 + 2 + 3 + 4 : 10 - 5 - 2 - 1;
-int _a4 = (5 + 5) * 2 > 15 ? (10 + 20) * 3 : (30 - 10) / 2;
-int _a5 = 1 + 2 * 3 ? 4 + 5 * 6 : 7 + 8 * 9;
-int _a6 = 500 * 1000 > 400000 ? 12345 : 54321;
+// --- Arrays of Pointers ---
+int *****_ap5[10];
+int ***_ap3_multi[5][10][15];
+const volatile int ****_cvap4[20];
 
-// === TERNARY WITH RELATIONAL ===
-int _r1 = 10 < 20 ? 20 < 30 ? 1 : 2 : 3;
-int _r2 = 10 > 20 ? 1 : 20 > 30 ? 2 : 3;
-int _r3 = 5 <= 5 ? 10 >= 10 ? 100 : 200 : 300;
-int _r4 = 1 == 1 ? 2 != 3 ? 111 : 222 : 333;
-int _r5 = (10 < 20) + (20 < 30) > 1 ? 1 : 0;
-int _r6 = 10 < 20 && 20 < 30 ? 50 > 40 || 30 > 40 ? 1 : 2 : 3;
+// --- Pointers to Arrays ---
+int (*_pa3)[10][20][30];
+int (***_pppa)[10][20];
+const unsigned long long (*_cullpa)[50][50];
 
-// === TERNARY WITH LOGICAL ===
-int _l1 = 1 && 1 ? 100 : 200;
-int _l2 = 1 || 0 ? 100 : 200;
-int _l3 = 0 && 1 ? 100 : 200;
-int _l4 = 0 || 0 ? 100 : 200;
-int _l5 = !0 ? !1 ? 10 : 20 : 30;
-int _l6 = !!1 ? !!!0 ? 1 : 2 : 3;
-int _l7 = 1 && 1 && 1 ? 0 || 0 || 1 ? 5 : 6 : 7;
-int _l8 = (1 && 0) || (0 || 1) ? 1 : 0;
+// --- Function Pointers (no void params) ---
+int (*_fp4)(int, char, double, float);
+double (*_dfp)(double, double);
+unsigned long long (*_ullfp)(unsigned long long, unsigned long long);
+int (*_varfp)(int, const char *, ...);
 
-// === TERNARY WITH BITWISE ===
-unsigned int _b1 = 255 & 15 ? 85 | 170 : 0;
-unsigned int _b2 = 255 ^ 255 ? 100 : 200;
-unsigned int _b3 = ~0 ? 1 : 0;
-unsigned int _b4 = 1 << 4 ? 255 >> 2 : 17 << 1;
-unsigned int _b5 = (240 & 15) ? 1 : (240 | 15) ? 2 : 3;
-unsigned int _b6 = 18 ^ 52 ? 86 & 120 : 154 | 1;
+// --- Multi-level Function Pointers ---
+int (*****_fp5)(int, int, int);
+double (***_dfp3)(double, double);
 
-// === TERNARY WITH UNARY ===
-int _u1 = -10 < 0 ? -(-10) : -10;
-int _u2 = +5 > 0 ? +10 : -10;
-int _u3 = !0 ? !!1 : !!!1;
-int _u4 = ~0 != 0 ? ~(~100) : 0;
-int _u5 = -(-(-(-1))) ? 1 : 0;
-int _u6 = +-+-+-10 > 0 ? 1 : 0;
+// --- Arrays of Function Pointers ---
+int (*_afp3d[5][10][15])(int, double);
+char *(*_cpafp[20])(const char *, int);
+int (*_vfparr[10])(const char *, ...);
 
-// === TERNARY WITH PARENTHESES ===
-int _p1 = (1 ? 2 : 3);
-int _p2 = (1 ? (2 ? 3 : 4) : 5);
-int _p3 = ((1 ? 2 : 3) ? (4 ? 5 : 6) : (7 ? 8 : 9));
-int _p4 = (((1))) ? (((2))) : (((3)));
-int _p5 = (1 ? 2 : 3) + (4 ? 5 : 6) * (7 ? 8 : 9);
-int _p6 = ((1 ? 2 : 3) + 4) ? ((5 ? 6 : 7) - 2) : ((8 ? 9 : 10) * 3);
+// --- Pointers to Arrays of Function Pointers ---
+int (*(*_pafp)[10])(int);
+int (*(**_ppafp)[5][10])(int, int);
+double (*(*_dpafp)[20][30])(double, double);
 
-// === TERNARY WITH MIXED OPERATORS ===
-int _m1 = 1 + 2 > 2 && 3 * 4 >= 12 ? 100 : 200;
-int _m2 = (1 < 2) + (3 > 2) ? (4 == 4) * 10 : (5 != 5) + 20;
-int _m3 = 10 & 2 ? 20 | 1 : 30 ^ 5;
-int _m4 = 1 << 2 > 2 ? 8 >> 1 : 16 >> 2;
-int _m5 = !0 && !!1 || !!!0 ? 1 : 0;
-int _m6 = 5 + 3 * 2 - 4 / 2 % 3 > 5 ? 1 && 1 || 0 : 0 || 0 && 1;
+// --- Function Pointers Returning Pointers ---
+int ***(*_fprp3)(int);
+int **(****_fprp4)(int, int, int);
+unsigned long long *(*_ullfprp)(int, double);
 
-// === TERNARY USED AS SUB-EXPRESSION ===
-int _s1 = (1 ? 10 : 20) + (0 ? 30 : 40);
-int _s2 = (1 ? 5 : 10) * (1 ? 2 : 3);
-int _s3 = 100 / (1 ? 10 : 1);
-int _s4 = 100 - (0 ? 10 : 20) + (1 ? 5 : 15);
-int _s5 = (1 ? 2 : 3) << (1 ? 2 : 3);
-int _s6 = (1 ? 240 : 15) & (0 ? 170 : 85);
+// --- Extreme Nesting (6 levels) ---
+int *(*(**_nest1)[10])(int);
+int (*(*(**_nest2)[5])[10])(int, int);
+int *(*(*(*_nest3)[5])[10])(int);
+int *(*(*(*(*_nest4)[2])[3])[4])(int, int);
 
-// === EXTREME NESTING ===
-int _e1 = 1 ? 1 ? 1 ? 1 ? 1 ? 1 ? 1 ? 1 ? 1 ? 1 ? 999 : 1 : 2 : 3 : 4 : 5 : 6 : 7 : 8 : 9 : 10;
-int _e2 = 0 ? 0 ? 0 ? 0 ? 0 : 1 : 2 : 3 : 4 ? 5 ? 6 : 7 : 8;
-int _e3 = (1 ? (1 ? (1 ? (1 ? (1 ? 100 : 99) : 98) : 97) : 96) : 95);
-int _e4 = ((((1 ? 2 : 3) ? 4 : 5) ? 6 : 7) ? 8 : 9) ? 10 : 11;
-int _e5 = 1 ? 2 ? 3 ? 4 ? 5 ? 6 ? 7 ? 8 ? 9 ? 10 ? 11 : 12 : 13 : 14 : 15 : 16 : 17 : 18 : 19 : 20 : 21;
-int _e6 = (1 + (2 ? 3 : 4)) * (5 ? (6 + (7 ? 8 : 9)) : 10) - (11 ? 12 : (13 ? 14 : 15));
+// --- Mixed Pointer/Array Complex ---
+int *(*_mix1[10])[20];
+int **(*_mix2[5][10])[20];
+int *(*(*_mix3)[10])[20];
+int (*(*_mix4[10])[20])(int);
+int *(*(*_mix5[5])[10])(int, int);
 
-// === TERNARY WITH COMMA OPERATOR ===
-int _c1 = (1, 2, 3) ? 10 : 20;
-int _c2 = 1 ? (1, 2, 100) : (3, 4, 200);
-int _c3 = (0, 0, 1) ? (5, 10, 15) : (20, 25, 30);
-int _c4 = ((1, 2), (3, 4)) ? ((5, 6), 7) : ((8, 9), 10);
+// --- Named Complex Parameters ---
+int _f1(int (*_fp)(int));
+int _f2(int (*_fp)(int, int), int (*_fp2)(double, double));
+int _f3(int (*_arr)[10]);
+int _f4(int (*_arr)[10][20], int (*_fp)(int));
+int _f5(int (**_pp)[10]);
+int _f6(int (*(*_pafp)[10])(int));
+int _f7(int (*_fp)(int), int (*_arr)[10], int ***_ppp);
+int _f8(const int (*_carr)[100], volatile double (*_vfp)(double));
+int _f9(int *(*(**_extreme)[10])(int), double ***_dpp);
 
-// === TERNARY WITH TYPE MIXING ===
-double _tm1 = 1 ? 3.14 : 2.71;
-float _tm2 = 0 ? 1.5 : 2.5;
-long _tm3 = 1 > 0 ? 100 : 200;
-char _tm4 = 1 ? 'A' : 'B';
-double _tm5 = 10 > 5 ? 3.14159 * 2 : 2.71828 / 2;
-long long _tm6 = 1 && 1 ? 12345 : 54321;
+// --- Unnamed Simple Parameters ---
+int _u1(int, int, int);
+int _u2(char, double, float, long, short);
+int _u3(int *, char **, double ***, unsigned long ****);
+int _u4(const int, volatile double, unsigned long long);
+int _u5(const char *, volatile int **, unsigned long ***);
+
+// --- Mixed Named/Unnamed ---
+int _m1(int _a, int, int _c);
+int _m2(int *, double _d, char **);
+int _m3(const int _a, volatile double, unsigned long long ***_p);
+
+// --- Variadic ---
+int _v1(int _a, ...);
+int _v2(const char *_fmt, ...);
+int _v3(int _n, double _d, const char *_s, ...);
+
+// --- Empty Parameters ---
+int _e1();
+int *_e2();
+int **_e3();
+int (*_e4())(int);
+int *(*_e5())(int, int);
+
+// --- Complex Return Types ---
+int ***_r1(int);
+int (*_r2(int))[10];
+int *(*_r3(int, int))[20];
+int (*_r4(int))(int);
+int *(*_r5(int))(int, int);
+int (*(*_r6(int))[10])(int);
+
+// --- Complex Expressions ---
+int _ex1 = 1 + 2 * 3 - 4 / 2 % 3 << 1 >> 2;
+int _ex2 = (1 + 2) * ((3 - 4) / (2 + 1)) << (1 + 1);
+int _ex3 = 1 & 2 | 3 ^ 4 & 5 | 6 ^ 7;
+int _ex4 = 1 < 2 && 3 > 4 || 5 <= 6 && 7 >= 8 != 9 == 10;
+int _ex5 = 1 ? 2 : 3 ? 4 : 5 ? 6 : 7;
+int _ex6 = (1 ? 2 : 3) ? (4 ? 5 : 6) : (7 ? 8 : 9);
+int _ex7 = ~!-+-+-+1;
+int _ex8 = 1 || 2 && 3 | 4 ^ 5 & 6 == 7 < 8 << 9 + 10 * ~-11;
+
+// --- sizeof and Casts (valid - no nested brackets) ---
+int _s1 = sizeof(int);
+int _s2 = sizeof(unsigned long long);
+int _s3 = sizeof(const volatile int ***);
+int _c1 = (int)3.14;
+int *_c2 = (int *)0;
+int ***_c3 = (const int ***)0;
+unsigned long long _c4 = (unsigned long long)(int)3.14;
+
+// --- Storage + Qualifiers + Complex ---
+static const int *(*(*_ultimate1)[10])(int, double);
+extern volatile unsigned long long ***(*_ultimate2[5])(int);
+static const volatile int *(*(**_ultimate3)[10][20])(const char *, ...);
