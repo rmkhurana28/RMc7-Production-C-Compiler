@@ -144,7 +144,6 @@ A complete reference for all supported syntax, declarators, types, operators, an
 - ✅ Expression statements (standalone expressions outside declarations)
 - ✅ Added sizeof operator and type cast expressions
 - ✅ Expression parsing testing (~370 test cases, 100% pass rate , except complex ternary)
-- ⏭️ Next: ternary operator bug fix
 - ⏭️ Next: Statement parsing (if/else, goto/labels, for, switch, return, etc.)
 
 ---
