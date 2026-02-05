@@ -205,11 +205,22 @@ void printParametersRecursive(ofstream& out, const vector<ParameterNode>& params
             out << param.paramType.trBaseArray[0];
         }
         
-        // Print parameter name with modifiers
+        // Find and print parameter name first, then modifiers
+        string paramName = "";
         for(const auto& nameProp : param.paramName.namePropArray) {
             if(nameProp.type == VAR_NAME) {
-                out << " " << nameProp.varName;
-            } else if(nameProp.type == POINTOR) {
+                paramName = nameProp.varName;
+            }
+        }
+        
+        // Print name if present
+        if(!paramName.empty()) {
+            out << " " << paramName;
+        }
+        
+        // Print modifiers (pointers, arrays, functions) after name
+        for(const auto& nameProp : param.paramName.namePropArray) {
+            if(nameProp.type == POINTOR) {
                 for(int j = 0; j < nameProp.numPointor; j++) {
                     out << "*";
                 }
@@ -220,32 +231,35 @@ void printParametersRecursive(ofstream& out, const vector<ParameterNode>& params
             }
         }
         
-        // Show declarator sequence
-        out << " [";
-        for(size_t j = 0; j < param.paramName.namePropArray.size(); j++) {
-            if(j > 0) out << ", ";
-            const auto& nameProp = param.paramName.namePropArray[j];
-            switch(nameProp.type) {
-                case VAR_NAME: 
-                    out << "VAR_NAME"; 
-                    break;
-                case POINTOR: 
-                    out << "POINTOR(" << nameProp.numPointor << ")"; 
-                    break;
-                case ARRAY: 
-                    out << "ARRAY";
-                    break;
-                case FUNC: 
-                    out << "FUNC(" << nameProp.funcParams.size() << ")";
-                    break;
+        // Show declarator sequence in brackets
+        if(!param.paramName.namePropArray.empty()) {
+            out << " [";
+            for(size_t j = 0; j < param.paramName.namePropArray.size(); j++) {
+                if(j > 0) out << ", ";
+                const auto& nameProp = param.paramName.namePropArray[j];
+                switch(nameProp.type) {
+                    case VAR_NAME: 
+                        out << "VAR_NAME"; 
+                        break;
+                    case POINTOR: 
+                        out << "POINTOR(" << nameProp.numPointor << ")"; 
+                        break;
+                    case ARRAY: 
+                        out << "ARRAY";
+                        break;
+                    case FUNC: 
+                        out << "FUNC(" << nameProp.funcParams.size() << ")";
+                        break;
+                }
             }
+            out << "]";
         }
-        out << "]\n";
+        out << "\n";
         
         // Recursively print nested function parameters
         for(const auto& nameProp : param.paramName.namePropArray) {
             if(nameProp.type == FUNC && !nameProp.funcParams.empty()) {
-                out << indent << "  Parameters (" << nameProp.funcParams.size() << "):\n";
+                out << indent << "  Nested Function Parameters (" << nameProp.funcParams.size() << "):\n";
                 printParametersRecursive(out, nameProp.funcParams, indent + "    ");
             }
         }
@@ -270,7 +284,7 @@ void FunctionDeclarationNode::print(ofstream& out) {
         out << tokenToReadable(bt) << " ";
     }
     
-    // Print function name
+    // Print function name with full declarator sequence
     out << "\n      Function Name: ";
     for(const auto& prop : funcName.namePropArray) {
         if(prop.type == VAR_NAME) {
@@ -278,7 +292,43 @@ void FunctionDeclarationNode::print(ofstream& out) {
         }
     }
     
-    // Print parameters
+    // Print declarator sequence in brackets
+    out << " [";
+    for(size_t i = 0; i < funcName.namePropArray.size(); i++) {
+        if(i > 0) out << ", ";
+        const auto& prop = funcName.namePropArray[i];
+        switch(prop.type) {
+            case VAR_NAME: 
+                out << "VAR_NAME"; 
+                break;
+            case POINTOR: 
+                out << "POINTOR(" << prop.numPointor << ")"; 
+                break;
+            case ARRAY: 
+                out << "ARRAY";
+                if(prop.arrayExpr) {
+                    out << "(index)";
+                } else {
+                    out << "(N/A)";
+                }
+                break;
+            case FUNC: 
+                out << "FUNC(";
+                if(!prop.funcParams.empty()) {
+                    out << prop.funcParams.size();
+                    if(prop.isVariadic) out << ", ...";
+                } else if(prop.isVariadic) {
+                    out << "...";
+                } else {
+                    out << "0";
+                }
+                out << ")";
+                break;
+        }
+    }
+    out << "]";
+    
+    // Print main function parameters
     out << "\n      Parameters: ";
     if(paramsArray.empty()) {
         out << "()";
@@ -289,6 +339,30 @@ void FunctionDeclarationNode::print(ofstream& out) {
         }
         out << "\n";
         printParametersRecursive(out, paramsArray, "        ");
+    }
+    
+    // Print return type modifiers (like pointer-to-function)
+    // This shows parameters that are part of the function's return type
+    bool hasReturnTypeModifiers = false;
+    for(const auto& prop : funcName.namePropArray) {
+        if(prop.type == FUNC && !prop.funcParams.empty() && &prop != &funcName.namePropArray[1]) {
+            // Skip the first FUNC (that's the main function), print others
+            hasReturnTypeModifiers = true;
+        }
+    }
+    
+    if(hasReturnTypeModifiers) {
+        out << "\n      Return Type Modifiers:\n";
+        int funcIndex = 0;
+        for(const auto& prop : funcName.namePropArray) {
+            if(prop.type == FUNC) {
+                funcIndex++;
+                if(funcIndex > 1 && !prop.funcParams.empty()) { // Skip first FUNC
+                    out << "        Function signature (" << prop.funcParams.size() << " params):\n";
+                    printParametersRecursive(out, prop.funcParams, "          ");
+                }
+            }
+        }
     }
     out << "\n";
 }

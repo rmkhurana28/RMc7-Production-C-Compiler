@@ -675,7 +675,8 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 //}
             }
             else{
-                cout << "Unknown token error in star\n";
+                cout << this->parser.tokens[this->parser.currentPos].data;
+                cout << " || Unknown token error in star\n";
                 exit(1);
             }
 
@@ -781,6 +782,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 this->parser.currentPos++; // advance 1 token , skip (
                 bracketStackCount++; // increase current bracket stack count by 1
                 this->getVarName(typeHolder , isFuncParam); // recursive call
+                bracketStackCount--;
                 // used to evaluate stars when recursion ends
                 // Only apply if stars were deferred (init Brack was set AND stars exist)
                 //cout << "DEBUG after recursion: initBrackCount=" << initBrackCount 
@@ -816,11 +818,13 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 continue;
             }            
             
-        } else if(current.type == RPAREN){ // found )
-            if(isFuncParam){ // for function parameters - check THIS FIRST!                
+        } else if(current.type == RPAREN){ // found )            
+
+            if(isFuncParam){ // for function parameters - check THIS FIRST!                 
+
                 return nullptr;
             } else if(bracketStackCount > 0){ // for recursion case
-                bracketStackCount--; // reduce bracket stack count by 1
+                // bracketStackCount--; // reduce bracket stack count by 1
                 // Don't add stars here - they're handled after recursion returns (line 677-682)
                 return nullptr;
             } else if(gotoHelper && addStarCount > 0) { // goto * case , for params
@@ -1087,7 +1091,7 @@ int varNameHolder::checkValidity(){
 
     for(size_t i=0 ; i<this->namePropArray.size()-1 ; i++){
         if(this->namePropArray[i].type == FUNC){
-            if(this->namePropArray[i+1].type == FUNC){
+            if(this->namePropArray[i+1].type == FUNC){                
                 cout << "F + F\n";
                 return -1;
             } else if(this->namePropArray[i+1].type == ARRAY){
@@ -1561,7 +1565,7 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
             }
             currentPos++; // skip ?
             expectedStack.push_back(OP_COLON);
-            ExpressionNode* ifTrue = parseExpression(3 , false , -1);
+            ExpressionNode* ifTrue = parseExpression(0 , false , -1);
             
             if(tokens[currentPos].type != OP_COLON){
                 cout << "Expected : here\n";
@@ -1569,7 +1573,7 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
             }
             currentPos++; // skip :
             expectedStack.pop_back();
-            ExpressionNode* ifFalse = parseExpression(3 , false , -1);
+            ExpressionNode* ifFalse = parseExpression(0 , false , -1);
             
             left = new TernaryOpNode(left , ifTrue , ifFalse);
             // 

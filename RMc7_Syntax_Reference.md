@@ -64,6 +64,27 @@ volatile int hardware_port;
 int *restrict ptr;
 ```
 
+**Design Rule: No Duplicate Qualifiers**
+
+The same type qualifier or modifier cannot appear more than once in a declaration.
+
+> **Note:** `long long` is **allowed** - this is a valid size modifier combination, not a duplicate.
+
+**Supported:**
+```c
+const int _x;
+const volatile int _y;
+long long int _ll;          // Valid - long long is a single modifier
+unsigned long long _ull;    // Valid
+```
+
+**Not Supported:**
+```c
+const const int _x;         // Duplicate const - NOT ALLOWED
+volatile volatile int _y;   // Duplicate volatile - NOT ALLOWED
+unsigned unsigned int _z;   // Duplicate unsigned - NOT ALLOWED
+```
+
 ### 1.4 Multiple Declarations
 
 ✅ **Basic multiple declarations:**
@@ -129,18 +150,44 @@ int *(*(**ptr)[10])(int);    // Pointer to pointer to array of pointers to funct
 
 ### 2.3 Function Parameters
 ✅ Named parameters  
-✅ Unnamed parameters  
+✅ Unnamed parameters (simple types only)  
 ✅ Variadic functions (`...`)  
 ✅ Empty parameter list `()`  
-✅ `void` parameter list `(void)`
+🟡 `void` parameter list `(void)` - **Known Bug**
 
 **Examples:**
 ```c
 int add(int a, int b);           // Named parameters
 int subtract(int, int);          // Unnamed parameters
 int printf(const char *fmt, ...); // Variadic
-int get_random(void);            // Explicit void
 int legacy_func();               // Empty (old-style)
+```
+
+🟡 **`void` parameters have a known bug** - Avoid `(void)` parameter lists and `void *` parameters until fixed.
+
+**Design Rule: Anonymous Parameters**
+
+Anonymous parameters (without names) can only use **simple type specifiers with optional pointers**. Nested brackets (function pointers, array pointers) are **NOT allowed** for anonymous parameters.
+
+**Supported (Anonymous - Simple Types Only):**
+```c
+int func(int, char, double);     // Simple types - OK
+int func(int, int *, char **);   // Pointers - OK  
+int func(int, int **, int ***);  // Multi-level pointers - OK
+```
+
+**Not Supported (Anonymous + Nested Brackets):**
+```c
+int func(int (*)(int));          // Anonymous function pointer - NOT OK
+int func(int (*)[10]);           // Anonymous array pointer - NOT OK
+int func(int (*(*)[10])(int));   // Anonymous complex - NOT OK
+```
+
+**Named parameters support full declarator syntax:**
+```c
+int func(int (*_fp)(int));                  // Function pointer WITH name - OK
+int func(int (*_arr)[10]);                  // Array pointer WITH name - OK
+int func(int (*(*_name)[10])(int));         // Complex nested WITH name - OK
 ```
 
 ---
@@ -332,8 +379,6 @@ ptr->x                // Pointer member
 func(a, b)            // Function call
 ```
 
-🟡 **Ternary operator** - Currently has known bugs with complex nesting, fix in progress.
-
 ### 4.8 Operator Precedence
 ✅ All 15 precedence levels correctly implemented  
 ✅ Correct associativity (left-to-right, right-to-left)  
@@ -480,7 +525,7 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 - ✅ **Phase 2 (60%):** Type system, declarators, expressions
 
 **In Progress:**
-- 🟡 Ternary operator bug fix
+- 🟡 `void` parameter handling (known bug)
 - 🟡 Statement parsing
 
 **Upcoming:**

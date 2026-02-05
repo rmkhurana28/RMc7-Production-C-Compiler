@@ -1,190 +1,111 @@
+// === BASIC TERNARY ===
+int _t1 = 1 ? 10 : 20;
+int _t2 = 0 ? 100 : 200;
+int _t3 = 5 > 3 ? 1 : 0;
+int _t4 = 10 < 5 ? 999 : 111;
+int _t5 = 10 == 10 ? 50 : 60;
+int _t6 = 10 != 10 ? 70 : 80;
 
+// === NESTED TERNARY - RIGHT ASSOCIATIVE ===
+int _n1 = 1 ? 2 ? 3 : 4 : 5;
+int _n2 = 0 ? 2 ? 3 : 4 : 5;
+int _n3 = 1 ? 0 ? 3 : 4 : 5;
+int _n4 = 1 ? 2 : 3 ? 4 : 5;
+int _n5 = 0 ? 2 : 3 ? 4 : 5;
+int _n6 = 0 ? 2 : 0 ? 4 : 5;
 
-// int tr4 = a ? b : c ? d : e ? f : g;
-// currently ternary is acting like LR , but need to make it RL
+// === DEEP NESTED TERNARY ===
+int _d1 = 1 ? 1 ? 1 ? 1 ? 100 : 99 : 98 : 97 : 96;
+int _d2 = 0 ? 1 ? 1 ? 1 ? 100 : 99 : 98 : 97 : 96;
+int _d3 = 1 ? 0 ? 1 ? 1 ? 100 : 99 : 98 : 97 : 96;
+int _d4 = 1 ? 1 ? 0 ? 1 ? 100 : 99 : 98 : 97 : 96;
+int _d5 = 1 ? 1 ? 1 ? 0 ? 100 : 99 : 98 : 97 : 96;
+int _d6 = 1 ? 1 ? 1 ? 1 ? 1 ? 1 ? 1 ? 1 : 2 : 3 : 4 : 5 : 6 : 7 : 8;
 
+// === TERNARY WITH ARITHMETIC ===
+int _a1 = 10 + 5 > 12 ? 100 + 50 : 200 - 50;
+int _a2 = 10 * 2 == 20 ? 5 * 5 * 5 : 6 / 2 / 1;
+int _a3 = 100 / 10 % 3 ? 1 + 2 + 3 + 4 : 10 - 5 - 2 - 1;
+int _a4 = (5 + 5) * 2 > 15 ? (10 + 20) * 3 : (30 - 10) / 2;
+int _a5 = 1 + 2 * 3 ? 4 + 5 * 6 : 7 + 8 * 9;
+int _a6 = 500 * 1000 > 400000 ? 12345 : 54321;
 
-// ============================================
-// EXTREME PRECEDENCE CHAINS
-// ============================================
-int p1 = a + b * c - d / e % f + g * h - i / j % k;
-int p2 = a << b + c * d - e >> f + g * h;
-int p3 = a | b ^ c & d | e ^ f & g | h ^ i & j;
-int p4 = a && b || c && d || e && f || g && h;
-int p5 = a == b != c == d != e < f > g <= h >= i;
-int p6 = a | b & c ^ d | e & f ^ g | h & i ^ j;
-int p7 = a << b << c << d >> e >> f >> g;
-int p8 = a + b - c + d - e + f - g + h - i + j;
-int p9 = a * b / c % d * e / f % g * h / i % j;
-int p10 = a || b && c | d ^ e & f == g < h << i + j * k;
+// === TERNARY WITH RELATIONAL ===
+int _r1 = 10 < 20 ? 20 < 30 ? 1 : 2 : 3;
+int _r2 = 10 > 20 ? 1 : 20 > 30 ? 2 : 3;
+int _r3 = 5 <= 5 ? 10 >= 10 ? 100 : 200 : 300;
+int _r4 = 1 == 1 ? 2 != 3 ? 111 : 222 : 333;
+int _r5 = (10 < 20) + (20 < 30) > 1 ? 1 : 0;
+int _r6 = 10 < 20 && 20 < 30 ? 50 > 40 || 30 > 40 ? 1 : 2 : 3;
 
-// ============================================
-// ASSIGNMENT CHAIN STRESS
-// ============================================
-int as1 = a = b = c = d = e = f = g = h = 100;
-int as2 = a += b -= c *= d /= e %= f = 10;
-int as3 = a &= b |= c ^= d <<= e >>= f = 5;
-int as4 = (a = 1) + (b = 2) + (c = 3) + (d = 4);
-int as5 = (a += b) * (c -= d) / (e *= f) + (g /= h);
-int as6 = a = (b = (c = (d = (e = 1))));
-int as7 = (a = b + c) * (d = e - f) + (g = h * i);
-int as8 = a = b = c += d += e *= f *= g = 1;
+// === TERNARY WITH LOGICAL ===
+int _l1 = 1 && 1 ? 100 : 200;
+int _l2 = 1 || 0 ? 100 : 200;
+int _l3 = 0 && 1 ? 100 : 200;
+int _l4 = 0 || 0 ? 100 : 200;
+int _l5 = !0 ? !1 ? 10 : 20 : 30;
+int _l6 = !!1 ? !!!0 ? 1 : 2 : 3;
+int _l7 = 1 && 1 && 1 ? 0 || 0 || 1 ? 5 : 6 : 7;
+int _l8 = (1 && 0) || (0 || 1) ? 1 : 0;
 
-// ============================================
-// UNARY MADNESS
-// ============================================
-int u1 = - - - - - - - - a;
-int u2 = + + + + + + + + b;
-int u3 = ! ! ! ! ! ! ! ! c;
-int u4 = ~ ~ ~ ~ ~ ~ ~ ~ d;
-int u5 = - + ~ ! - + ~ ! a;
-int u6 = ~ ! ~ ! ~ ! ~ ! b;
-int u7 = - - a * + + b - ~ ~ c + ! ! d;
-int u8 = ++a + ++b + ++c + ++d + ++e;
-int u9 = a++ + b++ + c++ + d++ + e++;
-int u10 = --a - --b - --c - --d - --e;
-int u11 = a-- - b-- - c-- - d-- - e--;
-int u12 = ++a * b-- + --c / d++ - ++e % f--;
-int u13 = -++a + +--b - ~c++ * !d--;
-int u14 = a+++b+++c+++d+++e;
-int u15 = a---b---c---d---e;
+// === TERNARY WITH BITWISE ===
+unsigned int _b1 = 255 & 15 ? 85 | 170 : 0;
+unsigned int _b2 = 255 ^ 255 ? 100 : 200;
+unsigned int _b3 = ~0 ? 1 : 0;
+unsigned int _b4 = 1 << 4 ? 255 >> 2 : 17 << 1;
+unsigned int _b5 = (240 & 15) ? 1 : (240 | 15) ? 2 : 3;
+unsigned int _b6 = 18 ^ 52 ? 86 & 120 : 154 | 1;
 
-// ============================================
-// FUNCTION CALL CHAOS
-// ============================================
-int fc1 = add(a, b) + add(c, d) + add(e, f) + add(g, h);
-int fc2 = add(a * b, c * d) + multiply(e / f, g / h);
-int fc3 = add(add(add(a, b), add(c, d)), add(add(e, f), add(g, h)));
-int fc4 = add(a + b + c, d + e + f) * add(g - h - i, j - k - l);
-int fc5 = -add(a, b) + ~add(c, d) - !add(e, f);
-int fc6 = add(a, b)++ + ++add(c, d) - add(e, f)-- * --add(g, h);
-int fc7 = add((a, b, c), (d, e, f)) + multiply((g, h), (i, j));
-int fc8 = add(a = 1, b = 2) + add(c += 3, d -= 4);
-int fc9 = add(++a, b++) * add(--c, d--) / add(~e, !f);
-int fc10 = compute(add(a, b), multiply(c, d), add(e, f), multiply(g, h));
-int fc11 = (add(a, b) + add(c, d)) * (multiply(e, f) - multiply(g, h));
-int fc12 = add(add(add(add(a, b), c), d), e) + add(a, add(b, add(c, add(d, e))));
+// === TERNARY WITH UNARY ===
+int _u1 = -10 < 0 ? -(-10) : -10;
+int _u2 = +5 > 0 ? +10 : -10;
+int _u3 = !0 ? !!1 : !!!1;
+int _u4 = ~0 != 0 ? ~(~100) : 0;
+int _u5 = -(-(-(-1))) ? 1 : 0;
+int _u6 = +-+-+-10 > 0 ? 1 : 0;
 
-// ============================================
-// SIZEOF STRESS
-// ============================================
-int sz1 = sizeof(int) + sizeof(char) + sizeof(float) + sizeof(double);
-int sz2 = sizeof(a) + sizeof(b) + sizeof(c) + sizeof(d);
-int sz3 = sizeof(int) * sizeof(char) - sizeof(float) / sizeof(double);
-int sz4 = -sizeof(int) + ~sizeof(char) - !sizeof(float);
-int sz5 = sizeof(a + b) + sizeof(c * d) + sizeof(e - f);
-int sz6 = sizeof(a = b) + sizeof(c += d) + sizeof(e *= f);
-int sz7 = sizeof(++a) + sizeof(b++) + sizeof(--c) + sizeof(d--);
-int sz8 = sizeof(-a) + sizeof(+b) + sizeof(~c) + sizeof(!d);
-int sz9 = add(sizeof(int), sizeof(char)) * sizeof(float);
-int sz10 = sizeof(add(a, b)) + sizeof(multiply(c, d));
-int sz11 = sizeof(int) << 2 >> 1 & 255 | 256;
-int sz12 = (sizeof(int) + sizeof(char)) * (sizeof(float) - sizeof(double));
+// === TERNARY WITH PARENTHESES ===
+int _p1 = (1 ? 2 : 3);
+int _p2 = (1 ? (2 ? 3 : 4) : 5);
+int _p3 = ((1 ? 2 : 3) ? (4 ? 5 : 6) : (7 ? 8 : 9));
+int _p4 = (((1))) ? (((2))) : (((3)));
+int _p5 = (1 ? 2 : 3) + (4 ? 5 : 6) * (7 ? 8 : 9);
+int _p6 = ((1 ? 2 : 3) + 4) ? ((5 ? 6 : 7) - 2) : ((8 ? 9 : 10) * 3);
 
-// ============================================
-// TYPE CAST MADNESS
-// ============================================
-int tc1 = (int)a + (int)b + (int)c + (int)d;
-int tc2 = (int)(float)(double)(char)(long)a;
-int tc3 = (int)a * (float)b + (double)c - (char)d;
-int tc4 = -(int)a + ~(float)b - !(double)c;
-int tc5 = (int)-a + (float)+b + (double)~c + (char)!d;
-int tc6 = (int)++a + (float)b++ + (double)--c + (char)d--;
-int tc7 = (int)(a + b) * (float)(c - d) / (double)(e * f);
-int tc8 = (int)add(a, b) + (float)multiply(c, d);
-int tc9 = (int)sizeof(float) + (float)sizeof(int);
-int tc10 = (int)(a = b) + (float)(c += d) + (double)(e *= f);
-int tc11 = (int)(a, b, c) + (float)(d, e, f);
-int tc12 = add((int)a, (float)b) * multiply((double)c, (char)d);
+// === TERNARY WITH MIXED OPERATORS ===
+int _m1 = 1 + 2 > 2 && 3 * 4 >= 12 ? 100 : 200;
+int _m2 = (1 < 2) + (3 > 2) ? (4 == 4) * 10 : (5 != 5) + 20;
+int _m3 = 10 & 2 ? 20 | 1 : 30 ^ 5;
+int _m4 = 1 << 2 > 2 ? 8 >> 1 : 16 >> 2;
+int _m5 = !0 && !!1 || !!!0 ? 1 : 0;
+int _m6 = 5 + 3 * 2 - 4 / 2 % 3 > 5 ? 1 && 1 || 0 : 0 || 0 && 1;
 
-// ============================================
-// COMMA OPERATOR INSANITY
-// ============================================
-int cm1 = (a, b, c, d, e, f, g, h, i, j);
-int cm2 = (a = 1, b = 2, c = 3, d = 4, a + b + c + d);
-int cm3 = (++a, ++b, ++c, a + b + c);
-int cm4 = (a++, b++, c++, d++, e++, a + b + c + d + e);
-int cm5 = ((a, b), (c, d), (e, f), (g, h));
-int cm6 = (a = 1, b = a + 1, c = b + 1, d = c + 1, a + b + c + d);
-int cm7 = add((a, b), (c, d)) + multiply((e, f), (g, h));
-int cm8 = (a, b) + (c, d) * (e, f) - (g, h) / (i, j);
-int cm9 = ((a = 1, a + 1), (b = 2, b + 2), (c = 3, c + 3));
-int cm10 = (add(a, b), multiply(c, d), compute(e, f, g, h));
+// === TERNARY USED AS SUB-EXPRESSION ===
+int _s1 = (1 ? 10 : 20) + (0 ? 30 : 40);
+int _s2 = (1 ? 5 : 10) * (1 ? 2 : 3);
+int _s3 = 100 / (1 ? 10 : 1);
+int _s4 = 100 - (0 ? 10 : 20) + (1 ? 5 : 15);
+int _s5 = (1 ? 2 : 3) << (1 ? 2 : 3);
+int _s6 = (1 ? 240 : 15) & (0 ? 170 : 85);
 
-// ============================================
-// BITWISE OPERATOR SYMPHONY
-// ============================================
-int bw1 = a & b & c & d & e & f & g & h;
-int bw2 = a | b | c | d | e | f | g | h;
-int bw3 = a ^ b ^ c ^ d ^ e ^ f ^ g ^ h;
-int bw4 = ~a & ~b | ~c ^ ~d & ~e | ~f ^ ~g & ~h;
-int bw5 = (a & b) | (c & d) ^ (e & f) | (g & h);
-int bw6 = a << 1 | b << 2 | c << 3 | d << 4;
-int bw7 = a >> 1 & b >> 2 & c >> 3 & d >> 4;
-int bw8 = (a | b) & (c | d) ^ (e | f) & (g | h);
-int bw9 = a & 255 | b & 65280 ^ c & 16711680;
-int bw10 = ~(a & b) | ~(c | d) ^ ~(e ^ f);
-int bw11 = a << b + c >> d - e & f * g | h / i;
-int bw12 = ((a & b) | (c ^ d)) & ((e | f) ^ (g & h));
+// === EXTREME NESTING ===
+int _e1 = 1 ? 1 ? 1 ? 1 ? 1 ? 1 ? 1 ? 1 ? 1 ? 1 ? 999 : 1 : 2 : 3 : 4 : 5 : 6 : 7 : 8 : 9 : 10;
+int _e2 = 0 ? 0 ? 0 ? 0 ? 0 : 1 : 2 : 3 : 4 ? 5 ? 6 : 7 : 8;
+int _e3 = (1 ? (1 ? (1 ? (1 ? (1 ? 100 : 99) : 98) : 97) : 96) : 95);
+int _e4 = ((((1 ? 2 : 3) ? 4 : 5) ? 6 : 7) ? 8 : 9) ? 10 : 11;
+int _e5 = 1 ? 2 ? 3 ? 4 ? 5 ? 6 ? 7 ? 8 ? 9 ? 10 ? 11 : 12 : 13 : 14 : 15 : 16 : 17 : 18 : 19 : 20 : 21;
+int _e6 = (1 + (2 ? 3 : 4)) * (5 ? (6 + (7 ? 8 : 9)) : 10) - (11 ? 12 : (13 ? 14 : 15));
 
-// ============================================
-// LOGICAL OPERATOR MAZE
-// ============================================
-int lg1 = a && b && c && d && e && f && g && h;
-int lg2 = a || b || c || d || e || f || g || h;
-int lg3 = a && b || c && d || e && f || g && h;
-int lg4 = !a && !b || !c && !d || !e && !f;
-int lg5 = (a && b) || (c && d) || (e && f) || (g && h);
-int lg6 = (a || b) && (c || d) && (e || f) && (g || h);
-int lg7 = !!a && ~~b || !!c && ~~d;
-int lg8 = a > 0 && b < 10 || c >= 5 && d <= 15;
-int lg9 = a == b && c != d || e < f && g > h;
-int lg10 = (a + b > c - d) && (e * f < g / h) || (i % j == k);
-int lg11 = !a || !b && !c || !d && !e || !f;
-int lg12 = a && b && c || d || e && f && g || h;
+// === TERNARY WITH COMMA OPERATOR ===
+int _c1 = (1, 2, 3) ? 10 : 20;
+int _c2 = 1 ? (1, 2, 100) : (3, 4, 200);
+int _c3 = (0, 0, 1) ? (5, 10, 15) : (20, 25, 30);
+int _c4 = ((1, 2), (3, 4)) ? ((5, 6), 7) : ((8, 9), 10);
 
-// ============================================
-// RELATIONAL + EQUALITY CHAINS
-// ============================================
-int rl1 = a < b < c < d < e;
-int rl2 = a > b > c > d > e;
-int rl3 = a <= b <= c <= d <= e;
-int rl4 = a >= b >= c >= d >= e;
-int rl5 = a == b == c == d == e;
-int rl6 = a != b != c != d != e;
-int rl7 = a < b == c > d != e <= f >= g;
-int rl8 = (a < b) == (c > d) != (e <= f);
-int rl9 = a + b < c + d == e - f > g - h;
-int rl10 = a * b <= c / d >= e % f != g + h;
-int rl11 = (a < b) + (c > d) - (e == f) * (g != h);
-int rl12 = !!(a < b) && !!(c > d) || !!(e == f);
-
-// ============================================
-// SHIFT OPERATOR STRESS
-// ============================================
-int sh1 = a << 1 << 2 << 3 << 4 << 5;
-int sh2 = a >> 1 >> 2 >> 3 >> 4 >> 5;
-int sh3 = a << 1 >> 2 << 3 >> 4 << 5;
-int sh4 = a << b + c >> d - e << f * g;
-int sh5 = (a + b) << (c + d) >> (e + f);
-int sh6 = a << 1 + b << 2 + c << 3 + d;
-int sh7 = a >> b - c >> d - e >> f - g;
-int sh8 = (a << 1) | (b << 2) | (c << 3) | (d << 4);
-int sh9 = (a >> 1) & (b >> 2) & (c >> 3) & (d >> 4);
-int sh10 = a * b << c / d >> e % f + g - h;
-int sh11 = ~a << 2 | ~b >> 3 ^ ~c << 4;
-int sh12 = sizeof(int) << 3 >> 1 + 2;
-
-// ============================================
-// MONSTER EXPRESSIONS (NO TERNARY)
-// ============================================
-int mon1 = a + b * c - d / e % f << g >> h & i | j ^ k && l || m;
-int mon2 = (a = b += c) * (d -= e *= f) + (g /= h %= i) - (j &= k |= l);
-int mon3 = add(a * b + c, multiply(d - e, f)) + compute(g, h, i, j) - add(k, l);
-int mon4 = ~!-+a + (int)sizeof(b) * add(c, d) / (e + f) % (g, h, i);
-int mon5 = a++ * ++b - c-- / --d + +e - -f & ~g | !h ^ i << j >> k;
-int mon6 = ((a + b) * (c - d)) << ((e / f) % (g + h)) >> ((i & j) | (k ^ l));
-int mon7 = add((a, b, c), (d, e, f)) * multiply((int)g, (float)h) + sizeof(int);
-int mon8 = (a = 1, b = 2, c = a + b) * (d = 3, e = 4, d + e) + (f++, g--, f + g);
-int mon9 = !!~~--++a + (int)(float)(double)b - sizeof(c + d) * add(e, f);
-int mon10 = a && b || c && d && e || f || g && h || i && j || k && l || m && n;
+// === TERNARY WITH TYPE MIXING ===
+double _tm1 = 1 ? 3.14 : 2.71;
+float _tm2 = 0 ? 1.5 : 2.5;
+long _tm3 = 1 > 0 ? 100 : 200;
+char _tm4 = 1 ? 'A' : 'B';
+double _tm5 = 10 > 5 ? 3.14159 * 2 : 2.71828 / 2;
+long long _tm6 = 1 && 1 ? 12345 : 54321;
