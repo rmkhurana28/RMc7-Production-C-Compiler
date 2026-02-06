@@ -639,7 +639,7 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 - ✅ Complete expression system
 - ✅ Statement system (complete)
 - ✅ Function definitions (complete)
-- 🟡 Error messages evaluation (in progress)
+- 🟡 Diagnostic Engine (in progress)
 - ➡️ Preprocessor
 
 ---
@@ -652,7 +652,7 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 
 **In Progress:**
 - 🟡 `void` parameter handling (known bug)
-- 🟡 Error messages evaluation
+- 🟡 Diagnostic Engine
 
 **Upcoming:**
 - ➡️ `typedef`, `struct`, `union`, `enum` parsing
