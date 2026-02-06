@@ -53,6 +53,7 @@ class dataTypeHolder{
     friend class varNameHolder;  // Allow varNameHolder to access private members
     friend class VariableDeclarationNode;  // Allow VariableDeclarationNode to print
     friend class FunctionDeclarationNode;  // Allow FunctionDeclarationNode to print
+    friend class FunctionDefinitionNode;  // Allow FunctionDefinitionNode to print
     friend class ParameterNode;  // Allow ParameterNode access for recursive printing
     friend class CastNode;  // Allow CastNode to print type information
     friend class SizeofNode;  // Allow SizeofNode to print type information
@@ -95,6 +96,7 @@ public:
 class varNameHolder{
     friend class VariableDeclarationNode;  // Allow VariableDeclarationNode to print
     friend class FunctionDeclarationNode;  // Allow FunctionDeclarationNode to print
+    friend class FunctionDefinitionNode;  // Allow FunctionDefinitionNode to print
     friend class ParameterNode;  // Allow ParameterNode access for recursive printing
     friend void printParametersRecursive(ofstream&, const vector<ParameterNode>&, const string&);  // Allow helper function
 private:
@@ -122,14 +124,16 @@ public:
 };
 
 // Static function to get operator precedence (15 = highest, 1 = lowest)
-static int getOperatorPrecedence(TokenType op);
+int getOperatorPrecedence(TokenType op);
 
-// Static function to generate current left expression node
-static ExpressionNode* generateCurrentLeftExpressionNode(Parser& parser);
+bool isThisTokenUnaryOp(TokenType op);
 
-static bool isThisTokenUnaryOp(TokenType op);
+// Forward declarations
+class Parser;
+class BlockExpressionNode;
 
-
+// Function to parse a block of statements
+BlockExpressionNode* parseBlock(Parser& parser);
 
 
 #endif

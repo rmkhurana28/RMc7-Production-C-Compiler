@@ -18,6 +18,7 @@ src/**/*.o
 src/Main.o
 src/lexer/Lexer.o
 
+.vscode/
 
 insights/
 insights/rmc7_clones.json

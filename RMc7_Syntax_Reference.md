@@ -1,7 +1,10 @@
 # RMc7 Syntax Reference
 
-**Version:** Phase 1 Complete | Phase 2 In Progress (~60%)  
+**Version:** Phase 1 Complete | Phase 2 In Progress (~80%)  
 **Target:** 90-95% ISO C Core Features
+
+> **Note:** This syntax reference describes only the syntactic structure of the language.  
+> ➡️ Position-validity rules (e.g., checking whether `break` appears inside a loop or `case` inside a switch) are not yet implemented and are planned as an upcoming feature.
 
 ---
 
@@ -417,30 +420,131 @@ a + b;  // Valid but useless
 ```
 
 ### 5.2 Selection Statements
-➡️ `if` statement  
-➡️ `if-else` statement  
-➡️ `switch` statement with `case` and `default`
+✅ `if` statement  
+✅ `if-else` statement  
+✅ `switch` statement with `case` and `default`
+
+**Examples:**
+```c
+// With braces
+if (x > 10) {
+    return x;
+}
+
+if (x > 0) {
+    x = x + 1;
+} else {
+    x = 0;
+}
+
+// Without braces (single statement)
+if (x > 10)
+    return x;
+
+if (x > 0)
+    x = x + 1;
+else
+    x = 0;
+
+switch (x) {
+    case 1:
+    case 2:
+        x = x + 10;
+        break;
+    default:
+        x = 0;
+}
+```
 
 ### 5.3 Iteration Statements
-➡️ `while` loop  
-➡️ `do-while` loop  
-➡️ `for` loop
+✅ `while` loop  
+✅ `do-while` loop  
+✅ `for` loop (declaration init, expression init, empty components)
+
+**Examples:**
+```c
+// With braces
+while (x > 0) {
+    x--;
+}
+
+do {
+    x = x + 1;
+} while (x < 10);
+
+for (int i = 0; i < 10; i++) {
+    sum = sum + i;
+}
+
+// Without braces (single statement)
+while (x > 0)
+    x--;
+
+do
+    x = x + 1;
+while (x < 10);
+
+for (int i = 0; i < 10; i++)
+    sum = sum + i;
+
+// For loop variants
+for (;;) {          // All components empty
+    break;
+}
+
+for (i = 0; ; i++) {  // Empty condition
+    if (i > 5) break;
+}
+```
 
 ### 5.4 Jump Statements
-➡️ `break`  
-➡️ `continue`  
-➡️ `return`  
-➡️ `goto`
+✅ `break`  
+✅ `continue`  
+✅ `return` (void and valued)  
+✅ `goto`
+
+**Examples:**
+```c
+break;
+continue;
+return;          // Void return
+return x + 1;    // Valued return
+goto end;
+```
 
 ### 5.5 Labeled Statements
-➡️ Labels for `goto`  
-➡️ `case` labels  
-➡️ `default` label
+✅ Labels for `goto`  
+✅ `case` labels (with expressions)  
+✅ `default` label
+
+**Examples:**
+```c
+end:
+return x;
+
+case 1 + 2:
+    break;
+
+default:
+    return 0;
+```
 
 ### 5.6 Compound Statements
-➡️ Blocks `{ }`  
-➡️ Nested blocks  
-➡️ Block-scoped declarations
+✅ Blocks `{ }`  
+✅ Nested blocks  
+✅ Block-scoped declarations
+
+**Examples:**
+```c
+{
+    int x = 10;
+    if (x > 0) {
+        while (x > 0) {
+            x--;
+        }
+    }
+}
+```
 
 ---
 
@@ -448,9 +552,29 @@ a + b;  // Valid but useless
 
 ✅ Function declarations  
 ✅ Function calls  
-➡️ Function definitions  
-➡️ Return statements  
-➡️ Recursive functions
+✅ Function definitions  
+✅ Return statements (void and valued)  
+✅ Recursive functions
+
+**Examples:**
+```c
+int add(int a, int b);          // Declaration
+
+int add(int a, int b) {         // Definition
+    return a + b;
+}
+
+int factorial(int n) {          // Recursive
+    if (n <= 1) {
+        return n;
+    }
+    return n * factorial(n - 1);
+}
+
+void do_nothing() {             // Void function
+    return;
+}
+```
 
 ---
 
@@ -481,13 +605,14 @@ The goal is to support full ISO C preprocessing, including:
 
 ## 8. Testing Status
 
-### Completed Tests (620+ test cases, 100% pass rate)
+### Completed Tests (720+ test cases, 100% pass rate)
 
 - ✅ **Type System Validation:** 87 tests
 - ✅ **Declarator Parsing:** 100+ tests (simple pointers, arrays, complex nesting, function pointers)
 - ✅ **Function Parameters:** 50+ tests (named, unnamed, variadic)
 - ✅ **Expression Parsing:** ~370 tests (all operators, precedence, associativity)
 - ✅ **Type Cast & Sizeof:** ~370 tests
+- ✅ **Control Flow Statements:** ~100 tests (if/else, while, do-while, for, switch/case/default, break, continue, return, goto/labels, nested structures, function definitions)
 
 ---
 
@@ -508,12 +633,13 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 
 **Target:** 90-95% ISO C core features
 
-**Current Coverage (Parser Phase):** ~60%
+**Current Coverage (Parser Phase):** ~80%
 - ✅ Complete type system
 - ✅ Complete declarator system
 - ✅ Complete expression system
-- 🟡 Statement system (in progress)
-- ➡️ Function definitions
+- ✅ Statement system (complete)
+- ✅ Function definitions (complete)
+- 🟡 Error messages evaluation (in progress)
 - ➡️ Preprocessor
 
 ---
@@ -522,15 +648,15 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 
 **Completed:**
 - ✅ **Phase 1:** Lexical Analysis (100%)
-- ✅ **Phase 2 (60%):** Type system, declarators, expressions
+- ✅ **Phase 2 (80%):** Type system, declarators, expressions, statements, function definitions
 
 **In Progress:**
 - 🟡 `void` parameter handling (known bug)
-- 🟡 Statement parsing
+- 🟡 Error messages evaluation
 
 **Upcoming:**
-- ➡️ Control flow statements (if, while, for, switch)
-- ➡️ Function definitions
+- ➡️ `typedef`, `struct`, `union`, `enum` parsing
+- ➡️ Position-validity rules (semantic context checks)
 - ➡️ Preprocessor
 - ➡️ Semantic analysis
 - ➡️ IR generation

@@ -840,7 +840,18 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 cout << "Unknown ) found\n";
                 exit(1);
             }
-        } else{
+        } else if(current.type == LBRACE){
+            // need proper evlauation again when dealing wiht struct/enum/union and all
+
+            /*
+                CAREFUL || NEED FURTHER ATTENTION AND EVALUATION
+            */
+
+            break;
+        }
+
+        else{
+            cout << "Token = " << this->parser.tokens[this->parser.currentPos].data << " | ";
             cout << "Error this one\n";
             exit(1);
         }
@@ -1074,7 +1085,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
         
         
-    } else if(current.type == RBRACE){ // func definition
+    } else if(current.type == LBRACE){ // func definition
         
         // validate if varName is syntactical valid for variable
         if(this->checkValidity() == -1){
@@ -1092,6 +1103,12 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
         // evaluate block inside func for func definitiuon
         // evaluate block here
+
+        BlockExpressionNode* body = parseBlock(this->parser);
+
+        FunctionDefinitionNode* funcDef = new FunctionDefinitionNode(&typeHolder , this , paramList  , isVariad , body);
+
+        return funcDef;
 
         // generate func defi node 
 
@@ -1274,6 +1291,8 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
         expectedStack.push_back(RPAREN);
     } else if(needManualPushOfRBrackets == 3){
         expectedStack.push_back(RBRACKET);
+    } else if(needManualPushOfRBrackets == 4){
+        expectedStack.push_back(OP_COLON);
     }
 
     // static ExpressionNode* temp = nullptr;
@@ -1380,7 +1399,7 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
             left = parseExpression(0 , false , -1);
             currToken = tokens[currentPos]; // update token 
             if(currToken = tokens[currentPos] , currToken.type != RPAREN){
-                cout << "Expected closing )\n";
+                cout << "Expected closing ) in this position\n";
                 exit(1);
             }
             expectedStack.pop_back();
@@ -1392,7 +1411,7 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
     } else if(currToken.type == LBRACE){ // found {
         currToken = tokens[++currentPos]; // skip {
         expectedStack.push_back(RBRACE);
-        vector<ExpressionNode*> myData;
+        vector<ASTNode*> myData;
             if(currToken.type != RBRACE){                
 
                 multiData:
@@ -1458,6 +1477,9 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
 
         if(currToken.type == OP_COLON){
             if(!expectedStack.empty() && expectedStack.back() == OP_COLON){
+                if(needManualPushOfRBrackets == 4){
+                    expectedStack.pop_back();
+                }
                 return left;
             }
 
@@ -2054,9 +2076,7 @@ bool dataTypeHolder::validateTypeCast(){
     }
 }
 
-bool Parser::isThisParenForTypeCast(){
-
-    
+bool Parser::isThisParenForTypeCast(){    
 
     Token evaToken = tokens[currentPos+1];
     
@@ -2088,7 +2108,7 @@ void dataTypeHolder::rejectOnlyVoid(){
     if(this->baseTypeArray.size() != 0 && this->baseTypeArray.back() == KEYWORD_VOID){
         // void exist
 
-        for(int i=0 ; i<this->starDataArray.size() ; i++){
+        for(size_t i=0 ; i<this->starDataArray.size() ; i++){
             if(starDataArray[i].typeBeforeStar == KEYWORD_VOID && starDataArray[i].numOfStars>0) return;
         }
 
@@ -2098,4 +2118,30 @@ void dataTypeHolder::rejectOnlyVoid(){
 
     return;
 }
+
+BlockExpressionNode* parseBlock(Parser& parser){
+    vector<ASTNode*> blockASTs;
+
+    if(parser.tokens[parser.currentPos].type != LBRACE){
+        cout << "Expected { to start block\n";
+        exit(1);
+    }
+
+    parser.currentPos++; // skip {
+
+    while(parser.currentPos < parser.tokens.size() && parser.tokens[parser.currentPos].type != RBRACE){
+        blockASTs.push_back(parser.startParsingOfCurrentToken());
+    }
+
+    if(parser.currentPos >= parser.tokens.size() || parser.tokens[parser.currentPos].type != RBRACE){
+        cout << "Expected } to close block\n";
+        exit(1);
+    }
+
+    parser.currentPos++; // skip }
+
+    return new BlockExpressionNode(blockASTs);
+    
+}
+
 

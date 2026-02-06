@@ -17,6 +17,7 @@ class Parser {
     friend class dataTypeHolder; // allows dataTypeHolder to access private section of this class
     friend class varNameHolder; // allows varNameHolder to access private section of this class
     friend class ParameterNode;
+    friend BlockExpressionNode* parseBlock(Parser& parser); // allows parseBlock function to access private members
 private:
     vector<Token> tokens;
     size_t currentPos;
@@ -24,8 +25,8 @@ private:
     // array to store all the AST
     vector<ASTNode*> allAST;
     
-    // array to store expression statements
-    vector<ExpressionStatementNode*> allStmts;
+    // array to store all statements (expression statements, control flow, etc.)
+    vector<StatementNode*> allStmts;
     
     // type registry for the struct/union/enum data types
     unordered_map<string, string> typeRegisry;
@@ -35,7 +36,8 @@ private:
     
     // Add your helper methods here
     DeclarationNode* parseCurrentDecl();
-    void parseExpressionStatement();
+    StatementNode* parseExpressionStatement();
+    ASTNode* startParsingOfCurrentToken();
 
     // check
     bool isThisTokenDataTypeOrPropToken(Token currToken);
@@ -59,6 +61,29 @@ private:
 
     // Expression parsing method
     ExpressionNode* parseExpression(short initPrec , bool stopAtComma, int needManualPushOfBrackets);
+
+    // Control flow statements
+    StatementNode* parseIf();
+    StatementNode* parseFor();
+    StatementNode* parseWhile();
+    StatementNode* parseDoWhile();
+    StatementNode* parseSwitch();
+    StatementNode* parseCaseLabel();
+    StatementNode* parseDefaultLabel();
+    
+    // Structured types
+    DeclarationNode* parseStruct();
+    DeclarationNode* parseEnum();
+    DeclarationNode* parseUnion();
+    DeclarationNode* parseTypedef();
+    
+    // Jump statements
+    StatementNode* parseReturn();
+    StatementNode* parseContinue();
+    StatementNode* parseBreak();
+    StatementNode* parseGoto();
+    StatementNode* parseLabel();
+
     
 public:
     Parser(const vector<Token>& tokenList);
@@ -73,7 +98,7 @@ public:
         return tokens;
     }
     
-    vector<ExpressionStatementNode*> getStatements(){
+    vector<StatementNode*> getStatements(){
         return allStmts;
     }
 

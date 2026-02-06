@@ -10,6 +10,7 @@ using namespace std;
 
 // Forward declarations
 class ExpressionStatementNode;
+class StatementNode;
 
 // ============================================================================
 // Abstract base class for all declaration nodes
@@ -68,9 +69,21 @@ public:
 };
 
 class FunctionDefinitionNode : public DeclarationNode {
+private:
+    dataTypeHolder funcDefType; // to store the return type of the func
+    varNameHolder funcName; // to store the function name
+
+    // storage to store parameters
+    vector<ParameterNode> paramsArray; // array to store all the params
+
+    bool isVariadic; // true if function accepts variable parameters [like int param1 , ...]
+    
+    BlockExpressionNode* funcBody; // function body block
+
 public:
-    FunctionDefinitionNode() {}
-    ~FunctionDefinitionNode() {}
+    FunctionDefinitionNode(dataTypeHolder* retType, varNameHolder* name, vector<ParameterNode> params, bool isVar, BlockExpressionNode* body);
+    ~FunctionDefinitionNode();
+    void print(ofstream& out) override;
 };
 
 class StructDeclarationNode : public DeclarationNode {
@@ -144,6 +157,6 @@ public:
 };
 
 // Helper function to print statements - declared here
-void printStatementsToFile(ofstream& out, const vector<ExpressionStatementNode*>& statements);
+void printStatementsToFile(ofstream& out, const vector<StatementNode*>& statements);
 
 #endif

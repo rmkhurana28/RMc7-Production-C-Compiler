@@ -216,12 +216,11 @@ public:
 };
 
 class BlockExpressionNode : public ExpressionNode {
-private:
-    vector<ExpressionNode*> expressions; // to store block of expressions (e.g., {1, 2, 3})
+public:
+    vector<ASTNode*> expressions; // to store block of expressions/statements (e.g., {1, 2, 3} or compound statements)
     void print(ofstream& out, const string& indent = "") const override;
 
-public:
-    BlockExpressionNode(vector<ExpressionNode*> exprs);
+    BlockExpressionNode(vector<ASTNode*> exprs);
     ~BlockExpressionNode();
 };
 

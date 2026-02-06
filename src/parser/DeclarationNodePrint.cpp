@@ -1,6 +1,7 @@
 #include "DeclarationNode.h"
 #include "StatementNode.h"
 #include "../lexer/Token.h"
+#include <sstream>
 
 // Helper function to convert token type to readable C keyword
 string tokenToReadable(TokenType type) {
@@ -451,6 +452,106 @@ void FunctionDeclarationNode::print(ofstream& out) {
     out << "\n";
 }
 
+void FunctionDefinitionNode::print(ofstream& out) {
+    out << "      Return Type: ";
+    
+    // Print storage class
+    for(auto sc : funcDefType.storageClassArray) {
+        out << tokenToReadable(sc) << " ";
+    }
+    
+    // Print sign modifiers
+    for(auto sm : funcDefType.signModifiersArray) {
+        out << tokenToReadable(sm) << " ";
+    }
+    
+    // Print size modifiers
+    for(auto szm : funcDefType.sizeModifiersArray) {
+        out << tokenToReadable(szm) << " ";
+    }
+    
+    // Print qualifiers
+    for(auto tq : funcDefType.typeQualifiersArray) {
+        out << tokenToReadable(tq) << " ";
+    }
+    
+    // Print base type
+    if(!funcDefType.baseTypeArray.empty()) {
+        out << tokenToReadable(funcDefType.baseTypeArray[0]);
+    }
+    
+    // Print stars from return type
+    for(const auto& starData : funcDefType.starDataArray) {
+        for(int j = 0; j < starData.numOfStars; j++) {
+            out << "*";
+        }
+    }
+    
+    out << "\n";
+    
+    out << "      Function Name: ";
+    for(const auto& prop : funcName.namePropArray) {
+        if(prop.type == VAR_NAME) {
+            out << prop.varName;
+        }
+    }
+    out << "\n";
+    
+    out << "      Parameters (" << paramsArray.size() << "):\n";
+    if(!paramsArray.empty()) {
+        printParametersRecursive(out, paramsArray, "        ");
+    } else {
+        out << "        (no parameters)\n";
+    }
+    
+    if(isVariadic) {
+        out << "      Variadic: Yes\n";
+    }
+    
+    out << "      Function Body (" << (funcBody ? funcBody->expressions.size() : 0) << " AST nodes):\n";
+    if(funcBody && !funcBody->expressions.empty()) {
+        for(size_t i = 0; i < funcBody->expressions.size(); i++) {
+            out << "\n";
+            out << "        ---- Body Node #" << (i+1) << " ----\n";
+            if(funcBody->expressions[i]) {
+                // Check if it's a statement
+                StatementNode* stmt = dynamic_cast<StatementNode*>(funcBody->expressions[i]);
+                if(stmt) {
+                    stmt->print(out, "        ");
+                } else {
+                    // Check if it's a declaration
+                    DeclarationNode* decl = dynamic_cast<DeclarationNode*>(funcBody->expressions[i]);
+                    if(decl) {
+                        // Write to a temporary file to capture output
+                        ofstream tempFile(".temp_decl_output.txt");
+                        decl->print(tempFile);
+                        tempFile.close();
+                        
+                        // Read back and add indentation to each line
+                        ifstream tempRead(".temp_decl_output.txt");
+                        string line;
+                        while(getline(tempRead, line)) {
+                            if(!line.empty()) {
+                                out << "  " << line << "\n";
+                            }
+                        }
+                        tempRead.close();
+                        remove(".temp_decl_output.txt");
+                    } else {
+                        out << "        [Unknown node type]\n";
+                    }
+                }
+            } else {
+                out << "        [NULL node]\n";
+            }
+        }
+    } else {
+        out << "        (empty body)\n";
+    }
+    
+    out << "\n";
+}
+
 void ProgramNode::printAST(ofstream& out) {
     out << "\n========================================\n";
     out << "            DECLARATIONS AST           \n";
@@ -481,7 +582,7 @@ void ProgramNode::printAST(ofstream& out) {
 }
 
 // Function to print expression statements
-void printStatementsToFile(ofstream& out, const vector<ExpressionStatementNode*>& statements) {
+void printStatementsToFile(ofstream& out, const vector<StatementNode*>& statements) {
     if(statements.empty()) return;
     
     out << "\n========================================\n";
@@ -491,7 +592,11 @@ void printStatementsToFile(ofstream& out, const vector<ExpressionStatementNode*>
     
     for(size_t i = 0; i < statements.size(); i++) {
         out << "statement #" << (i+1) << ":\n";
-        statements[i]->print(out);
+        if (statements[i]) {
+            statements[i]->print(out);
+        } else {
+            out << "  NULL statement\n";
+        }
         if(i < statements.size() - 1) {
             out << "\n"; // Add gap between statements
         }

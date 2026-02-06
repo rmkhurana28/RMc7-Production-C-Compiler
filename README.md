@@ -130,7 +130,7 @@ A complete reference for all supported syntax, declarators, types, operators, an
 - Comments (single & multi-line)
 - Line/column tracking
 
-**Phase 2 - Syntax Analysis (Parser):** 🟡 IN PROGRESS (~60%)
+**Phase 2 - Syntax Analysis (Parser):** 🟡 IN PROGRESS (~80%)
 - ✅ Type collection algorithm (storage classes, qualifiers, sign/size modifiers)
 - ✅ Type validation system with compatibility rules (87 test cases, 100% pass rate)
 - ✅ Typedef expansion (recursive resolution)
@@ -143,8 +143,10 @@ A complete reference for all supported syntax, declarators, types, operators, an
 - ✅ Precedence climbing algorithm (15 precedence levels, correct associativity)
 - ✅ Expression statements (standalone expressions outside declarations)
 - ✅ Added sizeof operator and type cast expressions
-- ✅ Expression parsing testing (~370 test cases, 100% pass rate , except complex ternary)
-- ⏭️ Next: Statement parsing (if/else, goto/labels, for, switch, return, etc.)
+- ✅ Expression parsing testing (~370 test cases, 100% pass rate)
+- ✅ Statement parsing (if/else, while, do-while, for, switch/case/default, break, continue, return, goto/labels) — ~100 test cases, 100% pass rate
+- ✅ Function definitions with body parsing and block expressions
+- ⏭️ Next: `typedef`, `struct`, `union`, `enum` parsing
 
 ---
 

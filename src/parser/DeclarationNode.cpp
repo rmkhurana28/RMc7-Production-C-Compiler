@@ -14,6 +14,14 @@ FunctionDeclarationNode::FunctionDeclarationNode(dataTypeHolder* retType, varNam
     : funcDeclType(*retType), funcName(*name), paramsArray(params), isVariadic(isVar) {
 }
 
+FunctionDefinitionNode::FunctionDefinitionNode(dataTypeHolder* retType, varNameHolder* name, vector<ParameterNode> params, bool isVar, BlockExpressionNode* body)
+    : funcDefType(*retType), funcName(*name), paramsArray(params), isVariadic(isVar), funcBody(body) {
+}
+
+FunctionDefinitionNode::~FunctionDefinitionNode() {
+    delete funcBody;
+}
+
 ParameterNode::ParameterNode(dataTypeHolder* type, varNameHolder* name)
     : paramType(*type), paramName(*name) {
 }

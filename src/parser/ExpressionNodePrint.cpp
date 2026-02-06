@@ -457,7 +457,7 @@ void BlockExpressionNode::print(ofstream& out, const string& indent) const {
     out << indent << "BlockExpression {\n";
     for (size_t i = 0; i < expressions.size(); i++) {
         if (expressions[i]) {
-            expressions[i]->print(out, indent + "  ");
+            // expressions[i]->print(out, indent + "  ");
             if (i < expressions.size() - 1) {
                 out << ",";
             }

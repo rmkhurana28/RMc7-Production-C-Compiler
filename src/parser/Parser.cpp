@@ -23,20 +23,19 @@ ProgramNode* Parser::startParsing() {
     // generate all relavent AST
     // keep parsing untill tokens are finished
     while(this->currentPos < tokens.size()){
-        Token current = this->tokens[this->currentPos];
+        ASTNode* node = startParsingOfCurrentToken();
         
-        // Check if it's a declaration (starts with type/storage class)
-        if(isThisTokenDataTypeOrPropToken(current)) {
-            this->parseCurrentDecl(); // parse declaration(s)
-            
-            // Add all nodes from allAST to allDeclNodes
-            for(auto node : this->allAST) {
-                allDeclNodes.push_back(static_cast<DeclarationNode*>(node));
+        if(node != nullptr) {
+            // Check if it's a statement
+            StatementNode* stmt = dynamic_cast<StatementNode*>(node);
+            if(stmt != nullptr) {
+                allStmts.push_back(stmt);
             }
-            this->allAST.clear(); // clear for next declaration
-        } else {
-            // Otherwise it's an expression statement
-            this->parseExpressionStatement();
+            // Check if it's a declaration
+            DeclarationNode* decl = dynamic_cast<DeclarationNode*>(node);
+            if(decl != nullptr) {
+                allDeclNodes.push_back(decl);
+            }
         }
     }
 
@@ -47,12 +46,72 @@ ProgramNode* Parser::startParsing() {
     return myRootNode;
 }
 
+ASTNode* Parser::startParsingOfCurrentToken() {
+    Token current = this->tokens[this->currentPos];
+    
+    // Check for control flow statements
+    if(current.type == KEYWORD_IF) {
+        return this->parseIf();
+    } else if(current.type == KEYWORD_FOR) {
+        return this->parseFor();
+    } else if(current.type == KEYWORD_WHILE) {
+        return this->parseWhile();
+    } else if(current.type == KEYWORD_DO){
+        return this->parseDoWhile();
+    } 
+    else if(current.type == KEYWORD_SWITCH) {
+        return this->parseSwitch();
+    }
+    // Check for case/default labels
+    else if(current.type == KEYWORD_CASE) {
+        return this->parseCaseLabel();
+    } else if(current.type == KEYWORD_DEFAULT) {
+        return this->parseDefaultLabel();
+    }
+    // Check for jump statements
+    else if(current.type == KEYWORD_RETURN) {
+        return this->parseReturn();
+    } else if(current.type == KEYWORD_CONTINUE) {
+        return this->parseContinue();
+    } else if(current.type == KEYWORD_BREAK) {
+        return this->parseBreak();
+    } else if(current.type == KEYWORD_GOTO) {
+        return this->parseGoto();
+    }
+    else if(current.type == ID && tokens[currentPos+1].type == OP_COLON){
+        return this->parseLabel();
+    }
+    // Check for structured types
+    else if(current.type == KEYWORD_STRUCT) {
+        return this->parseStruct();
+    } else if(current.type == KEYWORD_ENUM) {
+        return this->parseEnum();
+    } else if(current.type == KEYWORD_UNION) {
+        return this->parseUnion();
+    } else if(current.type == KEYWORD_TYPEDEF) {
+        return this->parseTypedef();
+    } 
+    // Check if it's a declaration (starts with type/storage class)
+    else if(isThisTokenDataTypeOrPropToken(current)) {
+        return this->parseCurrentDecl();
+    } else {
+        // Otherwise it's an expression statement
+        return this->parseExpressionStatement();
+    }
+}
+
 DeclarationNode* Parser::parseCurrentDecl(){
     // use if else to find the best parser for current node
     if(isThisTokenDataTypeOrPropToken(this->tokens[this->currentPos])){ // found some data type or prop
         // call the parser fucntion with data type as first token
         this->parseDataTypeFoundDeclaration();
-        return nullptr; // allAST now contains all nodes
+        // grab the last node that was pushed to allAST and return it
+        if(!allAST.empty()){
+            ASTNode* last = allAST.back();
+            allAST.pop_back();
+            return dynamic_cast<DeclarationNode*>(last);
+        }
+        return nullptr;
     } 
     return nullptr;
 }
@@ -288,7 +347,7 @@ DeclarationNode* Parser::parseDataTypeFoundDeclaration(){
     return nullptr; // nodes stored in this->allAST
 }
 
-void Parser::parseExpressionStatement() {
+StatementNode* Parser::parseExpressionStatement() {
     // Parse the expression
     ExpressionNode* expr = parseExpression(0, false, -1);
     
@@ -299,7 +358,396 @@ void Parser::parseExpressionStatement() {
     }
     this->currentPos++; // skip ;
     
-    // Create ExpressionStatementNode and store it
-    ExpressionStatementNode* stmt = new ExpressionStatementNode(expr);
-    this->allStmts.push_back(stmt);
+    // Create and return ExpressionStatementNode
+    // Caller is responsible for adding to appropriate collection
+    return new ExpressionStatementNode(expr);
 }
+
+// Control flow statements
+StatementNode* Parser::parseIf() {
+    
+    currentPos++; // skip keyword if
+
+    if(tokens[currentPos].type != LPAREN){
+        cout << "Expected opening ( of if condition\n";
+        exit(1);
+    }
+
+    currentPos++; // skip (
+
+    ExpressionNode* cond = parseExpression(0 , false , 1);
+
+    if(tokens[currentPos].type != RPAREN){
+        cout << "Expected closing ) of if condition\n";
+        exit(1);
+    }
+
+    currentPos++; // skip )
+
+    vector<ASTNode*> ifStatements; // to store 1 statment if not block
+
+    BlockExpressionNode* ifBlock = nullptr; // block if condition is true 
+
+    if(tokens[currentPos].type == LBRACE){ // block
+        ifBlock = parseBlock(*this);
+    } else{ // single line
+        ifStatements.push_back(startParsingOfCurrentToken());
+        ifBlock = new BlockExpressionNode(ifStatements);
+    }
+
+    if(tokens[currentPos].type == KEYWORD_ELSE){
+        
+
+        currentPos++; // skip keyword else
+
+        BlockExpressionNode* elseBlock;
+
+        if(tokens[currentPos].type == LBRACE){
+            elseBlock = parseBlock(*this);
+        } else{
+            vector<ASTNode*> elseStatements;
+            elseStatements.push_back(startParsingOfCurrentToken());
+            elseBlock = new BlockExpressionNode(elseStatements);
+        }
+
+        return new IfStatementNode(cond , ifBlock , true , elseBlock);
+
+    } else{
+        return new IfStatementNode(cond , ifBlock , false , nullptr);
+    }
+
+}
+
+StatementNode* Parser::parseFor() {    
+
+    currentPos++; // skip keyword for
+
+    if(tokens[currentPos].type != LPAREN){
+        cout << "Expected ( after for\n";
+        exit(1);
+    }
+
+    currentPos++; // skip (
+
+    ASTNode* init = nullptr;
+
+    if(tokens[currentPos].type != SEMICOLON){ // if there is some initialization statement
+        if(isThisTokenDataTypeOrPropToken(tokens[currentPos]) || 
+           (tokens[currentPos].type == ID && isThisStringPresentAsKeyInTdMap(tokens[currentPos].data))){
+            init = parseCurrentDecl(); // consumes ;
+        } else {
+            init = parseExpressionStatement(); // consumes ;
+        }
+    } else{
+        currentPos++; // skip ; (empty init)
+    }        
+
+    ExpressionNode* cond = nullptr;
+
+    if(tokens[currentPos].type != SEMICOLON){ // if there is some condition
+        cond = parseExpression(0 , false , -1);
+    }
+
+    if(tokens[currentPos].type != SEMICOLON){
+        cout << "Expected ; after for condition\n";
+        exit(1);
+    }
+
+    currentPos++; // skip ;
+
+    ExpressionNode* incr = nullptr;
+
+    if(tokens[currentPos + 1].type != SEMICOLON){ // if there is some increment
+        incr = parseExpression(0 , false , 1);
+    } 
+
+    if(tokens[currentPos].type != RPAREN){
+        cout << "Expected ) after for increment\n";
+        exit(1);
+    }
+
+    currentPos++; // skip )
+
+    if(tokens[currentPos].type == LBRACE){
+        BlockExpressionNode* forBlock = parseBlock(*this);
+        return new ForStatementNode(init , cond , incr , forBlock);
+    } else{
+        vector<ASTNode*> forStatements;
+        forStatements.push_back(startParsingOfCurrentToken());
+        BlockExpressionNode* forBlock = new BlockExpressionNode(forStatements);
+        return new ForStatementNode(init , cond , incr , forBlock);
+    }
+
+    
+
+}
+
+StatementNode* Parser::parseWhile() {
+    currentPos++; // skip keyword while
+
+    if(tokens[currentPos].type != LPAREN){
+        cout << "Expected opening ( of while condition\n";
+        exit(1);
+    }
+
+    currentPos++; // skip (
+
+    ExpressionNode* cond = parseExpression(0 , false , 1);
+
+    if(tokens[currentPos].type != RPAREN){
+        cout << "Expected closing ) of while condition\n";
+        exit(1);
+    }
+
+    currentPos++; // skip )
+
+    vector<ASTNode*> whileStatements; // to store 1 statment if not block
+
+    BlockExpressionNode* whileBlock = nullptr; // block if condition is true 
+
+    if(tokens[currentPos].type == LBRACE){ // block
+        whileBlock = parseBlock(*this);
+    } else{ // single line
+        whileStatements.push_back(startParsingOfCurrentToken());
+        whileBlock = new BlockExpressionNode(whileStatements);
+    }
+
+    return new WhileStatementNode(cond , whileBlock);
+
+    
+}
+
+StatementNode* Parser::parseDoWhile() {
+    
+    currentPos++; // skip keyword do
+
+    BlockExpressionNode* doWhileBlock = nullptr; 
+
+    if(tokens[currentPos].type == LBRACE){
+        doWhileBlock = parseBlock(*this);
+    } else{
+        vector<ASTNode*> doWhileStatements; 
+        doWhileStatements.push_back(startParsingOfCurrentToken());
+        doWhileBlock = new BlockExpressionNode(doWhileStatements);
+    }
+
+    if(tokens[currentPos].type != KEYWORD_WHILE){
+        cout << "Expected while after do-while block\n";
+        exit(1);        
+    }
+
+    currentPos++; // skip keyword while
+
+    if(tokens[currentPos].type != LPAREN){
+        cout << "Expected ( after while in do-while\n";
+        exit(1);
+    }
+
+    currentPos++; // skip (
+
+    ExpressionNode* cond = parseExpression(0 , false , 1);
+
+    if(tokens[currentPos].type != RPAREN){
+        cout << "Expected closing ) of do-while condition\n";
+        exit(1);
+    }
+
+    currentPos++; // skip )
+
+    if(tokens[currentPos].type != SEMICOLON){
+        cout << "Expected ; after do-while condition\n";
+        exit(1);
+    }
+
+    currentPos++; // skip ;
+
+    return new DoWhileStatementNode(cond , doWhileBlock);
+
+}
+
+StatementNode* Parser::parseSwitch() {
+    
+    currentPos++; // skip keyword switch
+
+    if(tokens[currentPos].type != LPAREN){
+        cout << "Expected opening ( of switch condition\n";
+        exit(1);
+    }
+
+    currentPos++; // skip (
+
+    ExpressionNode* cond = parseExpression(0 , false , 1);
+
+    if(tokens[currentPos].type != RPAREN){
+        cout << "Expected closing ) of switch condition\n";
+        exit(1);
+    }
+
+    currentPos++; // skip )
+
+    BlockExpressionNode* switchBlock = nullptr;
+
+    if(tokens[currentPos].type == LBRACE){ // block
+        switchBlock = parseBlock(*this);
+    } else{
+        cout << "Expected { after switch condition\n";
+        exit(1);
+    }
+
+    return new SwitchStatementNode(cond , switchBlock);
+
+}
+
+StatementNode* Parser::parseCaseLabel() {
+    currentPos++; // skip keyword case
+
+    if(currentPos >= tokens.size()){
+        cout << "Expected expression after 'case'\n";
+        exit(1);
+    }
+
+    ExpressionNode* caseExpr = parseExpression(0, false, 4);
+
+    if(currentPos >= tokens.size() || tokens[currentPos].type != OP_COLON){
+        cout << "Expected ':' after case expression\n";
+        exit(1);
+    }
+
+    currentPos++; // skip :
+
+    return new CaseLabelNode(caseExpr);
+}
+
+StatementNode* Parser::parseDefaultLabel() {
+    currentPos++; // skip keyword default
+
+    if(currentPos >= tokens.size() || tokens[currentPos].type != OP_COLON){
+        cout << "Expected ':' after 'default'\n";
+        exit(1);
+    }
+
+    currentPos++; // skip :
+
+    return new DefaultLabelNode();
+}
+
+// Structured types
+DeclarationNode* Parser::parseStruct() {
+    cout << "struct parsing isn't implemented yet\n";
+    exit(1);
+    return nullptr;
+}
+
+DeclarationNode* Parser::parseEnum() {
+    cout << "enum parsing isn't implemented yet\n";
+    exit(1);
+    return nullptr;
+}
+
+DeclarationNode* Parser::parseUnion() {
+    cout << "union parsing isn't implemented yet\n";
+    exit(1);
+    return nullptr;
+}
+
+DeclarationNode* Parser::parseTypedef() {
+    cout << "typedef parsing isn't implemented yet\n";
+    exit(1);
+    return nullptr;
+}
+
+// Jump statements
+StatementNode* Parser::parseReturn() {
+    currentPos++; // skip keyword return
+
+    ExpressionNode* retExpr = nullptr;
+
+    if(tokens[currentPos].type != SEMICOLON){
+        retExpr = parseExpression(0, false, -1);
+    }
+
+    if(tokens[currentPos].type != SEMICOLON){
+        cout << "Expected ; after return statement\n";
+        exit(1);
+    }
+
+    currentPos++; // skip ;
+
+    return new ReturnStatementNode(retExpr);
+}
+
+StatementNode* Parser::parseContinue() {
+    currentPos++; // skip keyword continue
+
+    if(tokens[currentPos].type != SEMICOLON){
+        cout << "Expected ; after continue\n";
+        exit(1);
+    }
+
+    currentPos++; // skip ;
+
+    return new ContinueStatementNode();
+}
+
+StatementNode* Parser::parseBreak() {
+    currentPos++; // skip keyword break
+
+    if(tokens[currentPos].type != SEMICOLON){
+        cout << "Expected ; after break\n";
+        exit(1);
+    }
+
+    currentPos++; // skip ;
+
+    return new BreakStatementNode();
+}
+
+StatementNode* Parser::parseGoto() {
+    // Skip 'goto' keyword
+    currentPos++;
+    
+    // Next token must be identifier
+    if(currentPos >= tokens.size() || tokens[currentPos].type != ID) {
+        cout << "Expected identifier after 'goto'\n";
+        exit(1);
+    }
+    
+    // Create identifier node
+    ExpressionNode* labelName = new IdentifierNode(tokens[currentPos].data);
+    currentPos++;
+    
+    // Expect semicolon
+    if(currentPos >= tokens.size() || tokens[currentPos].type != SEMICOLON) {
+        cout << "Expected ';' after goto statement\n";
+        exit(1);
+    }
+    currentPos++;
+    
+    // Create and return goto statement node
+    return new GotoStatementNode(labelName);
+}
+    
+StatementNode* Parser::parseLabel() {
+    // Current token should be identifier
+    if(currentPos >= tokens.size() || tokens[currentPos].type != ID) {
+        cout << "Expected identifier for label\n";
+        exit(1);
+    }
+    
+    // Create identifier node
+    ExpressionNode* labelName = new IdentifierNode(tokens[currentPos].data);
+    currentPos++;
+    
+    // Expect colon
+    if(currentPos >= tokens.size() || tokens[currentPos].type != OP_COLON) {
+        cout << "Expected ':' after label\n";
+        exit(1);
+    }
+    currentPos++;
+    
+    // Create and return label statement node
+    return new LabelStatementNode(labelName);
+}
+
+
+

@@ -1,4 +1,5 @@
 #include "ExpressionNode.h"
+#include "Helper.h"
 
 // Literal node constructors
 IntLiteralNode::IntLiteralNode(int value) {
@@ -144,12 +145,12 @@ SizeofNode::~SizeofNode() {
 }
 
 // BlockExpressionNode constructor and destructor
-BlockExpressionNode::BlockExpressionNode(vector<ExpressionNode*> exprs) {
+BlockExpressionNode::BlockExpressionNode(vector<ASTNode*> exprs) {
     this->expressions = exprs;
 }
 
 BlockExpressionNode::~BlockExpressionNode() {
-    for (ExpressionNode* expr : expressions) {
+    for (ASTNode* expr : expressions) {
         delete expr;
     }
 }
