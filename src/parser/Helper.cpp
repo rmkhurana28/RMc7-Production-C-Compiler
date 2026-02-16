@@ -136,6 +136,15 @@ void dataTypeHolder::getDataType(){
             cout << "Error: Expected ID after struct/enum/union\n" << endl;
             exit(1);
         }
+
+        // here it is struct/enum/union definition
+        if(this->parser.tokens[this->parser.currentPos+2].type == LBRACE){
+            TokenType helpType = this->parser.tokens[this->parser.currentPos].type;
+
+            if(helpType == KEYWORD_STRUCT){
+                this->parser.parseStruct(this);
+            }
+        }
         
         // ID is found now
         this->trKeywordArray.push_back(this->parser.tokens[this->parser.currentPos].type); // add struct/enum/union keyword to the tr keyword array

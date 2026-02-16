@@ -552,6 +552,54 @@ void FunctionDefinitionNode::print(ofstream& out) {
     out << "\n";
 }
 
+void ForwardDeclarationNode::print(ofstream& out) {
+    out << "      Declaration Type: Forward Declaration\n";
+    out << "      Type: " << tokenToReadable(declType) << "\n";
+    out << "      Tag Name: " << tagName << "\n";
+}
+
+void StructDefinitionNode::print(ofstream& out) {
+    out << "      Declaration Type: Struct Definition\n";
+    if(isTagNamePresent) {
+        out << "      Tag Name: " << tagName << "\n";
+    } else {
+        out << "      Anonymous Struct\n";
+    }
+    
+    if(block && !block->expressions.empty()) {
+        out << "      Struct Body (" << block->expressions.size() << " member declarations):\n";
+        
+        for(size_t i = 0; i < block->expressions.size(); i++) {
+            out << "        ---- Member #" << (i+1) << " ----\n";
+            
+            if(block->expressions[i]) {
+                // Try to cast to DeclarationNode for proper printing
+                DeclarationNode* memberDecl = dynamic_cast<DeclarationNode*>(block->expressions[i]);
+                if(memberDecl) {
+                    // Write to temp file to add indentation
+                    ofstream tempFile("temp_member.txt");
+                    memberDecl->print(tempFile);
+                    tempFile.close();
+                    
+                    // Read back with indentation
+                    ifstream readFile("temp_member.txt");
+                    string line;
+                    while(getline(readFile, line)) {
+                        out << "        " << line << "\n";
+                    }
+                    readFile.close();
+                } else {
+                    out << "        [Non-declaration node]\n";
+                }
+            } else {
+                out << "        [NULL member]\n";
+            }
+        }
+    } else {
+        out << "      Struct Body: (empty)\n";
+    }
+}
+
 void ProgramNode::printAST(ofstream& out) {
     out << "\n========================================\n";
     out << "            DECLARATIONS AST           \n";
@@ -569,6 +617,10 @@ void ProgramNode::printAST(ofstream& out) {
             out << "Function Declaration";
         } else if(dynamic_cast<FunctionDefinitionNode*>(declarations[i])) {
             out << "Function Definition";
+        } else if(dynamic_cast<ForwardDeclarationNode*>(declarations[i])) {
+            out << "Forward Declaration";
+        } else if(dynamic_cast<StructDefinitionNode*>(declarations[i])) {
+            out << "Struct Definition";
         } else {
             out << "Unknown Declaration";
         }

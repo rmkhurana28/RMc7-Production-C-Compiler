@@ -83,7 +83,7 @@ ASTNode* Parser::startParsingOfCurrentToken() {
     }
     // Check for structured types
     else if(current.type == KEYWORD_STRUCT) {
-        return this->parseStruct();
+        return this->parseStruct(nullptr);
     } else if(current.type == KEYWORD_ENUM) {
         return this->parseEnum();
     } else if(current.type == KEYWORD_UNION) {
@@ -632,10 +632,110 @@ StatementNode* Parser::parseDefaultLabel() {
 }
 
 // Structured types
-DeclarationNode* Parser::parseStruct() {
-    cout << "struct parsing isn't implemented yet\n";
-    exit(1);
-    return nullptr;
+DeclarationNode* Parser::parseStruct(dataTypeHolder* helperDeclName) {
+    
+    currentPos++; // skip keyword struct
+
+    bool tagNameExist = false;
+    Token tagName;
+
+    if(tokens[currentPos].type == ID){ // tagName exist
+        tagNameExist = true;
+        tagName = tokens[currentPos]; // save tagName in token
+        currentPos++; // skip tagName
+    } 
+
+    if(tokens[currentPos].type == SEMICOLON){ // can be forward decl if tagName exists
+        if(!tagNameExist){
+            cout << "Expected tagName for forward decl\n";
+            exit(1);
+        }
+
+        currentPos++; // skip ;
+
+        ForwardDeclarationNode* fwdDecl = new ForwardDeclarationNode(KEYWORD_STRUCT , tagName.data);
+        this->allAST.push_back(fwdDecl);
+        return fwdDecl; // return for startParsing to collect
+        
+    }
+
+    if(tokens[currentPos].type != LBRACE){
+        cout << "Expected opening { for struct definition\n";
+        exit(1);
+    }
+
+    BlockExpressionNode* structBlock = nullptr;
+
+    structBlock = parseBlock(*this); // parse the block
+
+    if(tokens[currentPos].type == SEMICOLON){
+        if(!tagNameExist){
+            cout << "Expected atleast one out of tagName or varName for struct definition\n";
+            exit(1);
+        }
+
+        /*
+
+            now, since no var is declared wiht it, it cna NOT have any specifier like extern/volatile/restrict/const/static
+
+            check the data type prop for this and reject if any of them exists
+
+        */
+
+        if(helperDeclName != nullptr){
+            cout << "var is NOT decl , hence extern/volatile/restrict/const/static NOT allowed\n";
+            exit(1);
+        }
+
+        currentPos++; // skip ;
+
+        StructDefinitionNode* structDef = new StructDefinitionNode(tagNameExist , tagName.data , structBlock);
+        this->allAST.push_back(structDef);
+        return structDef; // return for startParsing to collect
+
+    }
+
+    // now there is some varName also afetr the }
+
+    StructDefinitionNode* structDef = new StructDefinitionNode(tagNameExist , tagName.data , structBlock);
+    this->allAST.push_back(structDef);
+
+    getVarAgain:
+
+
+    /*
+    
+        so, now the var decl also exist with the struct definition
+        now, it is needed to check the data type prop object to check it's validaity for this
+    
+    */
+
+
+    varNameHolder* structVarName = new varNameHolder(*this);
+
+    // dataTypeHolder* helper = nullptr;
+
+    this->allAST.push_back(structVarName->getVarName(*helperDeclName, false)); 
+
+    // this->allAST.push_back(new DeclarationNode(helperDeclName , structVarName));
+
+    // generate struct decl node
+
+    if(tokens[currentPos].type == COMMA){
+        currentPos++; // skipp ,
+        goto getVarAgain;
+    }
+
+    if(tokens[currentPos].type != SEMICOLON){
+        cout << "Expected ; here to close it\n";
+        exit(1);
+    }
+
+    currentPos++; // skip ;
+
+    // return struct definition node for startParsing to collect
+    return structDef;
+    
 }
 
 DeclarationNode* Parser::parseEnum() {

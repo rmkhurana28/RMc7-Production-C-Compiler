@@ -72,7 +72,7 @@ private:
     StatementNode* parseDefaultLabel();
     
     // Structured types
-    DeclarationNode* parseStruct();
+    DeclarationNode* parseStruct(dataTypeHolder* helperDeclName);
     DeclarationNode* parseEnum();
     DeclarationNode* parseUnion();
     DeclarationNode* parseTypedef();

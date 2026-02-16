@@ -86,10 +86,27 @@ public:
     void print(ofstream& out) override;
 };
 
-class StructDeclarationNode : public DeclarationNode {
+class ForwardDeclarationNode : public DeclarationNode {
+private:
+    TokenType declType; // KEYWORD_STRUCT, KEYWORD_UNION, or KEYWORD_ENUM
+    string tagName;     // tag name of the forward declaration
+
 public:
-    StructDeclarationNode() {}
-    ~StructDeclarationNode() {}
+    ForwardDeclarationNode(TokenType type, string tag);
+    ~ForwardDeclarationNode() {}
+    void print(ofstream& out) override;
+};
+
+class StructDefinitionNode : public DeclarationNode {
+private:
+    bool isTagNamePresent;      // true if struct has a tag name
+    string tagName;             // tag name (empty if anonymous)
+    BlockExpressionNode* block; // struct body
+
+public:
+    StructDefinitionNode(bool hasTag, string tag, BlockExpressionNode* blk);
+    ~StructDefinitionNode();
+    void print(ofstream& out) override;
 };
 
 class UnionDeclarationNode : public DeclarationNode {

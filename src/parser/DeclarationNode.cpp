@@ -22,6 +22,18 @@ FunctionDefinitionNode::~FunctionDefinitionNode() {
     delete funcBody;
 }
 
+ForwardDeclarationNode::ForwardDeclarationNode(TokenType type, string tag)
+    : declType(type), tagName(tag) {
+}
+
+StructDefinitionNode::StructDefinitionNode(bool hasTag, string tag, BlockExpressionNode* blk)
+    : isTagNamePresent(hasTag), tagName(tag), block(blk) {
+}
+
+StructDefinitionNode::~StructDefinitionNode() {
+    delete block;
+}
+
 ParameterNode::ParameterNode(dataTypeHolder* type, varNameHolder* name)
     : paramType(*type), paramName(*name) {
 }
