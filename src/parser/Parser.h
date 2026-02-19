@@ -24,6 +24,9 @@ private:
 
     // array to store all the AST
     vector<ASTNode*> allAST;
+
+    // array to store all declaration nodes
+    vector<DeclarationNode*> allDeclNodes;
     
     // array to store all statements (expression statements, control flow, etc.)
     vector<StatementNode*> allStmts;

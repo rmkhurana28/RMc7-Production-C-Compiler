@@ -18,8 +18,6 @@ ProgramNode* Parser::startParsing() {
     // Main parsing logic will go here
     // This will return the root of the AST (ProgramNode)
 
-    vector<DeclarationNode*> allDeclNodes; // array to store all the decl nodes
-
     // generate all relavent AST
     // keep parsing untill tokens are finished
     while(this->currentPos < tokens.size()){
@@ -666,6 +664,7 @@ DeclarationNode* Parser::parseStruct(dataTypeHolder* helperDeclName) {
 
     BlockExpressionNode* structBlock = nullptr;
 
+    // cout << "Block parsing starting at " << this->tokens[this->currentPos-1].data << "\n";
     structBlock = parseBlock(*this); // parse the block
 
     if(tokens[currentPos].type == SEMICOLON){
@@ -713,9 +712,18 @@ DeclarationNode* Parser::parseStruct(dataTypeHolder* helperDeclName) {
 
     varNameHolder* structVarName = new varNameHolder(*this);
 
+    if(!helperDeclName){
+        helperDeclName = new dataTypeHolder(*this);
+        
+        // helperDeclName->baseTypeArray.push_back(HELPER_TOKEN);
+        helperDeclName->trKeywordArray.push_back(KEYWORD_STRUCT);
+        helperDeclName->trBaseArray.push_back(tagName.data);
+    }
+
     // dataTypeHolder* helper = nullptr;
 
-    this->allAST.push_back(structVarName->getVarName(*helperDeclName, false)); 
+    this->allDeclNodes.push_back(structVarName->getVarName(*helperDeclName, false));
+
 
     // this->allAST.push_back(new DeclarationNode(helperDeclName , structVarName));
 

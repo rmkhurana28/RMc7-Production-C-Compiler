@@ -58,6 +58,7 @@ class dataTypeHolder{
     friend class CastNode;  // Allow CastNode to print type information
     friend class SizeofNode;  // Allow SizeofNode to print type information
     friend void printParametersRecursive(ofstream&, const vector<ParameterNode>&, const string&);  // Allow helper function
+    friend class Parser;
     
 private:
     Parser& parser; // reference to main parser object

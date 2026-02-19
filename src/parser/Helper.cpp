@@ -513,6 +513,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
     bool isVariad = false;
     vector<ParameterNode> paramList;
+
     
 
     while(current.type != SEMICOLON && current.type != OP_ASSIGN && current.type != COMMA && current.type != RBRACE){ // var name ends when next token is ; or = or ,
@@ -869,11 +870,16 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
         
     }
 
+
     if(isFirstVar && bracketStackCount == 0){ // if the var is first in multiple decl
 
+
+        
+        
         // get base token type
         TokenType baseType;
         if(typeHolder.baseTypeArray.size() == 1){
+
             baseType = typeHolder.baseTypeArray.front();
             
             // If baseType is INT (possibly auto-added when short/long/signed/unsigned present without explicit int)
@@ -930,6 +936,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             
         }
     }
+
 
     // reseting static vars
     if(!isFuncParam){
@@ -1050,6 +1057,8 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
         // proceed accordingly
 
     } else if(current.type == SEMICOLON){ // end
+
+        // cout << "semi found here\n";
 
         short check = this->checkValidity();
 
