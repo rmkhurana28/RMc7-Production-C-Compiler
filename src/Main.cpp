@@ -26,6 +26,9 @@ int main()
     // OutputWriter::writeTokensToFile(tokens, outFile);
     
     Parser myParser = Parser(tokens);
+
+    myStack.push_back(GLOBAL); // manually push GLOABL representing the starting point of phase-2
+
     ProgramNode* myRootAST = myParser.startParsing();
     
     if(myRootAST != nullptr) {

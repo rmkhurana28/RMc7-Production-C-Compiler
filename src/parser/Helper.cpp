@@ -56,11 +56,13 @@ varNameHolder& varNameHolder::operator=(const varNameHolder& other) {
     return *this;
 }
 
-void dataTypeHolder::getDataType(){
+int dataTypeHolder::getDataType(){
     bool firstStarFound = false;
     bool isBaseTypeFound = false;
 
     bool isShortLongSignUnsignFound = false;
+
+    bool wasPrevTokenOfStructEnumUnion = false;
     
     TokenType latestType;
 
@@ -69,6 +71,7 @@ void dataTypeHolder::getDataType(){
     // get data type properties now
     while(this->parser.isThisTokenDataTypeOrPropToken(this->parser.tokens[this->parser.currentPos]) || this->parser.tokens[this->parser.currentPos].type == OP_STAR){ // parsing till data type prop or star
         if(this->parser.isThisTokenDataBaseTypeToken(this->parser.tokens[this->parser.currentPos])){ // base type
+            wasPrevTokenOfStructEnumUnion = false;
             isBaseTypeFound = true;
             this->baseTypeArray.push_back(this->parser.tokens[this->parser.currentPos].type);
             latestType = this->parser.tokens[this->parser.currentPos].type;
@@ -78,6 +81,7 @@ void dataTypeHolder::getDataType(){
                 cout << "Error: Sign modifier not allowed after pointer (*) declaration" << endl;
                 exit(1);
             }
+            wasPrevTokenOfStructEnumUnion = false;
             this->signModifiersArray.push_back(this->parser.tokens[this->parser.currentPos].type);
             latestType = this->parser.tokens[this->parser.currentPos].type;
         } else if(this->parser.isThisTokenSizeModifierToken(this->parser.tokens[this->parser.currentPos])){ // size
@@ -86,6 +90,7 @@ void dataTypeHolder::getDataType(){
                 cout << "Error: Size modifier not allowed after pointer (*) declaration" << endl;
                 exit(1);
             }
+            wasPrevTokenOfStructEnumUnion = false;
             this->sizeModifiersArray.push_back(this->parser.tokens[this->parser.currentPos].type);
             latestType = this->parser.tokens[this->parser.currentPos].type;
         } else if(this->parser.isThisTokenTypeQualifierToken(this->parser.tokens[this->parser.currentPos])){ // type
@@ -96,6 +101,7 @@ void dataTypeHolder::getDataType(){
                 cout << "Error: Storage class not allowed after pointer (*) declaration" << endl;
                 exit(1);
             }
+            wasPrevTokenOfStructEnumUnion = false;
             this->storageClassArray.push_back(this->parser.tokens[this->parser.currentPos].type);
             latestType = this->parser.tokens[this->parser.currentPos].type;
         } else if(this->parser.tokens[this->parser.currentPos].type == OP_STAR){ // *
@@ -104,7 +110,7 @@ void dataTypeHolder::getDataType(){
                 exit(1);
             }
             firstStarFound = true;
-            if(!isPrevTokenValidForCurrentStar(latestType)){ // * not allowed after prev tokenType
+            if(!isPrevTokenValidForCurrentStar(latestType) && !wasPrevTokenOfStructEnumUnion){ // * not allowed after prev tokenType
                 cout << "Error: Invalid token before pointer (*) declaration" << endl;
                 exit(1);
             }
@@ -141,8 +147,13 @@ void dataTypeHolder::getDataType(){
         if(this->parser.tokens[this->parser.currentPos+2].type == LBRACE){
             TokenType helpType = this->parser.tokens[this->parser.currentPos].type;
 
+            // this->parser.currentPos -= 2;
+
             if(helpType == KEYWORD_STRUCT){
+                cout << "Speical cond-1\n";
                 this->parser.parseStruct(this);
+
+                return 2;
             }
         }
         
@@ -165,6 +176,10 @@ void dataTypeHolder::getDataType(){
             this->trBaseArray.push_back(this->parser.tokens[this->parser.currentPos].data);
             this->parser.currentPos++;
             latestType = ID;
+
+            isBaseTypeFound = true;
+            wasPrevTokenOfStructEnumUnion = true;
+
             goto evaluate_again;
         } else{ // ID must be in TR to be valid
             cout << "Error: Expected correct ID after struct/enum/union\n" << endl;
@@ -174,7 +189,7 @@ void dataTypeHolder::getDataType(){
 
 
     // if the current token is NOT struct/enum/union (alr done in prev if-cond) AND check if current token is ID or not
-    if(this->parser.tokens[this->parser.currentPos].type != ID) return; // return if not ID , match completed    
+    if(this->parser.tokens[this->parser.currentPos].type != ID) return 1; // return if not ID , match completed    
     
     // current token is ID now
 
@@ -182,16 +197,18 @@ void dataTypeHolder::getDataType(){
     if(this->parser.isThisStringPresentAsKeyInTdMap(this->parser.tokens[this->parser.currentPos].data)){ // found in TD hashmap
 
         // check if it is actually specifying the data type or it is actualy an ID        
-        if(!this->parser.isCurrentIdValidTdAlias()) return; // return if ID is just a var/func name (found using lookup algo) , match completed
+        if(!this->parser.isCurrentIdValidTdAlias()) return 1; // return if ID is just a var/func name (found using lookup algo) , match completed
 
         // ID is valid TD entry, push it
         this->tdNew.push_back(this->parser.tokens[this->parser.currentPos].data);
         this->parser.currentPos++;
-        latestType = ID;
+        latestType = ID;        
+
+        
         goto evaluate_again;
     }        
 
-    return; // validation completed
+    return 1; // validation completed
 }
 
 int dataTypeHolder::isCurrentTypeValid(){
@@ -206,7 +223,7 @@ int dataTypeHolder::isCurrentTypeValid(){
         // expand all typedefs and populate the arrays
         for(const string& typedefName : this->tdNew){
             // get the vector of strings from tdMap
-            vector<string> expandedTokens = this->parser.tdMap[typedefName];
+            vector<string> expandedTokens = this->parser.tdMap[typedefName][0].declProp;
             
             // process each token string and add to appropriate arrays
             // use index-based loop to handle consecutive stars properly
@@ -308,7 +325,7 @@ int dataTypeHolder::isCurrentTypeValid(){
                     // check if it's another typedef that needs recursive expansion
                     else if(this->parser.isThisStringPresentAsKeyInTdMap(tokenStr)){
                         // recursively expand this nested typedef
-                        vector<string> nestedTokens = this->parser.tdMap[tokenStr];
+                        vector<string> nestedTokens = this->parser.tdMap[tokenStr][0].declProp;
                         // replace current typedef name with its expansion
                         expandedTokens.erase(expandedTokens.begin() + i); // remove typedef name
                         // insert expanded tokens at current position
@@ -477,6 +494,8 @@ bool dataTypeHolder::isPrevTokenValidForCurrentStar(TokenType prevTokenType){
     if(prevTokenType == KEYWORD_CONST || prevTokenType == KEYWORD_VOLATILE || prevTokenType == KEYWORD_RESTRICT || prevTokenType == KEYWORD_INT || prevTokenType == KEYWORD_CHAR || prevTokenType == KEYWORD_BOOL || prevTokenType == KEYWORD_FLOAT || prevTokenType == KEYWORD_DOUBLE || prevTokenType == KEYWORD_VOID || prevTokenType == KEYWORD_SHORT || prevTokenType == KEYWORD_LONG || prevTokenType == KEYWORD_SIGNED || prevTokenType == KEYWORD_UNSIGNED){
         return true;
     }
+
+    
 
     return false;
 }
@@ -1469,7 +1488,9 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
         return left; 
     } 
     else{
+        cout << "Prev token is " << tokens[currentPos-1].data << "\n";
         cout << "Error: Unsupported expression token: " << currToken.data << endl;
+        cout << "Next token is " << tokens[currentPos+1].data << "\n";
         exit(1);
         //
     }
@@ -1819,7 +1840,7 @@ void dataTypeHolder::evaluateTypeCast(){
             latestType = ID;
             goto evaluate_again;
         } else{ // ID must be in TR to be valid
-            cout << "Error: Expected correct ID after struct/enum/union\n" << endl;
+            cout << "Error: Expected correct ID after struct/enum/union inside typecast also\n" << endl;
             exit(1);
         }
     }
@@ -1858,7 +1879,7 @@ bool dataTypeHolder::validateTypeCast(){
         // expand all typedefs and populate the arrays
         for(const string& typedefName : this->tdNew){
             // get the vector of strings from tdMap
-            vector<string> expandedTokens = this->parser.tdMap[typedefName];
+            vector<string> expandedTokens = this->parser.tdMap[typedefName][0].declProp;
             
             // process each token string and add to appropriate arrays
             // use index-based loop to handle consecutive stars properly
@@ -1960,7 +1981,7 @@ bool dataTypeHolder::validateTypeCast(){
                     // check if it's another typedef that needs recursive expansion
                     else if(this->parser.isThisStringPresentAsKeyInTdMap(tokenStr)){
                         // recursively expand this nested typedef
-                        vector<string> nestedTokens = this->parser.tdMap[tokenStr];
+                        vector<string> nestedTokens = this->parser.tdMap[tokenStr][0].declProp;
                         // replace current typedef name with its expansion
                         expandedTokens.erase(expandedTokens.begin() + i); // remove typedef name
                         // insert expanded tokens at current position

@@ -1,0 +1,6 @@
+      Data Type: int 
+      Var Name: x [VAR_NAME]
+      IsArray: false
+      ArrayDim: 0
+      IsInit: false
+      AST: NULL

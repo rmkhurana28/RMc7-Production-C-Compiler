@@ -84,7 +84,7 @@ public:
     dataTypeHolder(Parser& parser);
     dataTypeHolder(const dataTypeHolder& other);
     dataTypeHolder& operator=(const dataTypeHolder& other);
-    void getDataType();
+    int getDataType();
 
     int isCurrentTypeValid();
 

@@ -13,6 +13,85 @@
 
 using namespace std;
 
+typedef struct tdMapPair{
+    vector<string> declProp;
+    varNameHolder* nameProp;
+} tdMapPair;
+
+
+typedef enum locationStack{
+    GLOBAL, // acting as a prent fro below 2
+    GLOABL_VAR_DECL, // global var decl starting point
+    GLOBAL_VAR_INIT, // gloabl var init , after decl starting point
+
+    TYPEDEF, // acting as parent for below 2
+    TYPEDEF_ORIGINAL, // typedef original starting poiny
+    TYPEDEF_ALIAS, // typedef alias starting point
+
+    STRUCT, // acting as parent for below 4
+    STRUCT_TAGNAME, // struct tag name starting point
+    STRUCT_BLOCK, // struct block starting point
+    STRUCT_VAR_NAME, // struct varName starting point
+    STRUCT_TYPEDEF_ALIAS, // struct with typedef alias
+
+    UNION, // acting as parent for below 4
+    UNION_TAGNAME, // union tag name starting point
+    UNION_BLOCK, // union block starting point
+    UNION_VAR_NAME, // union varName starting point
+    UNION_TYPEDEF_ALIAS, // union with typedef alias
+
+    ENUM, // acting as parent for below 4
+    ENUM_TAGNAME, // enum tag name starting point
+    ENUM_BLOCK, // enum block starting point
+    ENUM_VAR_NAME, // enum varName starting point
+    ENUM_TYPEDEF_ALIAS, // enum with typedef alias
+
+    FUNCC, // acting as parent for below 4
+    FUNCC_DECL, // func decl starting point
+    FUNCC_CALL, // func call starting point
+    FUNCC_PARAMS, // func param starting point
+    FUNCC_DEFI_BLOCK, // func definition block starting point
+
+    IF, // acting as parent fro below 2
+    IF_COND, // if cond starting point 
+    IF_BLOCK, // if block starting point
+    
+    ELSE, // acting as parent for below 1
+    ELSE_BLOCK, // else block starting point    
+
+    WHILE, // acting as parent for below 2
+    WHILE_COND, // while cond starting point
+    WHILE_BLOCK, // while block starting point
+
+    DO_WHILE, // acting as parent for below 2
+    DO_WHILE_BLOCK, // do-while block starting point
+    DO_WHILE_COND, // do-while cond starting point
+
+    FOR, // acting as parent for below 4
+    FOR_INIT, // for init starting point
+    FOR_COND, // for cond starting point
+    FOR_INCR, // for incr starting point
+    FOR_BLOCK, // for block starting point
+    
+    SWITCH, // acting as parent for below 2
+    SWITCH_COND, // switch cond starting point
+    SWITCH_BLOCK, // switch block starting point
+    CASE, // acting as parent for below 2
+    CASE_COND, // case cond starting point
+    CASE_BLOCK, // case block starting point
+    DEFAULT, // acting as parent fro below 1
+    DEFAULT_BLOCK, // default block starting point
+
+    DECL, // acting as parent for below 1
+    DECL_VAR, // var decl starting point
+
+    EXPR, // expression starting point
+    
+} locationStack;
+
+// global variable to store the stack
+vector<locationStack> myStack;
+
 class Parser {
     friend class dataTypeHolder; // allows dataTypeHolder to access private section of this class
     friend class varNameHolder; // allows varNameHolder to access private section of this class
@@ -35,7 +114,8 @@ private:
     unordered_map<string, string> typeRegisry;
 
     // hashmap to store new->old[] typedef alias
-    unordered_map<string, vector<string>> tdMap;
+    // unordered_map<string, vector<string>> tdMap;
+    unordered_map<string, vector<tdMapPair>> tdMap;
     
     // Add your helper methods here
     DeclarationNode* parseCurrentDecl();

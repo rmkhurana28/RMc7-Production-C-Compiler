@@ -122,9 +122,14 @@ public:
 };
 
 class TypedefDeclarationNode : public DeclarationNode {
+private:
+    vector<string> baseTokens;  // base type tokens (populates dataTypeHolder on use)
+    varNameHolder nameProp;     // declarator shape (function pointer, array, etc.)
+
 public:
-    TypedefDeclarationNode() {}
+    TypedefDeclarationNode(vector<string> tokens, varNameHolder* name);
     ~TypedefDeclarationNode() {}
+    void print(ofstream& out) override;
 };
 
 // ============================================================================

@@ -655,3 +655,7 @@ void printStatementsToFile(ofstream& out, const vector<StatementNode*>& statemen
     }
     out << "\n----------------------------------------\n";
 }
+
+void TypedefDeclarationNode::print(ofstream& out) {
+    out << "TypedefDeclarationNode (not yet implemented)\n";
+}

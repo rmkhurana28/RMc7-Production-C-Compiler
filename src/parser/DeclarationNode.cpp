@@ -34,6 +34,10 @@ StructDefinitionNode::~StructDefinitionNode() {
     delete block;
 }
 
+TypedefDeclarationNode::TypedefDeclarationNode(vector<string> tokens, varNameHolder* name)
+    : baseTokens(tokens), nameProp(*name) {
+}
+
 ParameterNode::ParameterNode(dataTypeHolder* type, varNameHolder* name)
     : paramType(*type), paramName(*name) {
 }

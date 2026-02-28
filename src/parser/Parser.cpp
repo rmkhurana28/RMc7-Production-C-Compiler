@@ -81,8 +81,14 @@ ASTNode* Parser::startParsingOfCurrentToken() {
     }
     // Check for structured types
     else if(current.type == KEYWORD_STRUCT) {
-        return this->parseStruct(nullptr);
-    } else if(current.type == KEYWORD_ENUM) {
+        DeclarationNode* myHelper =  this->parseStruct(nullptr);
+        if(myHelper == nullptr){
+            goto itIsVarDeclInstead;
+        } 
+
+        return myHelper;
+    } 
+    else if(current.type == KEYWORD_ENUM) {
         return this->parseEnum();
     } else if(current.type == KEYWORD_UNION) {
         return this->parseUnion();
@@ -91,6 +97,7 @@ ASTNode* Parser::startParsingOfCurrentToken() {
     } 
     // Check if it's a declaration (starts with type/storage class)
     else if(isThisTokenDataTypeOrPropToken(current)) {
+        itIsVarDeclInstead:
         return this->parseCurrentDecl();
     } else {
         // Otherwise it's an expression statement
@@ -100,7 +107,7 @@ ASTNode* Parser::startParsingOfCurrentToken() {
 
 DeclarationNode* Parser::parseCurrentDecl(){
     // use if else to find the best parser for current node
-    if(isThisTokenDataTypeOrPropToken(this->tokens[this->currentPos])){ // found some data type or prop
+    // if(isThisTokenDataTypeOrPropToken(this->tokens[this->currentPos])){ // found some data type or prop
         // call the parser fucntion with data type as first token
         this->parseDataTypeFoundDeclaration();
         // grab the last node that was pushed to allAST and return it
@@ -109,8 +116,7 @@ DeclarationNode* Parser::parseCurrentDecl(){
             allAST.pop_back();
             return dynamic_cast<DeclarationNode*>(last);
         }
-        return nullptr;
-    } 
+    // } 
     return nullptr;
 }
 
@@ -275,7 +281,11 @@ DeclarationNode* Parser::parseDataTypeFoundDeclaration(){
     dataTypeHolder currType = dataTypeHolder(*this);
 
     // collect the data type and props
-    currType.getDataType();
+    int retValueDecl = currType.getDataType();
+
+    if(retValueDecl == 2){ // struct defintion, alr added to ast, dont add again
+        return nullptr;
+    }
 
     // validate this data type (0 if valid for both, 1 if valid ONLY for var , 2 if valid ONLY for func , -1 if invalid)
     short retCode = currType.isCurrentTypeValid();
@@ -657,15 +667,32 @@ DeclarationNode* Parser::parseStruct(dataTypeHolder* helperDeclName) {
         
     }
 
+    
+
     if(tokens[currentPos].type != LBRACE){
-        cout << "Expected opening { for struct definition\n";
+        /*
+            this may be sruct var decl or error, but definitely not struct definition.
+
+            switch the control flow to the var decl side
+        */
+
+        currentPos -= 2;
+
+        return nullptr; // indicating the need to shift the control flow properly
+        
+        cout << "struct decl found, not implemented yet\n";
         exit(1);
     }
 
+    // if the control flow reaches here, it is struct definition.
+
     BlockExpressionNode* structBlock = nullptr;
+
+    this->typeRegisry[tagName.data] = "struct"; // might need tor revert it if the further code fails, take care !!!!!!!!!!!
 
     // cout << "Block parsing starting at " << this->tokens[this->currentPos-1].data << "\n";
     structBlock = parseBlock(*this); // parse the block
+
 
     if(tokens[currentPos].type == SEMICOLON){
         if(!tagNameExist){
@@ -681,6 +708,8 @@ DeclarationNode* Parser::parseStruct(dataTypeHolder* helperDeclName) {
 
         */
 
+        
+
         if(helperDeclName != nullptr){
             cout << "var is NOT decl , hence extern/volatile/restrict/const/static NOT allowed\n";
             exit(1);
@@ -689,6 +718,12 @@ DeclarationNode* Parser::parseStruct(dataTypeHolder* helperDeclName) {
         currentPos++; // skip ;
 
         StructDefinitionNode* structDef = new StructDefinitionNode(tagNameExist , tagName.data , structBlock);
+
+        /*
+            need to add the current new struct definition in the TR
+        */
+
+
         this->allAST.push_back(structDef);
         return structDef; // return for startParsing to collect
 
@@ -697,7 +732,75 @@ DeclarationNode* Parser::parseStruct(dataTypeHolder* helperDeclName) {
     // now there is some varName also afetr the }
 
     StructDefinitionNode* structDef = new StructDefinitionNode(tagNameExist , tagName.data , structBlock);
+
+    
     this->allAST.push_back(structDef);
+
+    /*
+        if it came from dataTypeDecl, it has some specifiers like extern/volatile/restrict/const/static , we here need to validate it and the manually add struct tagName to it in the dataType object
+    */
+
+    // validity of data type prop array is STILL not checked so far
+
+    // helperDeclName validaiton algo    
+    if(helperDeclName){
+
+        {
+            if(helperDeclName->signModifiersArray.size() != 0){ // signed/unsigned NOT allowed
+                cout << "Error in sign\n";
+                exit(1);
+            }
+
+            if(helperDeclName->sizeModifiersArray.size() != 0){ // size modifiers NOT allowed
+                cout << "Error in size\n";
+                exit(1);
+            }
+
+            if(helperDeclName->storageClassArray.size() > 1){ // multiple storage class NOT allowed
+                cout << "Error is storage class size\n";
+                exit(1);        
+            } else if(helperDeclName->storageClassArray.size() == 1){ // if there is a storage class, it should not be auto or register
+                if(helperDeclName->storageClassArray.back() == KEYWORD_AUTO || helperDeclName->storageClassArray.back() == KEYWORD_REGISTER){
+                    cout << "auto/register NOT allowed\n";
+                    exit(1);
+                }                
+            }
+
+            if(helperDeclName->typeQualifiersArray.size() > 3){ // max 3 type qualifiers allowed
+                cout << "Error in type qualifier\n";
+                exit(1);
+            } else if(helperDeclName->typeQualifiersArray.size() > 1){ // if there are more than 1 type qualifiers, they should not be same
+                for(long unsigned i=0 ; i<helperDeclName->typeQualifiersArray.size() ; i++){
+                    for(long unsigned j=0 ; j<helperDeclName->typeQualifiersArray.size() ; j++){
+                        if(i == j) continue;
+
+                        if(helperDeclName->typeQualifiersArray[i] == helperDeclName->typeQualifiersArray[j]){
+                            cout << "Dublicate type qualifiers NOT allowed\n";
+                            exit(1);
+                        }
+                    }
+                }
+            }
+
+            /*
+                this validation is pending rn, that restrict always require * with the var
+                
+                might add this in semantic phase
+            */
+
+            
+        }
+
+
+        // add this as base type is NOT present 
+        helperDeclName->trKeywordArray.push_back(KEYWORD_STRUCT);
+        helperDeclName->trBaseArray.push_back(tagName.data);
+    }
+
+    
+    
+    
+    
 
     getVarAgain:
 
@@ -759,8 +862,62 @@ DeclarationNode* Parser::parseUnion() {
 }
 
 DeclarationNode* Parser::parseTypedef() {
-    cout << "typedef parsing isn't implemented yet\n";
-    exit(1);
+    
+    currentPos++; // skip typedef keyword
+    
+    int tempIndexHolder = currentPos;
+
+    dataTypeHolder* original = new dataTypeHolder(*this);
+
+    original->getDataType();
+    
+     // validation ????
+
+    varNameHolder* alias = new varNameHolder(*this);
+
+    alias->getVarName(*original , false);
+
+    tdMapPair* rhs = new tdMapPair;
+    rhs->nameProp = alias;
+
+    {
+        addAgain:
+
+        // first add the data type prop as string in sequence
+        while(isThisTokenDataTypeOrPropToken(tokens[tempIndexHolder])){
+            rhs->declProp.push_back(tokens[tempIndexHolder].data);
+
+            tempIndexHolder++;
+        }
+
+        // check if next one is some typedef of original parsing is done
+        if(tokens[tempIndexHolder].type == KEYWORD_STRUCT){
+            // this is pending for now
+        }
+
+        if(tokens[tempIndexHolder].type == ID){
+            if(tokens[tempIndexHolder+1].type == SEMICOLON){
+                // it is the situation of normal typedef usecase (no complex expr in alias)
+
+                // generate typedef ast
+            }
+
+            if(isThisStringPresentAsKeyInTdMap(tokens[tempIndexHolder].data)){
+                rhs->declProp.push_back(tokens[tempIndexHolder].data);
+
+                tempIndexHolder++; // skip ID
+
+                goto addAgain;
+            }
+        }
+    }
+
+    // generate typedef ast
+
+    return new TypedefDeclarationNode(rhs->declProp , alias);
+
+    
+
     return nullptr;
 }
 
