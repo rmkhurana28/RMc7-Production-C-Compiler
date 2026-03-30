@@ -10,6 +10,8 @@ using namespace std;
 // Define the global myStack variable
 vector<locationStack> myStack;
 
+vector<ASTNode*> tempASTStorage;
+
 Parser::Parser(const vector<Token>& tokenList) {
     tokens = tokenList;
     currentPos = 0;
@@ -66,7 +68,7 @@ ASTNode** Parser::highLevelParse(){
         // parseTypedef();
         //
     } else if(isThisTokenDataTypeOrPropToken(current)){ // for global var decl, func decl, froward decl, extern 
-        itIsVarDeclInstead:
+        itIsVarDeclInstead:        
         return parseDataTypeFoundDeclaration();
     } else if(current.type == KEYWORD_STRUCT || current.type == KEYWORD_UNION || current.type == KEYWORD_ENUM){ // covers parts of struct/enum/union without any data type prop before them
 
@@ -378,11 +380,12 @@ Token Parser::getCurrentToken(){
     }
 }
 
-ASTNode** Parser::parseDataTypeFoundDeclaration(){    
+ASTNode** Parser::parseDataTypeFoundDeclaration(){
 
     DeclarationNode* temp;
 
-    vector<DeclarationNode*> list; // to store all decl nodes (can be multiple in case of multi-decl)
+    // vector<DeclarationNode*> list; // to store all decl nodes (can be multiple in case of multi-decl)
+    vector<ASTNode*> list; // to store all decl nodes (can be multiple in case of multi-decl)
 
     // generate an object to store the current data type
     dataTypeHolder currType = dataTypeHolder(*this);
@@ -395,11 +398,31 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
     // }
 
     if(retValueDecl == 2){ // struct definition found, need to call the struct definition func with proper token 
-        return nullptr; 
+        // return nullptr; 
+
+
+
+        // convert tempASTStorage to arrya and push all to list
+        for(uint64_t i=0 ; i<tempASTStorage.size(); i++){
+            list.push_back(tempASTStorage[i]);
+        }
+
+        tempASTStorage.clear();
+
+
+        ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
+        for(uint64_t i = 0; i < list.size(); i++){
+            arr[i] = list[i];
+        }
+        arr[list.size()] = nullptr; // null terminate the array
+
+        return arr; // nodes stored in this->allAST
 
         /*
         
             this is not done yet, needs to fix this properly, need to find some way to call parse struct or something from here while at the same time keeping track of data type and prop used 
+
+            UPDATE: parseStruct is happened but not added properly to it's parent block 
 
         */
 

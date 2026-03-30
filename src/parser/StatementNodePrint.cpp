@@ -35,7 +35,21 @@ void IfStatementNode::print(ofstream& out, const string& indent) {
                     if (stmt) {
                         stmt->print(out, indent + "    ");
                     } else {
-                        out << indent << "    [Non-statement node]\n";
+                        DeclarationNode* decl = dynamic_cast<DeclarationNode*>(ifBlock->expressions[i]);
+                        if (decl) {
+                            ofstream tempFile("temp_member.txt");
+                            decl->print(tempFile);
+                            tempFile.close();
+                            ifstream readFile("temp_member.txt");
+                            string line;
+                            while(getline(readFile, line)) {
+                                out << indent << "    " << line << "\n";
+                            }
+                            readFile.close();
+                            remove("temp_member.txt");
+                        } else {
+                            out << indent << "    [Non-statement/declaration node]\n";
+                        }
                     }
                 } else {
                     out << indent << "    [NULL node]\n";
@@ -57,7 +71,21 @@ void IfStatementNode::print(ofstream& out, const string& indent) {
                         if (stmt) {
                             stmt->print(out, indent + "    ");
                         } else {
-                            out << indent << "    [Non-statement node]\n";
+                            DeclarationNode* decl = dynamic_cast<DeclarationNode*>(elseBlock->expressions[i]);
+                            if (decl) {
+                                ofstream tempFile("temp_member.txt");
+                                decl->print(tempFile);
+                                tempFile.close();
+                                ifstream readFile("temp_member.txt");
+                                string line;
+                                while(getline(readFile, line)) {
+                                    out << indent << "    " << line << "\n";
+                                }
+                                readFile.close();
+                                remove("temp_member.txt");
+                            } else {
+                                out << indent << "    [Non-statement/declaration node]\n";
+                            }
                         }
                     } else {
                         out << indent << "    [NULL node]\n";
@@ -87,7 +115,21 @@ void WhileStatementNode::print(ofstream& out, const string& indent) {
                 if (stmt) {
                     stmt->print(out, indent + "    ");
                 } else {
-                    out << indent << "    [Non-statement node]\n";
+                    DeclarationNode* decl = dynamic_cast<DeclarationNode*>(whileBlock->expressions[i]);
+                    if (decl) {
+                        ofstream tempFile("temp_member.txt");
+                        decl->print(tempFile);
+                        tempFile.close();
+                        ifstream readFile("temp_member.txt");
+                        string line;
+                        while(getline(readFile, line)) {
+                            out << indent << "    " << line << "\n";
+                        }
+                        readFile.close();
+                        remove("temp_member.txt");
+                    } else {
+                        out << indent << "    [Non-statement/declaration node]\n";
+                    }
                 }
             }
         }
@@ -106,7 +148,21 @@ void DoWhileStatementNode::print(ofstream& out, const string& indent) {
                 if (stmt) {
                     stmt->print(out, indent + "    ");
                 } else {
-                    out << indent << "    [Non-statement node]\n";
+                    DeclarationNode* decl = dynamic_cast<DeclarationNode*>(doWhileBlock->expressions[i]);
+                    if (decl) {
+                        ofstream tempFile("temp_member.txt");
+                        decl->print(tempFile);
+                        tempFile.close();
+                        ifstream readFile("temp_member.txt");
+                        string line;
+                        while(getline(readFile, line)) {
+                            out << indent << "    " << line << "\n";
+                        }
+                        readFile.close();
+                        remove("temp_member.txt");
+                    } else {
+                        out << indent << "    [Non-statement/declaration node]\n";
+                    }
                 }
             }
         }
@@ -168,7 +224,21 @@ void ForStatementNode::print(ofstream& out, const string& indent) {
                 if (stmt) {
                     stmt->print(out, indent + "    ");
                 } else {
-                    out << indent << "    [Non-statement node]\n";
+                    DeclarationNode* decl = dynamic_cast<DeclarationNode*>(forBlock->expressions[i]);
+                    if (decl) {
+                        ofstream tempFile("temp_member.txt");
+                        decl->print(tempFile);
+                        tempFile.close();
+                        ifstream readFile("temp_member.txt");
+                        string line;
+                        while(getline(readFile, line)) {
+                            out << indent << "    " << line << "\n";
+                        }
+                        readFile.close();
+                        remove("temp_member.txt");
+                    } else {
+                        out << indent << "    [Non-statement/declaration node]\n";
+                    }
                 }
             }
         }
@@ -235,7 +305,21 @@ void SwitchStatementNode::print(ofstream& out, const string& indent) {
                 if (stmt) {
                     stmt->print(out, indent + "    ");
                 } else {
-                    out << indent << "    [Non-statement node]\n";
+                    DeclarationNode* decl = dynamic_cast<DeclarationNode*>(switchBlock->expressions[i]);
+                    if (decl) {
+                        ofstream tempFile("temp_member.txt");
+                        decl->print(tempFile);
+                        tempFile.close();
+                        ifstream readFile("temp_member.txt");
+                        string line;
+                        while(getline(readFile, line)) {
+                            out << indent << "    " << line << "\n";
+                        }
+                        readFile.close();
+                        remove("temp_member.txt");
+                    } else {
+                        out << indent << "    [Non-statement/declaration node]\n";
+                    }
                 }
             }
         }

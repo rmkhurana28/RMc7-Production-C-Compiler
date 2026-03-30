@@ -1,5 +1,5 @@
-      Data Type: char 
-      Var Name: b [VAR_NAME]
+      Data Type: int 
+      Var Name: a [VAR_NAME]
       IsArray: false
       ArrayDim: 0
       IsInit: false

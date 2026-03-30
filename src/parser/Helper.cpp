@@ -150,8 +150,15 @@ int dataTypeHolder::getDataType(){
             // this->parser.currentPos -= 2;
 
             if(helpType == KEYWORD_STRUCT){
-                cout << "Speical cond-1\n";
-                this->parser.parseStruct(this);
+                ASTNode** tempStorage = this->parser.parseStruct(this);
+
+                short pushIndex = 0;
+                while(tempStorage != nullptr && tempStorage[pushIndex] != nullptr){
+                    tempASTStorage.push_back(tempStorage[pushIndex]);
+                    pushIndex++;
+                }
+
+                
 
                 return 2;
             }
@@ -2179,6 +2186,7 @@ BlockExpressionNode* parseBlock(Parser& parser){
             /*
                 using while instead of hardcoding it to 0 , coz some functions can return more than 1 ast at a time, ex struct with var decl
             */
+
 
             blockASTs.push_back(myHelper[i]);
             i++;

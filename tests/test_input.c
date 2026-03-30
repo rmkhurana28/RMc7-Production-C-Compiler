@@ -1,6 +1,14 @@
-int main(void){
-    struct testStruct{
+int main(void){    
+    while(0){
+        const struct name{
+            int a;
+            struct haha{
+                int dfg;
+            };
+        }asdf;
+    }
+
+    struct power{
         int a;
-        char b;
-    } var2, var3;
+    }haha;
 }

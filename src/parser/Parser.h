@@ -18,6 +18,7 @@ typedef struct tdMapPair{
     varNameHolder* nameProp;
 } tdMapPair;
 
+extern vector<ASTNode*> tempASTStorage; // to store ast which are diffcult to handle using recursive-decent approach, need custom additon
 
 typedef enum locationStack{
     GLOBAL, // acting as a prent fro below 2
