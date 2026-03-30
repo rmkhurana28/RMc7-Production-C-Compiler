@@ -585,13 +585,13 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 addStarCount++;
                 current = this->parser.tokens[++this->parser.currentPos];
             }
-            
+
             if(indexIfExist == -1){ // base type doesnt alr exist in starData array
-                // starData tempStarData({addStarCount , baseType}); // generate a starData object 
-                // typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array
+                starData tempStarData({addStarCount , baseType}); // generate a starData object
+                typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array
             } else{ // base type alr exist in starData array
-                //typeHolder.starDataArray[indexIfExist].numOfStars += addStarCount; // update the number of stars in the starData
-                //addStarCount = typeHolder.starDataArray[indexIfExist].numOfStars;
+                typeHolder.starDataArray[indexIfExist].numOfStars += addStarCount; // update the number of stars in the starData
+                addStarCount = typeHolder.starDataArray[indexIfExist].numOfStars;
             }
             
             // updation is done on the data type side
@@ -2169,7 +2169,23 @@ BlockExpressionNode* parseBlock(Parser& parser){
     parser.currentPos++; // skip {
 
     while(parser.currentPos < parser.tokens.size() && parser.tokens[parser.currentPos].type != RBRACE){
-        blockASTs.push_back(parser.startParsingOfCurrentToken());
+
+        ASTNode** myHelper = parser.startParsingOfCurrentToken();
+
+        short i = 0;
+
+        while(myHelper[i] != nullptr){ // add all the ast nodes returned fromhere,
+
+            /*
+                using while instead of hardcoding it to 0 , coz some functions can return more than 1 ast at a time, ex struct with var decl
+            */
+
+            blockASTs.push_back(myHelper[i]);
+            i++;
+        }
+
+        // blockASTs.push_back(parser.startParsingOfCurrentToken()[0]);
+        
     }
 
     if(parser.currentPos >= parser.tokens.size() || parser.tokens[parser.currentPos].type != RBRACE){

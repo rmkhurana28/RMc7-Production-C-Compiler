@@ -28,3 +28,10 @@ insights/rmc7_views.json
 
 
 additionalRules.md
+
+# Temporary / logs
+temp_member.txt
+test_run.log
+
+# Reports
+TESTING_REPORT.md

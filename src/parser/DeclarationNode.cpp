@@ -74,8 +74,22 @@ vector<ParameterNode> ParameterNode::evaluateParams(Parser& parser){
         exit(1);
     }
     if(check == 2){
-        cout << "Param data type not valid for variable\n";
-        exit(1);
+
+        /*
+            need to add special chekc to allow only void here
+        */
+
+        if(paramType.baseTypeArray.size() == 1 && paramType.baseTypeArray[0] == KEYWORD_VOID){
+            // void is valid as param, but without varname
+
+            if(parser.tokens[parser.currentPos].type == ID){
+                cout << "Param name not valid for void type\n";
+                exit(1);
+            }
+        } else {
+            cout << "Param data type not valid for variable\n";
+            exit(1);
+        }
     }
 
     

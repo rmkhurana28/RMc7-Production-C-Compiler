@@ -156,6 +156,15 @@ private:
 public:
     ProgramNode(vector<DeclarationNode*> declarations) {
         this->declarations = declarations;
+    }
+
+    ProgramNode(vector<ASTNode*> astNodes) {
+        for (ASTNode* node : astNodes) {
+            DeclarationNode* declNode = dynamic_cast<DeclarationNode*>(node);
+            if (declNode != nullptr) {
+                declarations.push_back(declNode);
+            }
+        }
     }    
     
     ~ProgramNode() {

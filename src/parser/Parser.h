@@ -90,7 +90,7 @@ typedef enum locationStack{
 } locationStack;
 
 // global variable to store the stack
-vector<locationStack> myStack;
+extern vector<locationStack> myStack;
 
 class Parser {
     friend class dataTypeHolder; // allows dataTypeHolder to access private section of this class
@@ -116,11 +116,13 @@ private:
     // hashmap to store new->old[] typedef alias
     // unordered_map<string, vector<string>> tdMap;
     unordered_map<string, vector<tdMapPair>> tdMap;
+
+    ASTNode** highLevelParse(); // to generate all the AST and return accordingly (current plan is to return an array of ast nodes, might need to add all of them to the high level array)
     
     // Add your helper methods here
     DeclarationNode* parseCurrentDecl();
     StatementNode* parseExpressionStatement();
-    ASTNode* startParsingOfCurrentToken();
+    ASTNode** startParsingOfCurrentToken();
 
     // check
     bool isThisTokenDataTypeOrPropToken(Token currToken);
@@ -132,7 +134,7 @@ private:
 
     bool isThisTokenStructUnionEnumToken(Token currToken);
 
-    DeclarationNode* parseDataTypeFoundDeclaration();
+    ASTNode** parseDataTypeFoundDeclaration();
 
     bool isThisStringPresentAsKeyInTrHm(string key);
     bool isThisStringPresentAsKeyInTdMap(string key);
@@ -155,7 +157,7 @@ private:
     StatementNode* parseDefaultLabel();
     
     // Structured types
-    DeclarationNode* parseStruct(dataTypeHolder* helperDeclName);
+    ASTNode** parseStruct(dataTypeHolder* helperDeclName);
     DeclarationNode* parseEnum();
     DeclarationNode* parseUnion();
     DeclarationNode* parseTypedef();

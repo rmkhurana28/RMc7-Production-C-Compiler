@@ -3,7 +3,12 @@
 #include "Helper.h"
 #include <iostream>
 
+#include <cstdint>
+
 using namespace std;
+
+// Define the global myStack variable
+vector<locationStack> myStack;
 
 Parser::Parser(const vector<Token>& tokenList) {
     tokens = tokenList;
@@ -21,88 +26,188 @@ ProgramNode* Parser::startParsing() {
     // generate all relavent AST
     // keep parsing untill tokens are finished
     while(this->currentPos < tokens.size()){
-        ASTNode* node = startParsingOfCurrentToken();
-        
-        if(node != nullptr) {
-            // Check if it's a statement
-            StatementNode* stmt = dynamic_cast<StatementNode*>(node);
-            if(stmt != nullptr) {
-                allStmts.push_back(stmt);
-            }
-            // Check if it's a declaration
-            DeclarationNode* decl = dynamic_cast<DeclarationNode*>(node);
-            if(decl != nullptr) {
-                allDeclNodes.push_back(decl);
-            }
+        // ASTNode* node = startParsingOfCurrentToken();
+        ASTNode** node = highLevelParse();
+
+        // add nodes in node to allast
+        for(int i = 0; node != nullptr && node[i] != nullptr; i++){
+            allAST.push_back(node[i]);
         }
+
+        
+        
+        // if(node != nullptr) {
+        //     // Check if it's a statement
+        //     StatementNode* stmt = dynamic_cast<StatementNode*>(node);
+        //     if(stmt != nullptr) {
+        //         allStmts.push_back(stmt);
+        //     }
+        //     // Check if it's a declaration
+        //     DeclarationNode* decl = dynamic_cast<DeclarationNode*>(node);
+        //     if(decl != nullptr) {
+        //         allDeclNodes.push_back(decl);
+        //     }
+        // }
     }
 
     // generating program node containing an array of all decl nodes
-    ProgramNode* myRootNode = new ProgramNode(allDeclNodes);
+    // ProgramNode* myRootNode = new ProgramNode(allDeclNodes);
+    ProgramNode* myRootNode = new ProgramNode(allAST);
 
     // returning the program node as root node
     return myRootNode;
 }
 
-ASTNode* Parser::startParsingOfCurrentToken() {
+ASTNode** Parser::highLevelParse(){
+    Token current = this->tokens[this->currentPos];
+    
+
+    if(current.type == KEYWORD_TYPEDEF){ // typedef always comes as first word if it is typedef
+        // parseTypedef();
+        //
+    } else if(isThisTokenDataTypeOrPropToken(current)){ // for global var decl, func decl, froward decl, extern 
+        itIsVarDeclInstead:
+        return parseDataTypeFoundDeclaration();
+    } else if(current.type == KEYWORD_STRUCT || current.type == KEYWORD_UNION || current.type == KEYWORD_ENUM){ // covers parts of struct/enum/union without any data type prop before them
+
+        if(this->tokens[this->currentPos+1].type == ID && this->tokens[this->currentPos+2].type == ID){ // it is just var decl, and not struct definition, switch to data type decl parsing
+            goto itIsVarDeclInstead;
+        }
+
+        if(current.type == KEYWORD_STRUCT){
+            return parseStruct(nullptr);
+        }
+    } else if(current.type == ID){ // can be related to typedef or type registry, might need to check
+        //
+    }
+    else{ 
+        cout << "high level unknown token found\n";
+
+        exit(1);
+    }
+
+    return nullptr;
+}
+
+ASTNode** Parser::startParsingOfCurrentToken() {
     Token current = this->tokens[this->currentPos];
     
     // Check for control flow statements
     if(current.type == KEYWORD_IF) {
-        return this->parseIf();
+        StatementNode* ans = this->parseIf();
+        ASTNode** dummy = new ASTNode*[2];
+        dummy[0] = ans;
+        dummy[1] = nullptr;
+        return dummy;
     } else if(current.type == KEYWORD_FOR) {
-        return this->parseFor();
+        StatementNode* ans = this->parseFor();
+        ASTNode** dummy = new ASTNode*[2];
+        dummy[0] = ans;
+        dummy[1] = nullptr;
+        return dummy;
     } else if(current.type == KEYWORD_WHILE) {
-        return this->parseWhile();
+        StatementNode* ans = this->parseWhile();
+        ASTNode** dummy = new ASTNode*[2];
+        dummy[0] = ans;
+        dummy[1] = nullptr;
+        return dummy;
     } else if(current.type == KEYWORD_DO){
-        return this->parseDoWhile();
+        StatementNode* ans = this->parseDoWhile();
+        ASTNode** dummy = new ASTNode*[2];
+        dummy[0] = ans;
+        dummy[1] = nullptr;
+        return dummy;
     } 
     else if(current.type == KEYWORD_SWITCH) {
-        return this->parseSwitch();
+        StatementNode* ans = this->parseSwitch();
+        ASTNode** dummy = new ASTNode*[2];
+        dummy[0] = ans;
+        dummy[1] = nullptr;
+        return dummy;
     }
     // Check for case/default labels
     else if(current.type == KEYWORD_CASE) {
-        return this->parseCaseLabel();
+        StatementNode* ans = this->parseCaseLabel();
+        ASTNode** dummy = new ASTNode*[2];
+        dummy[0] = ans;
+        dummy[1] = nullptr;
+        return dummy;
     } else if(current.type == KEYWORD_DEFAULT) {
-        return this->parseDefaultLabel();
+        StatementNode* ans = this->parseDefaultLabel();
+        ASTNode** dummy = new ASTNode*[2];
+        dummy[0] = ans;
+        dummy[1] = nullptr;
+        return dummy;
     }
     // Check for jump statements
     else if(current.type == KEYWORD_RETURN) {
-        return this->parseReturn();
+        StatementNode* ans = this->parseReturn();
+        ASTNode** dummy = new ASTNode*[2];
+        dummy[0] = ans;
+        dummy[1] = nullptr;
+        return dummy;
     } else if(current.type == KEYWORD_CONTINUE) {
-        return this->parseContinue();
+        StatementNode* ans = this->parseContinue();
+        ASTNode** dummy = new ASTNode*[2];
+        dummy[0] = ans;
+        dummy[1] = nullptr;
+        return dummy;
     } else if(current.type == KEYWORD_BREAK) {
-        return this->parseBreak();
+        StatementNode* ans = this->parseBreak();
+        ASTNode** dummy = new ASTNode*[2];
+        dummy[0] = ans;
+        dummy[1] = nullptr;
+        return dummy;
     } else if(current.type == KEYWORD_GOTO) {
-        return this->parseGoto();
+        StatementNode* ans = this->parseGoto();
+        ASTNode** dummy = new ASTNode*[2];
+        dummy[0] = ans;
+        dummy[1] = nullptr;
+        return dummy;
     }
     else if(current.type == ID && tokens[currentPos+1].type == OP_COLON){
-        return this->parseLabel();
+        StatementNode* ans = this->parseLabel();
+        ASTNode** dummy = new ASTNode*[2];
+        dummy[0] = ans;
+        dummy[1] = nullptr;
+        return dummy;
     }
     // Check for structured types
     else if(current.type == KEYWORD_STRUCT) {
-        DeclarationNode* myHelper =  this->parseStruct(nullptr);
-        if(myHelper == nullptr){
-            goto itIsVarDeclInstead;
-        } 
-
-        return myHelper;
+        // Only call parseStruct if this appears to be a struct definition (has LBRACE)
+        // Check: next token must be ID, and token after that could be LBRACE for definition
+        if(currentPos + 2 < tokens.size() &&
+           tokens[currentPos + 1].type == ID &&
+           tokens[currentPos + 2].type == LBRACE) {
+            // This is a struct definition
+            ASTNode** myHelper = this->parseStruct(nullptr);
+            return myHelper;
+        }
+        // If not a definition, fall through to data type parsing
+        goto itIsVarDeclInstead;
     } 
     else if(current.type == KEYWORD_ENUM) {
-        return this->parseEnum();
-    } else if(current.type == KEYWORD_UNION) {
-        return this->parseUnion();
-    } else if(current.type == KEYWORD_TYPEDEF) {
-        return this->parseTypedef();
+    //     return this->parseEnum();
+    // } else if(current.type == KEYWORD_UNION) {
+    //     return this->parseUnion();
+    // } else if(current.type == KEYWORD_TYPEDEF) {
+    //     return this->parseTypedef();
     } 
     // Check if it's a declaration (starts with type/storage class)
     else if(isThisTokenDataTypeOrPropToken(current)) {
         itIsVarDeclInstead:
-        return this->parseCurrentDecl();
+        return parseDataTypeFoundDeclaration();
     } else {
         // Otherwise it's an expression statement
-        return this->parseExpressionStatement();
+        StatementNode* ans = this->parseExpressionStatement();
+        ASTNode** dummy = new ASTNode*[2];
+        dummy[0] = ans;
+        dummy[1] = nullptr;
+        return dummy;
     }
+
+    return nullptr; // Should never reach here
+
 }
 
 DeclarationNode* Parser::parseCurrentDecl(){
@@ -273,9 +378,11 @@ Token Parser::getCurrentToken(){
     }
 }
 
-DeclarationNode* Parser::parseDataTypeFoundDeclaration(){    
+ASTNode** Parser::parseDataTypeFoundDeclaration(){    
 
     DeclarationNode* temp;
+
+    vector<DeclarationNode*> list; // to store all decl nodes (can be multiple in case of multi-decl)
 
     // generate an object to store the current data type
     dataTypeHolder currType = dataTypeHolder(*this);
@@ -283,8 +390,19 @@ DeclarationNode* Parser::parseDataTypeFoundDeclaration(){
     // collect the data type and props
     int retValueDecl = currType.getDataType();
 
-    if(retValueDecl == 2){ // struct defintion, alr added to ast, dont add again
-        return nullptr;
+    // if(retValueDecl == 2){ // struct defintion, alr added to ast, dont add again
+    //     return nullptr;
+    // }
+
+    if(retValueDecl == 2){ // struct definition found, need to call the struct definition func with proper token 
+        return nullptr; 
+
+        /*
+        
+            this is not done yet, needs to fix this properly, need to find some way to call parse struct or something from here while at the same time keeping track of data type and prop used 
+
+        */
+
     }
 
     // validate this data type (0 if valid for both, 1 if valid ONLY for var , 2 if valid ONLY for func , -1 if invalid)
@@ -299,7 +417,8 @@ DeclarationNode* Parser::parseDataTypeFoundDeclaration(){
     
     if(retCode == 2){ // valid ONLY for func (void*)
         temp = currName.getVarName(currType , false);
-        this->allAST.push_back(temp);
+
+        // this->allAST.push_back(temp);
         
         if(this->tokens[this->currentPos].type == COMMA){ // multiple decl
             this->currentPos++;
@@ -311,7 +430,10 @@ DeclarationNode* Parser::parseDataTypeFoundDeclaration(){
         multiDecl:
         temp = currName.getVarName(currType , false);
         
-        this->allAST.push_back(temp);
+        // this->allAST.push_back(temp);
+
+        list.push_back(temp);
+
 
         if(this->tokens[this->currentPos].type == COMMA){ // multiple decl
             this->currentPos++;
@@ -324,7 +446,9 @@ DeclarationNode* Parser::parseDataTypeFoundDeclaration(){
         
         // if(var) proceed var decl        
         temp = currName.getVarName(currType , false);
-        this->allAST.push_back(temp);
+        // this->allAST.push_back(temp);
+
+        list.push_back(temp);
         
         if(this->tokens[this->currentPos].type == COMMA){ // multiple decl
             this->currentPos++;
@@ -352,7 +476,14 @@ DeclarationNode* Parser::parseDataTypeFoundDeclaration(){
     
 
     // generate all the AST and return accordignly
-    return nullptr; // nodes stored in this->allAST
+
+    ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
+    for(uint64_t i = 0; i < list.size(); i++){
+        arr[i] = list[i];
+    }
+    arr[list.size()] = nullptr; // null terminate the arraya
+
+    return arr; // nodes stored in this->allAST
 }
 
 StatementNode* Parser::parseExpressionStatement() {
@@ -399,7 +530,7 @@ StatementNode* Parser::parseIf() {
     if(tokens[currentPos].type == LBRACE){ // block
         ifBlock = parseBlock(*this);
     } else{ // single line
-        ifStatements.push_back(startParsingOfCurrentToken());
+        ifStatements.push_back(startParsingOfCurrentToken()[0]);
         ifBlock = new BlockExpressionNode(ifStatements);
     }
 
@@ -414,7 +545,7 @@ StatementNode* Parser::parseIf() {
             elseBlock = parseBlock(*this);
         } else{
             vector<ASTNode*> elseStatements;
-            elseStatements.push_back(startParsingOfCurrentToken());
+            elseStatements.push_back(startParsingOfCurrentToken()[0]);
             elseBlock = new BlockExpressionNode(elseStatements);
         }
 
@@ -481,7 +612,7 @@ StatementNode* Parser::parseFor() {
         return new ForStatementNode(init , cond , incr , forBlock);
     } else{
         vector<ASTNode*> forStatements;
-        forStatements.push_back(startParsingOfCurrentToken());
+        forStatements.push_back(startParsingOfCurrentToken()[0]);
         BlockExpressionNode* forBlock = new BlockExpressionNode(forStatements);
         return new ForStatementNode(init , cond , incr , forBlock);
     }
@@ -516,7 +647,7 @@ StatementNode* Parser::parseWhile() {
     if(tokens[currentPos].type == LBRACE){ // block
         whileBlock = parseBlock(*this);
     } else{ // single line
-        whileStatements.push_back(startParsingOfCurrentToken());
+        whileStatements.push_back(startParsingOfCurrentToken()[0]);
         whileBlock = new BlockExpressionNode(whileStatements);
     }
 
@@ -535,7 +666,7 @@ StatementNode* Parser::parseDoWhile() {
         doWhileBlock = parseBlock(*this);
     } else{
         vector<ASTNode*> doWhileStatements; 
-        doWhileStatements.push_back(startParsingOfCurrentToken());
+        doWhileStatements.push_back(startParsingOfCurrentToken()[0]);
         doWhileBlock = new BlockExpressionNode(doWhileStatements);
     }
 
@@ -640,20 +771,22 @@ StatementNode* Parser::parseDefaultLabel() {
 }
 
 // Structured types
-DeclarationNode* Parser::parseStruct(dataTypeHolder* helperDeclName) {
+ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
     
     currentPos++; // skip keyword struct
 
     bool tagNameExist = false;
     Token tagName;
 
+    vector<ASTNode*> list; // list to store struct decl node and maybe var decl nodes also if exist
+
     if(tokens[currentPos].type == ID){ // tagName exist
         tagNameExist = true;
         tagName = tokens[currentPos]; // save tagName in token
         currentPos++; // skip tagName
-    } 
+    }
 
-    if(tokens[currentPos].type == SEMICOLON){ // can be forward decl if tagName exists
+    if(tokens[currentPos].type == SEMICOLON){ // can be forward decl if tagName exists        
         if(!tagNameExist){
             cout << "Expected tagName for forward decl\n";
             exit(1);
@@ -661,9 +794,22 @@ DeclarationNode* Parser::parseStruct(dataTypeHolder* helperDeclName) {
 
         currentPos++; // skip ;
 
+
         ForwardDeclarationNode* fwdDecl = new ForwardDeclarationNode(KEYWORD_STRUCT , tagName.data);
-        this->allAST.push_back(fwdDecl);
-        return fwdDecl; // return for startParsing to collect
+        
+        list.push_back(fwdDecl);
+
+        ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
+        for(uint64_t i = 0; i < list.size(); i++){
+            arr[i] = list[i];
+        }
+        arr[list.size()] = nullptr; // null terminate the array
+
+
+        return arr;
+
+        // this->allAST.push_back(fwdDecl);
+        // return fwdDecl; // return for startParsing to collect
         
     }
 
@@ -692,6 +838,7 @@ DeclarationNode* Parser::parseStruct(dataTypeHolder* helperDeclName) {
 
     // cout << "Block parsing starting at " << this->tokens[this->currentPos-1].data << "\n";
     structBlock = parseBlock(*this); // parse the block
+
 
 
     if(tokens[currentPos].type == SEMICOLON){
@@ -723,9 +870,18 @@ DeclarationNode* Parser::parseStruct(dataTypeHolder* helperDeclName) {
             need to add the current new struct definition in the TR
         */
 
+        list.push_back(structDef);
 
-        this->allAST.push_back(structDef);
-        return structDef; // return for startParsing to collect
+        ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
+        for(uint64_t i = 0; i < list.size(); i++){
+            arr[i] = list[i];
+        }
+        arr[list.size()] = nullptr; // null terminate the arraya
+
+        return arr;
+
+        // this->allAST.push_back(structDef);
+        // return structDef; // return for startParsing to collect
 
     }
 
@@ -733,8 +889,10 @@ DeclarationNode* Parser::parseStruct(dataTypeHolder* helperDeclName) {
 
     StructDefinitionNode* structDef = new StructDefinitionNode(tagNameExist , tagName.data , structBlock);
 
+    list.push_back(structDef);
+
     
-    this->allAST.push_back(structDef);
+    // this->allAST.push_back(structDef);
 
     /*
         if it came from dataTypeDecl, it has some specifiers like extern/volatile/restrict/const/static , we here need to validate it and the manually add struct tagName to it in the dataType object
@@ -792,6 +950,7 @@ DeclarationNode* Parser::parseStruct(dataTypeHolder* helperDeclName) {
         }
 
 
+
         // add this as base type is NOT present 
         helperDeclName->trKeywordArray.push_back(KEYWORD_STRUCT);
         helperDeclName->trBaseArray.push_back(tagName.data);
@@ -817,15 +976,23 @@ DeclarationNode* Parser::parseStruct(dataTypeHolder* helperDeclName) {
 
     if(!helperDeclName){
         helperDeclName = new dataTypeHolder(*this);
-        
+
         // helperDeclName->baseTypeArray.push_back(HELPER_TOKEN);
         helperDeclName->trKeywordArray.push_back(KEYWORD_STRUCT);
+
+        // Generate automatic name for anonymous structs if needed
+        if(tagName.data.empty()){
+            static int anonStructCounter = 0;
+            tagName.data = "__anon_struct_" + to_string(anonStructCounter++);
+        }
         helperDeclName->trBaseArray.push_back(tagName.data);
     }
 
     // dataTypeHolder* helper = nullptr;
 
-    this->allDeclNodes.push_back(structVarName->getVarName(*helperDeclName, false));
+    list.push_back(structVarName->getVarName(*helperDeclName, false));
+
+    // this->allDeclNodes.push_back(structVarName->getVarName(*helperDeclName, false));
 
 
     // this->allAST.push_back(new DeclarationNode(helperDeclName , structVarName));
@@ -845,7 +1012,15 @@ DeclarationNode* Parser::parseStruct(dataTypeHolder* helperDeclName) {
     currentPos++; // skip ;
 
     // return struct definition node for startParsing to collect
-    return structDef;
+    
+    ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
+    for(uint64_t i = 0; i < list.size(); i++){
+        arr[i] = list[i];
+    }
+    arr[list.size()] = nullptr; // null terminate the arraya
+
+    return arr;
+    // return structDef;
     
 }
 
