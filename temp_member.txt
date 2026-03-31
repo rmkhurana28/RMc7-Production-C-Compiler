@@ -1,5 +1,5 @@
       Data Type: int 
-      Var Name: a [VAR_NAME]
+      Var Name: x [VAR_NAME]
       IsArray: false
       ArrayDim: 0
       IsInit: false

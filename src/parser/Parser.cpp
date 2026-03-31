@@ -68,7 +68,7 @@ ASTNode** Parser::highLevelParse(){
         // parseTypedef();
         //
     } else if(isThisTokenDataTypeOrPropToken(current)){ // for global var decl, func decl, froward decl, extern 
-        itIsVarDeclInstead:        
+        itIsVarDeclInstead:                
         return parseDataTypeFoundDeclaration();
     } else if(current.type == KEYWORD_STRUCT || current.type == KEYWORD_UNION || current.type == KEYWORD_ENUM){ // covers parts of struct/enum/union without any data type prop before them
 
@@ -76,8 +76,8 @@ ASTNode** Parser::highLevelParse(){
             goto itIsVarDeclInstead;
         }
 
-        if(current.type == KEYWORD_STRUCT){
-            return parseStruct(nullptr);
+        if(current.type == KEYWORD_STRUCT){            
+            return parseStruct(nullptr);            
         }
     } else if(current.type == ID){ // can be related to typedef or type registry, might need to check
         //
@@ -817,6 +817,8 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
 
         currentPos++; // skip ;
 
+        this->typeRegisry[tagName.data] = "struct"; // adding in type registry to add forw decl
+
 
         ForwardDeclarationNode* fwdDecl = new ForwardDeclarationNode(KEYWORD_STRUCT , tagName.data);
         
@@ -834,6 +836,8 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
         // this->allAST.push_back(fwdDecl);
         // return fwdDecl; // return for startParsing to collect
         
+    } else if(tokens[currentPos].type == ID){
+        // it is var decl
     }
 
     

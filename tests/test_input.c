@@ -1,14 +1,7 @@
-int main(void){    
-    while(0){
-        const struct name{
-            int a;
-            struct haha{
-                int dfg;
-            };
-        }asdf;
-    }
+struct A;
 
-    struct power{
-        int a;
-    }haha;
-}
+// struct A {
+//     int x;
+// };
+
+struct A var;
