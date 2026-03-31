@@ -1,6 +1,6 @@
 # RMc7 Syntax Reference
 
-**Version:** Phase 1 Complete | Phase 2 In Progress (~80%)  
+**Version:** Phase 1 Complete | Phase 2 In Progress (~85%)  
 **Target:** 90-95% ISO C Core Features
 
 > **Note:** This syntax reference describes only the syntactic structure of the language.  
@@ -152,11 +152,11 @@ int *(*(**ptr)[10])(int);    // Pointer to pointer to array of pointers to funct
 ```
 
 ### 2.3 Function Parameters
-✅ Named parameters  
-✅ Unnamed parameters (simple types only)  
-✅ Variadic functions (`...`)  
-✅ Empty parameter list `()`  
-🟡 `void` parameter list `(void)` - **Known Bug**
+✅ Named parameters
+✅ Unnamed parameters (simple types only)
+✅ Variadic functions (`...`)
+✅ Empty parameter list `()`
+✅ `void` parameter list `(void)`
 
 **Examples:**
 ```c
@@ -164,9 +164,10 @@ int add(int a, int b);           // Named parameters
 int subtract(int, int);          // Unnamed parameters
 int printf(const char *fmt, ...); // Variadic
 int legacy_func();               // Empty (old-style)
+int typed_empty(void);           // Void parameter list
 ```
 
-🟡 **`void` parameters have a known bug** - Avoid `(void)` parameter lists and `void *` parameters until fixed.
+> **Note:** `void *` (void pointer) as a parameter return type isn't fully fixed yet. Avoid using void pointers in parameter lists until this is resolved.
 
 **Design Rule: Anonymous Parameters**
 
@@ -198,12 +199,65 @@ int func(int (*(*_name)[10])(int));         // Complex nested WITH name - OK
 ## 3. Structured Types
 
 ### 3.1 Structures
-➡️ `struct` declarations  
-➡️ `struct` definitions  
-➡️ Nested structures  
-➡️ Anonymous structures  
-➡️ Structure member access (`.`)  
-➡️ Structure pointer access (`->`)
+✅ `struct` declarations
+✅ `struct` definitions
+✅ Named structures
+✅ Anonymous structures
+✅ Self-referencing structures
+✅ Nested structures
+✅ Structure member access (`.`)
+✅ Structure pointer access (`->`)
+
+**Examples:**
+```c
+// Simple declaration
+struct Point {
+    int x;
+    int y;
+};
+
+struct Point p;                    // Declare variable
+struct Point *ptr = &p;           // Pointer to struct
+
+// Inline definition
+struct Color {
+    int r, g, b;
+} color_var;
+
+// Anonymous struct
+struct {
+    int id;
+    char name[50];
+} employee;
+
+// Self-referencing (linked list)
+struct Node {
+    int data;
+    struct Node *next;
+};
+
+// Nested structures
+struct Address {
+    char street[100];
+    char city[50];
+};
+
+struct Person {
+    char name[50];
+    struct Address addr;
+};
+
+// Member access
+p.x = 10;
+ptr->y = 20;
+person.addr.city[0] = 'N';
+```
+
+**Design Rules:**
+- Structures can be declared, defined, or both in a single statement
+- Structure names are identifiers and must be used with the `struct` keyword when referencing the type (unless typedef'd)
+- Anonymous structures are allowed and automatically named by the compiler
+- Self-referencing is allowed (e.g., linked lists, trees)
 
 ### 3.2 Unions
 ➡️ `union` declarations  
@@ -633,7 +687,7 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 
 **Target:** 90-95% ISO C core features
 
-**Current Coverage (Parser Phase):** ~80%
+**Current Coverage (Parser Phase):** ~85%
 - ✅ Complete type system
 - ✅ Complete declarator system
 - ✅ Complete expression system
@@ -648,14 +702,13 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 
 **Completed:**
 - ✅ **Phase 1:** Lexical Analysis (100%)
-- ✅ **Phase 2 (80%):** Type system, declarators, expressions, statements, function definitions
+- ✅ **Phase 2 (85%):** Type system, declarators, expressions, statements, function definitions, struct parsing
 
 **In Progress:**
-- 🟡 `void` parameter handling (known bug)
 - 🟡 Diagnostic Engine
+- 🟡 `typedef`, `union`, `enum` parsing 
 
 **Upcoming:**
-- ➡️ `typedef`, `struct`, `union`, `enum` parsing
 - ➡️ Position-validity rules (semantic context checks)
 - ➡️ Preprocessor
 - ➡️ Semantic analysis
