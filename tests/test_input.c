@@ -1,7 +1,13 @@
-struct A;
+int main(void){
+    for(int i=0 ; i<100 ; i++){
+        printf("Hello world\n");
 
-// struct A {
-//     int x;
-// };
+        continue;
 
-struct A var;
+        ans = a++ * *num;
+
+        break;
+
+        return 0;
+    }
+}
