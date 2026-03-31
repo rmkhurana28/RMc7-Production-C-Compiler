@@ -139,17 +139,24 @@ int dataTypeHolder::getDataType(){
     if(this->parser.isThisTokenStructUnionEnumToken(this->parser.tokens[this->parser.currentPos])){ // struct/enum/union
 
         if(this->parser.tokens[this->parser.currentPos+1].type != ID){ // ID always expected after struct/enum/union keyword
-            cout << "Error: Expected ID after struct/enum/union\n" << endl;
+            if(this->parser.tokens[this->parser.currentPos+1].type == LBRACE){
+                // might be anonymous struct definition
+                goto jumpToStructDef;
+            }
+
+            cout << "Error: Expected ID after struct/enum/union new one\n" << endl;
             exit(1);
         }
 
         // here it is struct/enum/union definition
         if(this->parser.tokens[this->parser.currentPos+2].type == LBRACE){
+            jumpToStructDef:
             TokenType helpType = this->parser.tokens[this->parser.currentPos].type;
 
             // this->parser.currentPos -= 2;
 
             if(helpType == KEYWORD_STRUCT){
+                
                 ASTNode** tempStorage = this->parser.parseStruct(this);
 
                 short pushIndex = 0;

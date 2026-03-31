@@ -1,5 +1,5 @@
-      Data Type: int 
-      Var Name: x [VAR_NAME]
+      Data Type: Address 
+      Var Name: addr [VAR_NAME]
       IsArray: false
       ArrayDim: 0
       IsInit: false
