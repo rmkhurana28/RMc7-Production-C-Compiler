@@ -1091,6 +1091,8 @@ ASTNode** Parser::parseTypedef() {
 
     original->getDataType();
 
+    original->isCurrentTypeValid();
+
      // validation ????
 
     varNameHolder* alias = new varNameHolder(*this);    
