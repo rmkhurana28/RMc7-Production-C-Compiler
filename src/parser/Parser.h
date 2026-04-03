@@ -20,6 +20,8 @@ typedef struct tdMapPair{
 
 extern vector<ASTNode*> tempASTStorage; // to store ast which are diffcult to handle using recursive-decent approach, need custom additon
 
+extern bool typedDefTracker;
+
 typedef enum locationStack{
     GLOBAL, // acting as a prent fro below 2
     GLOABL_VAR_DECL, // global var decl starting point

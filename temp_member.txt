@@ -1,8 +1,6 @@
-      Data Type: char 
-      Var Name: name [VAR_NAME, ARRAY(index)]
-      IsArray: true
-      ArrayDim: 1
-      Array Sizes:
-        [Dimension 1]: 
-          IntLiteral(100)      IsInit: false
+      Data Type: int 
+      Var Name: y [VAR_NAME]
+      IsArray: false
+      ArrayDim: 0
+      IsInit: false
       AST: NULL

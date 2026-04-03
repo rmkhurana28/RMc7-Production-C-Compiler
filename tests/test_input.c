@@ -1,138 +1,264 @@
-// ====== COMPREHENSIVE COMPLEX TYPEDEF TESTS ======
-// Testing deep nesting, complex declarators, qualifiers, etc.
-// Now that implicit 'int' is fixed, testing full complexity
+// ====== COMPREHENSIVE TESTING (EXCLUDING VOID TYPEDEF & TYPEDEF REUSE) ======
 
-// ====== LEVEL 1: MULTI-LEVEL POINTERS ======
-typedef int*** TriplePtr;
-typedef int**** QuadruplePtr;
-typedef int***** FivePtr;
+// GROUP 1: PRIMITIVE TYPEDEFS
+typedef int MyInt;
+typedef unsigned int UInt;
+typedef long Long;
+typedef unsigned long ULong;
+typedef long long LongLong;
+typedef unsigned long long ULongLong;
+typedef short Short;
+typedef unsigned short UShort;
+typedef char Char;
+typedef float Float;
+typedef double Double;
 
-// ====== LEVEL 2: POINTERS WITH QUALIFIERS ======
+// GROUP 2: POINTER TYPEDEFS
+typedef int* IntPtr;
+typedef int** IntPtrPtr;
+typedef int*** IntPtrPtrPtr;
+typedef int **** IntPtrPtrPtrPtr;
+typedef char* CharPtr;
+typedef void* VoidPtr;
+
+// GROUP 3: ARRAY TYPEDEFS
+typedef int IntArray[10];
+typedef int IntMatrix[5][5];
+typedef int Int3D[3][4][5];
+typedef int Int4D[2][3][4][5];
+
+// GROUP 4: FUNCTION POINTER TYPEDEFS
+typedef int (*BinaryOp)(int, int);
+typedef void (*Callback)(void);
+typedef int (*GetValue)(void);
+typedef void (*SetValue)(int);
+typedef int (*VoidFunc)(void);
+typedef int* (*GetPtr)(void);
+typedef int (*MultiParam)(int, int, int, int, int);
+
+// GROUP 5: COMPLEX POINTER/ARRAY MIX
+typedef int* IntPtrArray[10];
+typedef int (*IntArrayPtr)[10];
+typedef int (*IntArrayPtr2D)[5][5];
+typedef int *(*IntPtrArrayPtr)[10];
+
+// GROUP 6: FUNCTION POINTER ARRAYS
+typedef int (*FuncPtrArray[10])(void);
+typedef int (*FuncPtr2D[5][5])(int);
+
+// GROUP 7: NESTED FUNCTION POINTERS
+typedef int (*(*NestedFuncPtr)(void))(int);
+typedef int (*(*NestedFuncPtr2)(int))(int, int);
+
+// GROUP 8: QUALIFIERS
+typedef const int ConstInt;
+typedef volatile int VolInt;
+typedef const volatile int CVInt;
 typedef const int* ConstIntPtr;
-typedef int* const ConstPtr;
-typedef volatile int* VolPtr;
-typedef const volatile int* CVPtr;
+typedef int* const IntConstPtr;
+typedef volatile int* VolIntPtr;
+typedef int* volatile IntVolPtr;
+typedef const int** ConstIntPtrPtr;
+typedef int* const* IntConstPtrPtr;
+typedef const volatile int* CVIntPtr;
+typedef const int ConstIntArray[10];
+typedef volatile int VolIntArray[5];
+typedef const int* ConstIntPtrArray[10];
 
-// ====== LEVEL 3: ARRAYS ======
-typedef int Arr1D[10];
-typedef int Arr2D[3][4];
-typedef int Arr3D[2][3][4];
-typedef int Arr4D[2][3][4][5];
-
-// ====== LEVEL 4: POINTERS TO ARRAYS ======
-typedef int (*PtrToArr1D)[10];
-typedef int (*PtrToArr2D)[3][4];
-typedef int (*PtrToArr3D)[2][3][4];
-
-// ====== LEVEL 5: ARRAYS OF POINTERS ======
-typedef int* ArrOfPtr1D[5];
-typedef int* ArrOfPtr2D[3][4];
-typedef int** ArrOfPtrToPtr[5];
-
-// ====== LEVEL 6: FUNCTION POINTERS - BASIC ======
-typedef int (*FuncPtr1)(void);
-typedef int (*FuncPtr2)(int);
-typedef int (*FuncPtr3)(int, int);
-typedef int (*FuncPtr4)(int, int, int);
-typedef void (*VoidFunc)(void);
-typedef void (*VoidFunc1)(int);
-
-// ====== LEVEL 7: FUNCTION POINTERS - WITH POINTERS ======
-typedef int* (*FuncRetPtr)(void);
-typedef int** (*FuncRetPtrPtr)(void);
-typedef int* (*FuncPtr1Arg)(int*);
-typedef int** (*FuncPtr2Arg)(int*, int**);
-
-// ====== LEVEL 8: FUNCTION POINTERS - WITH ARRAYS ======
-typedef int (*FuncArrParam)[10];
-typedef int* (*FuncArrPtrParam)[5];
-typedef int (*FuncArr2DParam)[3][4];
-
-// ====== LEVEL 9: POINTERS TO FUNCTION POINTERS ======
-typedef int (**PtrToFuncPtr)(void);
-typedef int (**PtrToFuncPtr2)(int, int);
-typedef void (**PtrToVoidFunc)(void);
-
-// ====== LEVEL 10: ARRAYS OF FUNCTION POINTERS ======
-typedef int (*ArrOfFunc[5])(void);
-typedef int (*ArrOfFunc2[3])(int, int);
-typedef int (*ArrOfFunc3[2][3])(void);
-typedef void (*ArrOfVoidFunc[5])(int);
-
-// ====== LEVEL 11: COMPLEX NESTED - FUNCTION POINTERS RETURNING POINTERS ======
-typedef int* (*FuncPtrReturnPtr)(int);
-typedef int** (*FuncPtrReturnPtrPtr)(void);
-typedef int* (*FuncPtrReturnPtr2)(int, int);
-typedef void* (*GenericFunc)(void);
-
-// ====== LEVEL 12: RETURN ARRAY-LIKE PATTERNS ======
-typedef int (*FuncReturnArrPtr)[10];
-typedef int (*FuncReturnArr2DPtr)[3][4];
-
-// ====== LEVEL 13: MIXED POINTER AND ARRAY NESTING ======
-typedef int (*(*PtrToPtrToFunc))(void);
-typedef int (*(*PtrToFuncArr)[5])(void);
-typedef int* (*(*PtrToPtrFunc))(void);
-typedef int (*(*PtrToFuncPtrArr)[3])(int, int);
-
-// ====== LEVEL 14: DEEPLY NESTED POINTERS ======
-typedef int* (*(**DeepPtr1)(void))(int);
-typedef int* (*(**DeepPtr2)[10])(void);
-typedef int (*(**DeepPtr3)(int))[10];
-
-// ====== LEVEL 15: QUALIFIERS IN COMPLEX POSITIONS ======
-typedef const int* (*FuncRetConstPtr)(void);
-typedef int* const (*FuncRetConstPtrToInt)(void);
-typedef volatile int* (*FuncRetVolPtr)(int);
-typedef int* volatile (*FuncRetVolPtrVar)(void);
-
-// ====== LEVEL 16: COMPLEX WITH MULTIPLE QUALIFIERS ======
-typedef const volatile int** (*FuncRetCVPtrPtr)(void);
-typedef const int* volatile (*FuncRetConstPtrVol)(void);
-typedef volatile int* const (*FuncRetVolPtrConst)(void);
-
-// ====== LEVEL 17: ARRAYS OF CONST/VOLATILE POINTERS ======
-typedef const int* ArrConstPtr[5];
-typedef int* const ArrConstPtr2[3];
-
-// ====== LEVEL 18: POINTERS TO ARRAYS OF FUNCTIONS ======
-typedef int (*(*PtrToArrOfFunc)[5])(void);
-typedef void (*(*PtrToArrOfFunc2)[3])(int);
-typedef int* (*(*PtrToArrOfFuncRetPtr)[4])(void);
-
-// ====== LEVEL 19: ADVANCED COMBINATIONS ======
-typedef int* (*(*(*TripleNest)(void))(int))(int);
-typedef int (*(*(*PtrToFuncReturningPtrToFunc)(int))(void))(int);
-
-// ====== LEVEL 20: EXTREME NESTING (6+ LEVELS) ======
-typedef int (*(*(*(*Level4FuncPtr)(void))(int))(int))(int);
-typedef int (*(*(*(*(*Level5FuncPtr)(void))(int))(int))(int))(int);
-typedef int (*(*(*(*(*(*Level6FuncPtr)(void))(int))(int))(int))(int))(int);
-
-// ====== LEVEL 21: UNSIGNED/SIGNED SIZE MODIFIERS WITH COMPLEX DECLARATORS ======
-typedef unsigned long* ULPtr;
-typedef unsigned long long** ULLPtrPtr;
-typedef long long int* LLIntPtr;
-typedef unsigned short* USPtr;
-typedef signed int (*SignedFuncPtr)(void);
-typedef unsigned int (*UnsignedFuncPtr)(void);
-
-// ====== LEVEL 22: VOLATILE WITH COMPLEX PATTERNS ======
-typedef volatile int* VolIntPtr[5];
-typedef volatile int* (*VolFuncPtr)(void);
-typedef int* volatile (*FuncRetVolPtr2)(void);
-
-// ====== LEVEL 23: RESTRICT QUALIFIER (IF SUPPORTED) ======
+// GROUP 9: RESTRICT QUALIFIER
 typedef int* restrict RestrictPtr;
 typedef int** restrict RestrictPtrPtr;
 
-// ====== LEVEL 24: MIXED SIZE MODIFIERS WITH QUALIFIERS ======
-typedef const unsigned long CLULong;
-typedef volatile unsigned short VUSShort;
-typedef const unsigned long long int CULLInt;
+// GROUP 10: EXTREME NESTING
+typedef int (*(*Level2)(void))(int);
+typedef int (*(*(*Level3)(void))(int))(int);
+typedef int (*(*(*Level4Func)(int))(int, int))(void);
 
-// ====== EDGE CASES ======
-typedef int (*EmptyParamFunc)(void);
-typedef int (*SingleParamFunc)(int);
-typedef int (*MultiParamFunc)(int, int, int, int, int);
-typedef void (*EvenMoreParams)(int, int, int, int, int, int, int);
+// GROUP 11: VARIADIC FUNCTION POINTERS
+typedef int (*VarFunc)(int, ...);
+typedef void (*VarNoReturn)(const char*, ...);
+
+// GROUP 12: SIMPLE ANONYMOUS STRUCTS
+typedef struct {
+    int x;
+    int y;
+} Point;
+
+typedef struct {
+    float r;
+    float g;
+    float b;
+} Color;
+
+typedef struct {
+    int width;
+    int height;
+} Size;
+
+// GROUP 13: ANONYMOUS STRUCTS WITH MULTIPLE NAMES
+typedef struct {
+    int a;
+    int b;
+} Pair, TwoParts;
+
+typedef struct {
+    double x;
+    double y;
+    double z;
+} Vector3D, V3D, ThreeD;
+
+// GROUP 14: ANONYMOUS STRUCTS WITH POINTER DECLARATORS
+typedef struct {
+    int data;
+} Node, *NodePtr;
+
+typedef struct {
+    float value;
+} Cell, *CellPtr, **CellPtrPtr;
+
+// GROUP 15: ANONYMOUS STRUCTS WITH ARRAY DECLARATORS
+typedef struct {
+    int id;
+} Item, ItemArray[20];
+
+typedef struct {
+    char name[50];
+} Entry, EntryArray[100];
+
+// GROUP 16: MIXED DECLARATORS
+typedef struct {
+    int val;
+} Value, *ValPtr, ValArr[10];
+
+typedef struct {
+    int x;
+} Coord, *CoordPtr, CoordArr[5], **CoordPtrPtr;
+
+// GROUP 17: NAMED STRUCTS
+typedef struct Point2D {
+    int x;
+    int y;
+} Point2D;
+
+typedef struct Color3 {
+    int r;
+    int g;
+    int b;
+} Color3;
+
+typedef struct Node {
+    int data;
+    int next;
+} Node;
+
+// GROUP 18: NAMED STRUCTS WITH MULTIPLE NAMES
+typedef struct LinkedList {
+    int value;
+    int link;
+} LinkedList, LL, List;
+
+typedef struct TreeNode {
+    int val;
+    int left;
+    int right;
+} TreeNode, TNode;
+
+// GROUP 19: NAMED STRUCTS WITH POINTER ALIASES
+typedef struct DataNode {
+    int info;
+} DataNode, *DataNodePtr;
+
+// GROUP 20: SELF-REFERENCING STRUCTS
+typedef struct ListNode {
+    int data;
+    struct ListNode *next;
+} ListNode;
+
+typedef struct TreeNodeSelf {
+    int value;
+    struct TreeNodeSelf *left;
+    struct TreeNodeSelf *right;
+} TreeNodeSelf;
+
+typedef struct DNode {
+    int data;
+    struct DNode *prev;
+    struct DNode *next;
+} DNode;
+
+// GROUP 21: STRUCT WITH FUNCTION POINTER MEMBERS
+typedef struct {
+    int (*callback)(int);
+} HandlerSimple;
+
+typedef struct {
+    int (*init)(void);
+    int (*process)(int);
+    void (*cleanup)(void);
+} Handler;
+
+typedef struct {
+    int (*op1)(int, int);
+    int (*op2)(int, int);
+    void (*display)(void);
+} Operations;
+
+// GROUP 22: STRUCT WITH QUALIFIED MEMBERS
+typedef struct {
+    const int id;
+    int value;
+} ConstMembers;
+
+typedef struct {
+    volatile int port;
+    int data;
+} VolMembers;
+
+typedef struct {
+    const volatile int reg;
+} CVMembers;
+
+// GROUP 23: STRUCT WITH POINTER MEMBERS
+typedef struct {
+    int *ptr;
+    int **pptr;
+    int ***ppptr;
+} PointerMembers;
+
+// GROUP 24: STRUCT WITH ARRAY MEMBERS
+typedef struct {
+    int arr[10];
+    int matrix[5][5];
+    int tensor[3][4][5];
+} ArrayMembers;
+
+// GROUP 25: STRUCT WITH MIXED MEMBERS
+typedef struct {
+    int data;
+    int *ptr;
+    int arr[10];
+    int (*func)(int);
+} MixedMembers;
+
+// GROUP 26: COMPLEX STRUCT COMBINATIONS
+typedef struct {
+    int arr[10];
+    int *ptr;
+    int **pptr;
+    int (*callback)(int, int);
+} ComplexLayout;
+
+typedef struct {
+    const int* const_ptr;
+    volatile int* vol_ptr;
+    int* const* const_ptr_ptr;
+} QualifiedPtrs;
+
+// GROUP 27: MULTIPLE DECLARATORS ON COMPLEX TYPES
+typedef struct {
+    int x;
+} S, *SP, SA[5], (*SF)(void);
+
+typedef struct Named {
+    int y;
+} N, *NP, NA[10];

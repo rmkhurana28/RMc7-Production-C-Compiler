@@ -12,6 +12,8 @@ vector<locationStack> myStack;
 
 vector<ASTNode*> tempASTStorage;
 
+bool typedDefTracker = false;
+
 Parser::Parser(const vector<Token>& tokenList) {
     tokens = tokenList;
     currentPos = 0;
@@ -72,7 +74,7 @@ ASTNode** Parser::highLevelParse(){
         return parseDataTypeFoundDeclaration();
     } else if(current.type == KEYWORD_STRUCT || current.type == KEYWORD_UNION || current.type == KEYWORD_ENUM){ // covers parts of struct/enum/union without any data type prop before them
 
-        if(this->tokens[this->currentPos+1].type == ID && this->tokens[this->currentPos+2].type == ID){ // it is just var decl, and not struct definition, switch to data type decl parsing
+        if(this->tokens[this->currentPos+1].type == ID && this->tokens[this->currentPos+2].type != SEMICOLON && this->tokens[this->currentPos+2].type != LBRACE){ // it is just var decl, and not struct definition, switch to data type decl parsing
             goto itIsVarDeclInstead;
         }
 
@@ -98,6 +100,7 @@ ASTNode** Parser::highLevelParse(){
     }
     else{ 
         cout << "high level unknown token found\n";
+        cout << "Token data: " << current.data << "\n";
 
         exit(1);
     }
@@ -831,6 +834,11 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
             exit(1);
         }
 
+        if(typedDefTracker){ // if typedef is there, then either ID is exepceted or definition is expeceted
+            cout << "typedef struct forward decl NOT allowed\n";
+            exit(1);
+        }
+
         currentPos++; // skip ;
 
         this->typeRegisry[tagName.data] = "struct"; // adding in type registry to add forw decl
@@ -852,8 +860,14 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
         // this->allAST.push_back(fwdDecl);
         // return fwdDecl; // return for startParsing to collect
         
-    } else if(tokens[currentPos].type == ID){
-        // it is var decl
+    } else if(tokens[currentPos].type == ID){        
+
+        if(typedDefTracker){ 
+            // it is typedef , not var decl
+        } else{
+            // it is var decl
+        }
+
     }
 
     
@@ -887,6 +901,11 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
     if(tokens[currentPos].type == SEMICOLON){
         if(!tagNameExist){
             cout << "Expected atleast one out of tagName or varName for struct definition\n";
+            exit(1);
+        }
+
+        if(typedDefTracker){
+            cout << "typedef struct definition without typedef name NOT allowed\n";
             exit(1);
         }
 
@@ -1042,7 +1061,8 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
 
     // generate struct decl node
 
-    if(tokens[currentPos].type == COMMA){
+    if(tokens[currentPos].type == COMMA){        
+
         currentPos++; // skipp ,
         goto getVarAgain;
     }
@@ -1080,6 +1100,9 @@ DeclarationNode* Parser::parseUnion() {
 }
 
 ASTNode** Parser::parseTypedef() {
+    
+
+    typedDefTracker = true;
 
     currentPos++; // skip typedef keyword
 
@@ -1089,9 +1112,136 @@ ASTNode** Parser::parseTypedef() {
 
     dataTypeHolder* original = new dataTypeHolder(*this);
 
-    original->getDataType();
+    int retValueDecl = original->getDataType();
 
     original->isCurrentTypeValid();
+
+
+    if(retValueDecl == 2){ // struct definition 
+        
+        // convert tempASTStorage to arrya and push all to list
+        for(uint64_t i=0 ; i<tempASTStorage.size(); i++){
+            // list.push_back(tempASTStorage[i]);
+
+            /*
+                here,
+                    it will contain 1 struct definition ast
+                    it can also contain variabel decl nodes, so need to convert them accoridngly to the typedef decl
+            */
+
+            if(i == 0){
+                list.push_back(tempASTStorage[i]); // add the struct to the list as it is the foundation for typedef                
+            } else{
+
+                
+                VariableDeclarationNode* parentObj = dynamic_cast<VariableDeclarationNode*>(tempASTStorage[i]);
+
+                varNameHolder* alias = &parentObj->varName; // store the varName object of the (so called) var decl, coz need to acces this to generate typedef ast 
+
+                tdMapPair* rhs = new tdMapPair;
+                rhs->nameProp = alias; // store the varName string in the tdMapPair
+
+                short helperStorageInt = tempIndexHolder; 
+
+                // below code is copy pasted to specially deal with struct
+                {
+                    addAgain2:
+
+                    // first add the data type prop as string in sequence
+                    while(isThisTokenDataTypeOrPropToken(tokens[tempIndexHolder])){
+                        rhs->declProp.push_back(tokens[tempIndexHolder].data);
+                    
+                        tempIndexHolder++;
+                    }
+                
+                    // check if next one is some typedef of original parsing is done
+                    if(tokens[tempIndexHolder].type == KEYWORD_STRUCT){
+                        // this is pending for now
+                    
+                        rhs->declProp.push_back(tokens[tempIndexHolder].data);
+                    
+                        tempIndexHolder++; // skip struct keyword
+                    
+                        if(tokens[tempIndexHolder].type == ID){ // struct tagName also exist
+                            rhs->declProp.push_back(tokens[tempIndexHolder].data);
+                        
+                            tempIndexHolder++; // skip struct tagName
+                        } else{
+                            // it is anon struct def with typedef, need to give it a name myself
+                        }
+                    
+
+                    }
+                
+                    if(tokens[tempIndexHolder].type == ID){
+                        if(tokens[tempIndexHolder+1].type == SEMICOLON){
+                            // it is the situation of normal typedef usecase (no complex expr in alias)
+                        
+                            // generate typedef ast
+                        }
+                    
+                        if(isThisStringPresentAsKeyInTdMap(tokens[tempIndexHolder].data)){
+                            rhs->declProp.push_back(tokens[tempIndexHolder].data);
+                        
+                            tempIndexHolder++; // skip ID
+                        
+                            goto addAgain2;
+                        }
+                    }
+                                        
+                    
+                } 
+                
+                
+                
+
+                list.push_back(new TypedefDeclarationNode(rhs->declProp , rhs->nameProp));
+
+                if(i != tempASTStorage.size() - 1){
+                    tempIndexHolder = helperStorageInt; 
+                    continue;
+                }
+                        
+                ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
+                for(uint64_t i = 0; i < list.size(); i++){
+                    arr[i] = list[i];
+                }
+                arr[list.size()] = nullptr; // null terminate the arraya
+            
+                // tdMap[rhs->nameProp->namePropArray[0].varName].push_back(rhs); 
+            
+                string typedefAliasName = rhs->nameProp->namePropArray[0].varName;
+                tdMap[typedefAliasName].push_back(*rhs); 
+            
+                tempASTStorage.clear();            
+
+
+                // cout << "Current token is : " << tokens[currentPos].data << "\n";
+                currentPos++; // skip ;
+            
+                return arr;
+
+            }
+
+            
+
+        }
+        
+
+        // String 
+
+        // tempASTStorage.clear();
+
+
+        // ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
+        // for(uint64_t i = 0; i < list.size(); i++){
+        //     arr[i] = list[i];
+        // }
+        // arr[list.size()] = nullptr; // null terminate the array
+
+        // return arr; // nodes stored in this->allAST
+
+    }
 
      // validation ????
 
@@ -1122,6 +1272,20 @@ ASTNode** Parser::parseTypedef() {
         // check if next one is some typedef of original parsing is done
         if(tokens[tempIndexHolder].type == KEYWORD_STRUCT){
             // this is pending for now
+
+            rhs->declProp.push_back(tokens[tempIndexHolder].data);
+
+            tempIndexHolder++; // skip struct keyword
+
+            if(tokens[tempIndexHolder].type == ID){ // struct tagName also exist
+                rhs->declProp.push_back(tokens[tempIndexHolder].data);
+
+                tempIndexHolder++; // skip struct tagName
+            } else{
+                // it is anon struct def with typedef, need to give it a name myself
+            }
+
+            
         }
 
         if(tokens[tempIndexHolder].type == ID){
