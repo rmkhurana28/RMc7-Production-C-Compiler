@@ -65,8 +65,8 @@ ASTNode** Parser::highLevelParse(){
     
 
     if(current.type == KEYWORD_TYPEDEF){ // typedef always comes as first word if it is typedef
-        // parseTypedef();
-        //
+        return parseTypedef();
+        
     } else if(isThisTokenDataTypeOrPropToken(current)){ // for global var decl, func decl, froward decl, extern 
         itIsVarDeclInstead:                
         return parseDataTypeFoundDeclaration();
@@ -80,7 +80,21 @@ ASTNode** Parser::highLevelParse(){
             return parseStruct(nullptr);            
         }
     } else if(current.type == ID){ // can be related to typedef or type registry, might need to check
-        //
+        // now, we need to check if this id can be part of typedef alias or not, if yes, then need to use lookup to decide how to proceed
+        
+        if(isCurrentIdValidTdAlias()){ 
+            // it has to be td alias if exist
+
+            if(isThisStringPresentAsKeyInTdMap(current.data)){
+                // it is present as key in td map
+
+                goto itIsVarDeclInstead;
+            }
+        } else{
+            cout << "Unknown identifier found at high level parsing: " << current.data << "\n";
+            exit(1);
+        }
+        
     }
     else{ 
         cout << "high level unknown token found\n";
@@ -438,8 +452,10 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
 
     varNameHolder currName = varNameHolder(*this);
     
-    if(retCode == 2){ // valid ONLY for func (void*)
+    if(retCode == 2){ // valid ONLY for func (void)
         temp = currName.getVarName(currType , false);
+
+        list.push_back(temp);
 
         // this->allAST.push_back(temp);
         
@@ -1063,24 +1079,33 @@ DeclarationNode* Parser::parseUnion() {
     return nullptr;
 }
 
-DeclarationNode* Parser::parseTypedef() {
-    
+ASTNode** Parser::parseTypedef() {
+
     currentPos++; // skip typedef keyword
-    
+
+    vector<ASTNode*> list; // list to store struct decl node and maybe var decl nodes also if exist
+
     int tempIndexHolder = currentPos;
 
     dataTypeHolder* original = new dataTypeHolder(*this);
 
     original->getDataType();
-    
+
      // validation ????
 
-    varNameHolder* alias = new varNameHolder(*this);
-
-    alias->getVarName(*original , false);
+    varNameHolder* alias = new varNameHolder(*this);    
+    
+    DeclarationNode* parentObj = alias->getVarName(*original , false); 
 
     tdMapPair* rhs = new tdMapPair;
-    rhs->nameProp = alias;
+
+    if(VariableDeclarationNode* varObj = dynamic_cast<VariableDeclarationNode*>(parentObj)){ // using dynamic case to access the child instance varaibles properly
+        rhs->nameProp = &varObj->varName;
+    } else if(FunctionDeclarationNode* funcObj = dynamic_cast<FunctionDeclarationNode*>(parentObj)){
+        rhs->nameProp = &funcObj->funcName;
+    }
+
+    
 
     {
         addAgain:
@@ -1116,7 +1141,29 @@ DeclarationNode* Parser::parseTypedef() {
 
     // generate typedef ast
 
-    return new TypedefDeclarationNode(rhs->declProp , alias);
+    currentPos++; // skip ;
+
+    list.push_back(new TypedefDeclarationNode(rhs->declProp , rhs->nameProp));
+
+    ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
+    for(uint64_t i = 0; i < list.size(); i++){
+        arr[i] = list[i];
+    }
+    arr[list.size()] = nullptr; // null terminate the arraya
+
+    // tdMap[rhs->nameProp->namePropArray[0].varName].push_back(rhs); 
+
+    string typedefAliasName = rhs->nameProp->namePropArray[0].varName;
+    tdMap[typedefAliasName].push_back(*rhs); 
+
+    
+    
+
+    return arr;
+
+    
+
+    // return new TypedefDeclarationNode(rhs->declProp , alias);
 
     
 

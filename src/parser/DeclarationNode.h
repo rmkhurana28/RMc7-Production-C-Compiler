@@ -35,6 +35,7 @@ class ParameterNode;
 class Parser;  // Forward declaration
 
 class VariableDeclarationNode : public DeclarationNode {
+    friend class Parser;
 private:
     dataTypeHolder varDeclType; // to store the decl type of the var
     varNameHolder varName; // to store the var name of the var
@@ -53,6 +54,7 @@ public:
 };
 
 class FunctionDeclarationNode : public DeclarationNode {
+    friend class Parser;
 private:
     dataTypeHolder funcDeclType; // to store the return type of the func
     varNameHolder funcName; // to store the function name

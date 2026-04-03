@@ -161,7 +161,7 @@ private:
     ASTNode** parseStruct(dataTypeHolder* helperDeclName);
     DeclarationNode* parseEnum();
     DeclarationNode* parseUnion();
-    DeclarationNode* parseTypedef();
+    ASTNode** parseTypedef();
     
     // Jump statements
     StatementNode* parseReturn();

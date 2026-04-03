@@ -54,6 +54,7 @@ class dataTypeHolder{
     friend class VariableDeclarationNode;  // Allow VariableDeclarationNode to print
     friend class FunctionDeclarationNode;  // Allow FunctionDeclarationNode to print
     friend class FunctionDefinitionNode;  // Allow FunctionDefinitionNode to print
+    friend class TypedefDeclarationNode;   // Allow TypedefDeclarationNode to print
     friend class ParameterNode;  // Allow ParameterNode access for recursive printing
     friend class CastNode;  // Allow CastNode to print type information
     friend class SizeofNode;  // Allow SizeofNode to print type information
@@ -98,7 +99,9 @@ class varNameHolder{
     friend class VariableDeclarationNode;  // Allow VariableDeclarationNode to print
     friend class FunctionDeclarationNode;  // Allow FunctionDeclarationNode to print
     friend class FunctionDefinitionNode;  // Allow FunctionDefinitionNode to print
+    friend class TypedefDeclarationNode;   // Allow TypedefDeclarationNode to print
     friend class ParameterNode;  // Allow ParameterNode access for recursive printing
+    friend class Parser;
     friend void printParametersRecursive(ofstream&, const vector<ParameterNode>&, const string&);  // Allow helper function
 private:
     Parser& parser; // reference to main parser object
@@ -115,13 +118,14 @@ public:
     varNameHolder& operator=(const varNameHolder& other);
 
     DeclarationNode* getVarName(dataTypeHolder& typeHolder , bool isFuncParam);
-    
+
     int checkValidity();
     void resetDataTypeAndNameObjectForNext(dataTypeHolder& typeHolder);
+    void setTypedefName(const string& name);  // Set just the name for typedef
 
-    
 
-    
+
+
 };
 
 // Static function to get operator precedence (15 = highest, 1 = lowest)

@@ -517,6 +517,8 @@ bool dataTypeHolder::isPrevTokenValidForCurrentStar(TokenType prevTokenType){
 DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isFuncParam){
 
     // cout << "[NAME] Current token is : " << this->parser.tokens[this->parser.currentPos].data << "\n";
+
+    bool static finalHelper = false;
     
     bool static idFound = false; // flag to check if first id is found
     if(isFuncParam){
@@ -600,13 +602,24 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 current = this->parser.tokens[++this->parser.currentPos];
             }
 
-            if(indexIfExist == -1){ // base type doesnt alr exist in starData array
-                starData tempStarData({addStarCount , baseType}); // generate a starData object
-                typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array
-            } else{ // base type alr exist in starData array
-                typeHolder.starDataArray[indexIfExist].numOfStars += addStarCount; // update the number of stars in the starData
-                addStarCount = typeHolder.starDataArray[indexIfExist].numOfStars;
+            if(!finalHelper){
+                if(indexIfExist == -1){ // base type doesnt alr exist in starData array
+                    starData tempStarData({addStarCount , baseType}); // generate a starData object
+                    cout << "DEBUG: Typeholder start added-1: " << tempStarData.numOfStars << " \n";
+                    typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array
+                } else{ // base type alr exist in starData array
+                    typeHolder.starDataArray[indexIfExist].numOfStars += addStarCount; // update the number of stars in the starData
+                    cout << "DEBUG: Typeholder start added-2: " << addStarCount << " \n";
+                    addStarCount = typeHolder.starDataArray[indexIfExist].numOfStars; // might be issue, need to check properly
+
+                    // typeHolder.starDataArray[indexIfExist].numOfStars = 0;
+
+                    // DON'T update addStarCount - keep it as the current iteration's star count, not the accumulated total
+                }
             }
+
+            finalHelper = true;
+            
             
             // updation is done on the data type side
             // now need to update on the name side
@@ -656,6 +669,9 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                         temp.type = POINTOR;
                         temp.numPointor = addStarCount;
                         this->namePropArray.push_back(temp);
+
+                        cout << "DEBUG: Added stars-1: " << addStarCount << " \n";
+
                         addStarCount = -1; // reset the addStarCounter 
 
                         current = this->parser.tokens[++this->parser.currentPos]; // skip ] and go to ) now
@@ -666,6 +682,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                         temp.type = POINTOR;
                         temp.numPointor = addStarCount;
                         this->namePropArray.push_back(temp);
+                        cout << "DEBUG: Added stars-2: " << addStarCount << " \n";
                         addStarCount = -1; // reset the addStarCounter
                         
                         current = this->parser.tokens[++this->parser.currentPos]; // skipped ] and kept current as ; = ,
@@ -691,6 +708,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                     temp.type = POINTOR;
                     temp.numPointor = addStarCount;
                     this->namePropArray.push_back(temp);
+                    cout << "DEBUG: Added stars-3: " << addStarCount << " \n";
                     addStarCount = -1; // reset addStarCount
                 } 
                 else{
@@ -705,6 +723,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                     temp.type = POINTOR;
                     temp.numPointor = addStarCount;
                     this->namePropArray.push_back(temp);
+                    cout << "DEBUG: Added stars-4: " << addStarCount << " \n";
                     addStarCount = -1;
                 }
 
@@ -765,6 +784,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 temp.type = POINTOR;
                 temp.numPointor = addStarCount;
                 this->namePropArray.push_back(temp);
+                cout << "DEBUG: Added stars-5: " << addStarCount << " \n";
                 addStarCount = -1;
                 // initBrackCount = -1;
                 initBrackCount = tempInitBrack;
@@ -786,6 +806,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                     temp.type = POINTOR;
                     temp.numPointor = addStarCount;
                     this->namePropArray.push_back(temp);
+                    cout << "DEBUG: Added stars-6: " << addStarCount << " \n";
                     addStarCount = -1;
                     // initBrackCount = -1;
                     initBrackCount = tempInitBrack;
@@ -810,6 +831,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                     temp.type = POINTOR;
                     temp.numPointor = addStarCount;
                     this->namePropArray.push_back(temp);
+                    cout << "DEBUG: Added stars-7: " << addStarCount << " \n";
                     addStarCount = -1;
                     // initBrackCount = -1;
                     initBrackCount = tempInitBrack;
@@ -853,6 +875,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                     temp.type = POINTOR;
                     temp.numPointor = addStarCount;
                     this->namePropArray.push_back(temp);
+                    cout << "DEBUG: Added stars-8: " << addStarCount << " \n";
                     addStarCount = -1;
                     // initBrackCount = -1;
                     initBrackCount = tempInitBrack;
@@ -877,6 +900,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 temp.type = POINTOR;
                 temp.numPointor = addStarCount;
                 this->namePropArray.push_back(temp);
+                cout << "DEBUG: Added stars-9: " << addStarCount << " \n";
                 addStarCount = -1;
                 // don't return, continue processing
             } else {
@@ -904,10 +928,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
     }
 
 
-    if(isFirstVar && bracketStackCount == 0){ // if the var is first in multiple decl
-
-
-        
+    if(isFirstVar && bracketStackCount == 0 && !finalHelper){ // if the var is first in multiple decl
         
         // get base token type
         TokenType baseType;
@@ -958,15 +979,18 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
         if(indexIfExist == -1){ // base type doesnt alr exist in starData array
             // do nothing
-        } else{ // base type alr exist in starData array            
-            
+        } else{ // base type alr exist in starData array
+
             // evalute those stars and add at the end
             varNameProp temp;
             temp.type = POINTOR;
             temp.numPointor = typeHolder.starDataArray[indexIfExist].numOfStars;
+
+            cout << "DEBUG: Added stars for first var: " << temp.numPointor << " \n";
+
             this->namePropArray.push_back(temp);
 
-            
+
         }
     }
 
@@ -1113,6 +1137,8 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             isFirstVar = true;
             isInit = false;
             initExpr = NULL;
+
+            finalHelper = false;
 
             return temp;
         } else if(check == 2){ // func

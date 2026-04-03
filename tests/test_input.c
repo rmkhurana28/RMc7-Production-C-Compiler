@@ -1,16 +1,5 @@
-int main(void){
-    for(int i=0 ; i<100 ; i++){
-        printf("Hello world\n");
+struct name{
+    char name[100];
+};
 
-        continue;
-
-        ans = a++ * *num;
-
-        break;
-
-        return 0;
-    }
-
-    
-
-}
+struct name func(); 

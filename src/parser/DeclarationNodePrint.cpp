@@ -621,10 +621,12 @@ void ProgramNode::printAST(ofstream& out) {
             out << "Forward Declaration";
         } else if(dynamic_cast<StructDefinitionNode*>(declarations[i])) {
             out << "Struct Definition";
+        } else if(dynamic_cast<TypedefDeclarationNode*>(declarations[i])) {
+            out << "Typedef Declaration";
         } else {
             out << "Unknown Declaration";
         }
-        
+
         out << "):\n";
         declarations[i]->print(out);
         out << "\n";
@@ -657,5 +659,64 @@ void printStatementsToFile(ofstream& out, const vector<StatementNode*>& statemen
 }
 
 void TypedefDeclarationNode::print(ofstream& out) {
-    out << "TypedefDeclarationNode (not yet implemented)\n";
+    out << "      Base Type: ";
+
+    // Print base type tokens
+    for(const auto& tokenStr : baseTokens) {
+        out << tokenStr << " ";
+    }
+
+    out << "\n      Alias Name: ";
+    // Print alias name - check if VAR_NAME exists
+    bool foundName = false;
+    for(const auto& prop : nameProp.namePropArray) {
+        if(prop.type == VAR_NAME) {
+            out << prop.varName;
+            foundName = true;
+            break;
+        }
+    }
+    if(!foundName) {
+        out << "(not set)";
+    }
+
+    out << "\n      Alias Shape: [";
+    if(nameProp.namePropArray.empty()) {
+        out << "empty";
+    } else {
+        for(size_t i = 0; i < nameProp.namePropArray.size(); i++) {
+            if(i > 0) out << ", ";
+            const auto& prop = nameProp.namePropArray[i];
+            switch(prop.type) {
+                case VAR_NAME:
+                    out << "VAR_NAME";
+                    break;
+                case POINTOR:
+                    out << "POINTOR(" << prop.numPointor << ")";
+                    break;
+                case ARRAY:
+                    out << "ARRAY(";
+                    if(prop.arrayExpr) {
+                        out << "index";
+                    } else {
+                        out << "N/A";
+                    }
+                    out << ")";
+                    break;
+                case FUNC:
+                    out << "FUNC(";
+                    if(!prop.funcParams.empty()) {
+                        out << prop.funcParams.size();
+                        if(prop.isVariadic) out << ", ...";
+                    } else if(prop.isVariadic) {
+                        out << "...";
+                    } else {
+                        out << "0";
+                    }
+                    out << ")";
+                    break;
+            }
+        }
+    }
+    out << "]\n";
 }
