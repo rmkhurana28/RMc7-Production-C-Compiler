@@ -1,6 +1,6 @@
 # RMc7 Syntax Reference
 
-**Version:** Phase 1 Complete | Phase 2 In Progress (~85%)  
+**Version:** Phase 1 Complete | Phase 2 In Progress (~90%)  
 **Target:** 90-95% ISO C Core Features
 
 > **Note:** This syntax reference describes only the syntactic structure of the language.  
@@ -42,17 +42,21 @@ double pi = 3.14159;
 ```
 
 ### 1.2 Storage Class Specifiers
-✅ `auto`  
-✅ `register`  
-✅ `static`  
-✅ `extern`  
-➡️ `typedef`
+✅ `auto`
+✅ `register`
+✅ `static`
+✅ `extern`
+✅ `typedef`
 
 **Examples:**
 ```c
 static int counter;
 extern double global_var;
 register int fast_var;
+
+typedef int MyInt;
+typedef struct Point { int x; int y; } Point;
+typedef int (*FuncPtr)(int);
 ```
 
 ### 1.3 Type Qualifiers
@@ -166,8 +170,6 @@ int printf(const char *fmt, ...); // Variadic
 int legacy_func();               // Empty (old-style)
 int typed_empty(void);           // Void parameter list
 ```
-
-> **Note:** `void *` (void pointer) as a parameter return type isn't fully fixed yet. Avoid using void pointers in parameter lists until this is resolved.
 
 **Design Rule: Anonymous Parameters**
 
@@ -659,7 +661,7 @@ The goal is to support full ISO C preprocessing, including:
 
 ## 8. Testing Status
 
-### Completed Tests (720+ test cases, 100% pass rate)
+### Completed Tests (920+ test cases, 100% pass rate)
 
 - ✅ **Type System Validation:** 87 tests
 - ✅ **Declarator Parsing:** 100+ tests (simple pointers, arrays, complex nesting, function pointers)
@@ -667,6 +669,8 @@ The goal is to support full ISO C preprocessing, including:
 - ✅ **Expression Parsing:** ~370 tests (all operators, precedence, associativity)
 - ✅ **Type Cast & Sizeof:** ~370 tests
 - ✅ **Control Flow Statements:** ~100 tests (if/else, while, do-while, for, switch/case/default, break, continue, return, goto/labels, nested structures, function definitions)
+- ✅ **Struct Parsing:** 50+ tests (named, anonymous, self-referencing, nested, complex members)
+- ✅ **Typedef Parsing:** 150 tests (primitives, pointers, arrays, function pointers, struct typedefs, qualifiers)
 
 ---
 
@@ -687,7 +691,7 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 
 **Target:** 90-95% ISO C core features
 
-**Current Coverage (Parser Phase):** ~85%
+**Current Coverage (Parser Phase):** ~90%
 - ✅ Complete type system
 - ✅ Complete declarator system
 - ✅ Complete expression system
@@ -702,11 +706,11 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 
 **Completed:**
 - ✅ **Phase 1:** Lexical Analysis (100%)
-- ✅ **Phase 2 (85%):** Type system, declarators, expressions, statements, function definitions, struct parsing
+- ✅ **Phase 2 (90%):** Type system, declarators, expressions, statements, function definitions, struct parsing, typedef parsing
 
 **In Progress:**
 - 🟡 Diagnostic Engine
-- 🟡 `typedef`, `union`, `enum` parsing 
+- 🟡 `union`, `enum` parsing 
 
 **Upcoming:**
 - ➡️ Position-validity rules (semantic context checks)
