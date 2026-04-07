@@ -82,7 +82,6 @@ ASTNode** Parser::highLevelParse(){
         return parseDataTypeFoundDeclaration();
     } else if(current.type == KEYWORD_STRUCT || current.type == KEYWORD_UNION || current.type == KEYWORD_ENUM){ // covers parts of struct/enum/union without any data type prop before them
 
-        cout << "High level struct/union/enum found\n";
 
         if(this->tokens[this->currentPos+1].type == ID && this->tokens[this->currentPos+2].type != SEMICOLON && this->tokens[this->currentPos+2].type != LBRACE){ // it is just var decl, and not struct definition, switch to data type decl parsing
             goto itIsVarDeclInstead;
@@ -231,7 +230,20 @@ ASTNode** Parser::startParsingOfCurrentToken() {
     else if(isThisTokenDataTypeOrPropToken(current)) {
         itIsVarDeclInstead:
         return parseDataTypeFoundDeclaration();
-    } else {
+    } else if(current.type == ID && isThisStringPresentAsKeyInTdMap(current.data)){
+        // it is valid td alias, so it has to be declaration
+        cout << "Here\n";
+        goto itIsVarDeclInstead;
+    } else if(current.type == LBRACE){
+        // it is a block statement, can be part of function definition or control flow statement, but we will parse it as block statement here and later decide how to use it based on the parent node
+        ASTNode* ans = parseBlock(*this);
+        ASTNode** dummy = new ASTNode*[2];
+        dummy[0] = ans;
+        dummy[1] = nullptr;
+        return dummy;
+        
+    }
+    else {
         // Otherwise it's an expression statement
         StatementNode* ans = this->parseExpressionStatement();
         ASTNode** dummy = new ASTNode*[2];
@@ -467,8 +479,6 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
     short retCode = currType.isCurrentTypeValid();
 
 
-
-    
 
     if(retCode == -1){
         cout << "Type is invalid\n";
@@ -1275,7 +1285,8 @@ ASTNode** Parser::parseTypedef() {
 
                 if(tokens[currentPos].type == SEMICOLON) currentPos++; // skip ;
                 
-            
+                typedDefTracker = false; 
+
                 return arr;
 
             }
@@ -1405,6 +1416,8 @@ ASTNode** Parser::parseTypedef() {
         }
         arr[list.size()] = nullptr; // null terminate the array
 
+        typedDefTracker = false; 
+
         return arr;
     } else{
         cout << "Expected ; or , after typedef declarator\n";
@@ -1412,7 +1425,7 @@ ASTNode** Parser::parseTypedef() {
     }
     // return new TypedefDeclarationNode(rhs->declProp , alias);
 
-    
+    typedDefTracker = false; 
 
     return nullptr;
 }

@@ -5,6 +5,39 @@
 
 using namespace std;
 
+static void printBlockContents(BlockExpressionNode* block, ofstream& out, const string& indent) {
+    out << indent << "Compound Block:\n";
+    for (size_t i = 0; i < block->expressions.size(); i++) {
+        if (block->expressions[i]) {
+            StatementNode* stmt = dynamic_cast<StatementNode*>(block->expressions[i]);
+            if (stmt) {
+                stmt->print(out, indent + "    ");
+            } else {
+                DeclarationNode* decl = dynamic_cast<DeclarationNode*>(block->expressions[i]);
+                if (decl) {
+                    ofstream tempFile("temp_member.txt");
+                    decl->print(tempFile);
+                    tempFile.close();
+                    ifstream readFile("temp_member.txt");
+                    string line;
+                    while(getline(readFile, line)) {
+                        out << indent << "    " << line << "\n";
+                    }
+                    readFile.close();
+                    remove("temp_member.txt");
+                } else {
+                    BlockExpressionNode* nestedBlock = dynamic_cast<BlockExpressionNode*>(block->expressions[i]);
+                    if (nestedBlock) {
+                        printBlockContents(nestedBlock, out, indent + "    ");
+                    } else {
+                        out << indent << "    [Non-statement/declaration node]\n";
+                    }
+                }
+            }
+        }
+    }
+}
+
 void ExpressionStatementNode::print(ofstream& out, const string& indent) {
     out << indent << "Expression Statement:\n";
     if (expression) {
@@ -48,7 +81,12 @@ void IfStatementNode::print(ofstream& out, const string& indent) {
                             readFile.close();
                             remove("temp_member.txt");
                         } else {
-                            out << indent << "    [Non-statement/declaration node]\n";
+                            BlockExpressionNode* nestedBlock = dynamic_cast<BlockExpressionNode*>(ifBlock->expressions[i]);
+                            if (nestedBlock) {
+                                printBlockContents(nestedBlock, out, indent + "    ");
+                            } else {
+                                out << indent << "    [Non-statement/declaration node]\n";
+                            }
                         }
                     }
                 } else {
@@ -84,7 +122,12 @@ void IfStatementNode::print(ofstream& out, const string& indent) {
                                 readFile.close();
                                 remove("temp_member.txt");
                             } else {
-                                out << indent << "    [Non-statement/declaration node]\n";
+                                BlockExpressionNode* nestedBlock = dynamic_cast<BlockExpressionNode*>(elseBlock->expressions[i]);
+                                if (nestedBlock) {
+                                    printBlockContents(nestedBlock, out, indent + "    ");
+                                } else {
+                                    out << indent << "    [Non-statement/declaration node]\n";
+                                }
                             }
                         }
                     } else {
@@ -128,7 +171,12 @@ void WhileStatementNode::print(ofstream& out, const string& indent) {
                         readFile.close();
                         remove("temp_member.txt");
                     } else {
-                        out << indent << "    [Non-statement/declaration node]\n";
+                        BlockExpressionNode* nestedBlock = dynamic_cast<BlockExpressionNode*>(whileBlock->expressions[i]);
+                        if (nestedBlock) {
+                            printBlockContents(nestedBlock, out, indent + "    ");
+                        } else {
+                            out << indent << "    [Non-statement/declaration node]\n";
+                        }
                     }
                 }
             }
@@ -161,7 +209,12 @@ void DoWhileStatementNode::print(ofstream& out, const string& indent) {
                         readFile.close();
                         remove("temp_member.txt");
                     } else {
-                        out << indent << "    [Non-statement/declaration node]\n";
+                        BlockExpressionNode* nestedBlock = dynamic_cast<BlockExpressionNode*>(doWhileBlock->expressions[i]);
+                        if (nestedBlock) {
+                            printBlockContents(nestedBlock, out, indent + "    ");
+                        } else {
+                            out << indent << "    [Non-statement/declaration node]\n";
+                        }
                     }
                 }
             }
@@ -237,7 +290,12 @@ void ForStatementNode::print(ofstream& out, const string& indent) {
                         readFile.close();
                         remove("temp_member.txt");
                     } else {
-                        out << indent << "    [Non-statement/declaration node]\n";
+                        BlockExpressionNode* nestedBlock = dynamic_cast<BlockExpressionNode*>(forBlock->expressions[i]);
+                        if (nestedBlock) {
+                            printBlockContents(nestedBlock, out, indent + "    ");
+                        } else {
+                            out << indent << "    [Non-statement/declaration node]\n";
+                        }
                     }
                 }
             }
@@ -318,7 +376,12 @@ void SwitchStatementNode::print(ofstream& out, const string& indent) {
                         readFile.close();
                         remove("temp_member.txt");
                     } else {
-                        out << indent << "    [Non-statement/declaration node]\n";
+                        BlockExpressionNode* nestedBlock = dynamic_cast<BlockExpressionNode*>(switchBlock->expressions[i]);
+                        if (nestedBlock) {
+                            printBlockContents(nestedBlock, out, indent + "    ");
+                        } else {
+                            out << indent << "    [Non-statement/declaration node]\n";
+                        }
                     }
                 }
             }

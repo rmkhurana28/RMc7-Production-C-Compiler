@@ -115,7 +115,6 @@ int dataTypeHolder::getDataType(){
                 cout << "Error: Pointer (*) found before base type declaration" << endl;
                 exit(1);
             }
-            cout << "Star found\n";
             firstStarFound = true;
             if(!isPrevTokenValidForCurrentStar(latestType) && !wasPrevTokenOfStructEnumUnion && !wasPrevTokenTypedefName){ // * not allowed after prev tokenType
                 cout << "Error: Invalid token before pointer (*) declaration" << endl;
@@ -128,7 +127,6 @@ int dataTypeHolder::getDataType(){
                 tempData = {0,latestType};            
             }            
             while(this->parser.tokens[this->parser.currentPos].type == OP_STAR){
-                cout << "Adding star\n";
                 tempData.numOfStars++;
                 this->parser.currentPos++;
             }
@@ -232,8 +230,6 @@ int dataTypeHolder::getDataType(){
         wasPrevTokenTypedefName = true;
         isBaseTypeFound = true;
 
-        cout << "TD alias found: " << this->tdNew.back() << "\n";
-        cout << "Current token is : " << this->parser.tokens[this->parser.currentPos].data << "\n";
 
         
         goto evaluate_again;
@@ -381,6 +377,15 @@ int dataTypeHolder::isCurrentTypeValid(){
 
             // mark as expanded
             this->tdExpanded[tdIndex] = -1;
+        }
+
+        // after expansion, patch starDataArray entries that were tagged HELPER_TOKEN with actual base type
+        if(this->baseTypeArray.size() == 1){
+            for(size_t i = 0; i < this->starDataArray.size(); i++){
+                if(this->starDataArray[i].typeBeforeStar == HELPER_TOKEN){
+                    this->starDataArray[i].typeBeforeStar = this->baseTypeArray.front();
+                }
+            }
         }
     }
 
