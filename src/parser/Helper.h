@@ -72,9 +72,11 @@ private:
     vector<TokenType> storageClassArray;
     vector<starData> starDataArray;
     
-    vector<TokenType> trKeywordArray; // array to store keyword for the type registry 
-    vector<string> trBaseArray; // array to store the new base type
-    vector<string> tdNew; // array to store the new name of keywords used
+    vector<TokenType> trKeywordArray; // array to store keyword for the type registry (STRUCT/ENUM/UNION)
+    vector<string> trBaseArray; // array to store the new base type (STRUCT id)  : id is stored here
+
+    vector<string> tdNew; // array to store the new name of keywords used (haha var)  :  haha is typedef'd data type
+    vector<short> tdExpanded; // array to keep record of which typedef is expanded and which is not
 
     bool isPrevTokenValidForCurrentStar(TokenType prevTokenType);    
 
@@ -117,7 +119,7 @@ public:
 
     varNameHolder& operator=(const varNameHolder& other);
 
-    DeclarationNode* getVarName(dataTypeHolder& typeHolder , bool isFuncParam);
+    DeclarationNode* getVarName(dataTypeHolder& typeHolder , bool isFuncParam, bool forceResetStatics = false);
 
     int checkValidity();
     void resetDataTypeAndNameObjectForNext(dataTypeHolder& typeHolder);

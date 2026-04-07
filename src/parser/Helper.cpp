@@ -24,7 +24,7 @@ dataTypeHolder::dataTypeHolder(const dataTypeHolder& other) : parser(other.parse
     baseTypeArray(other.baseTypeArray), signModifiersArray(other.signModifiersArray),
     sizeModifiersArray(other.sizeModifiersArray), typeQualifiersArray(other.typeQualifiersArray),
     storageClassArray(other.storageClassArray), starDataArray(other.starDataArray),
-    trKeywordArray(other.trKeywordArray), trBaseArray(other.trBaseArray), tdNew(other.tdNew) {}
+    trKeywordArray(other.trKeywordArray), trBaseArray(other.trBaseArray), tdNew(other.tdNew), tdExpanded(other.tdExpanded) {}
 
 varNameHolder::varNameHolder(const varNameHolder& other) : parser(other.parser),
     namePropArray(other.namePropArray), isArray(other.isArray), arrayDimensions(other.arrayDimensions) {}
@@ -42,6 +42,7 @@ dataTypeHolder& dataTypeHolder::operator=(const dataTypeHolder& other) {
         trKeywordArray = other.trKeywordArray;
         trBaseArray = other.trBaseArray;
         tdNew = other.tdNew;
+        tdExpanded = other.tdExpanded;
     }
     return *this;
 }
@@ -63,6 +64,7 @@ int dataTypeHolder::getDataType(){
     bool isShortLongSignUnsignFound = false;
 
     bool wasPrevTokenOfStructEnumUnion = false;
+    bool wasPrevTokenTypedefName = false;
     
     TokenType latestType;
 
@@ -72,6 +74,7 @@ int dataTypeHolder::getDataType(){
     while(this->parser.isThisTokenDataTypeOrPropToken(this->parser.tokens[this->parser.currentPos]) || this->parser.tokens[this->parser.currentPos].type == OP_STAR){ // parsing till data type prop or star
         if(this->parser.isThisTokenDataBaseTypeToken(this->parser.tokens[this->parser.currentPos])){ // base type
             wasPrevTokenOfStructEnumUnion = false;
+            wasPrevTokenTypedefName = false;
             isBaseTypeFound = true;
             this->baseTypeArray.push_back(this->parser.tokens[this->parser.currentPos].type);
             latestType = this->parser.tokens[this->parser.currentPos].type;
@@ -82,6 +85,7 @@ int dataTypeHolder::getDataType(){
                 exit(1);
             }
             wasPrevTokenOfStructEnumUnion = false;
+            wasPrevTokenTypedefName = false;
             this->signModifiersArray.push_back(this->parser.tokens[this->parser.currentPos].type);
             latestType = this->parser.tokens[this->parser.currentPos].type;
         } else if(this->parser.isThisTokenSizeModifierToken(this->parser.tokens[this->parser.currentPos])){ // size
@@ -91,6 +95,7 @@ int dataTypeHolder::getDataType(){
                 exit(1);
             }
             wasPrevTokenOfStructEnumUnion = false;
+            wasPrevTokenTypedefName = false;
             this->sizeModifiersArray.push_back(this->parser.tokens[this->parser.currentPos].type);
             latestType = this->parser.tokens[this->parser.currentPos].type;
         } else if(this->parser.isThisTokenTypeQualifierToken(this->parser.tokens[this->parser.currentPos])){ // type
@@ -102,6 +107,7 @@ int dataTypeHolder::getDataType(){
                 exit(1);
             }
             wasPrevTokenOfStructEnumUnion = false;
+            wasPrevTokenTypedefName = false;
             this->storageClassArray.push_back(this->parser.tokens[this->parser.currentPos].type);
             latestType = this->parser.tokens[this->parser.currentPos].type;
         } else if(this->parser.tokens[this->parser.currentPos].type == OP_STAR){ // *
@@ -109,8 +115,9 @@ int dataTypeHolder::getDataType(){
                 cout << "Error: Pointer (*) found before base type declaration" << endl;
                 exit(1);
             }
+            cout << "Star found\n";
             firstStarFound = true;
-            if(!isPrevTokenValidForCurrentStar(latestType) && !wasPrevTokenOfStructEnumUnion){ // * not allowed after prev tokenType
+            if(!isPrevTokenValidForCurrentStar(latestType) && !wasPrevTokenOfStructEnumUnion && !wasPrevTokenTypedefName){ // * not allowed after prev tokenType
                 cout << "Error: Invalid token before pointer (*) declaration" << endl;
                 exit(1);
             }
@@ -121,6 +128,7 @@ int dataTypeHolder::getDataType(){
                 tempData = {0,latestType};            
             }            
             while(this->parser.tokens[this->parser.currentPos].type == OP_STAR){
+                cout << "Adding star\n";
                 tempData.numOfStars++;
                 this->parser.currentPos++;
             }
@@ -193,6 +201,7 @@ int dataTypeHolder::getDataType(){
 
             isBaseTypeFound = true;
             wasPrevTokenOfStructEnumUnion = true;
+            wasPrevTokenTypedefName = false;
 
             goto evaluate_again;
         } else{ // ID must be in TR to be valid
@@ -215,8 +224,16 @@ int dataTypeHolder::getDataType(){
 
         // ID is valid TD entry, push it
         this->tdNew.push_back(this->parser.tokens[this->parser.currentPos].data);
+        this->tdExpanded.push_back(0); // initially mark this TD entry as not expanded
         this->parser.currentPos++;
         latestType = ID;        
+
+
+        wasPrevTokenTypedefName = true;
+        isBaseTypeFound = true;
+
+        cout << "TD alias found: " << this->tdNew.back() << "\n";
+        cout << "Current token is : " << this->parser.tokens[this->parser.currentPos].data << "\n";
 
         
         goto evaluate_again;
@@ -227,7 +244,8 @@ int dataTypeHolder::getDataType(){
 
 int dataTypeHolder::isCurrentTypeValid(){
 
-    // -1 means NOT valid 
+
+    // -1 means NOT valid
     // 0 means valid for both var and func
     // 1 means valid ONLY for var
     // 2 means valid ONLY for func
@@ -235,7 +253,14 @@ int dataTypeHolder::isCurrentTypeValid(){
     // open up TD entry if exists and update the order arrays (do NOT reset them, keep them for future use and validation, keep the TD entry also)
     if(this->tdNew.size() > 0){
         // expand all typedefs and populate the arrays
-        for(const string& typedefName : this->tdNew){
+        for(size_t tdIndex = 0; tdIndex < this->tdNew.size(); tdIndex++){
+
+            // check if already expanded
+            if(tdIndex >= this->tdExpanded.size()) this->tdExpanded.push_back(0);
+            if(this->tdExpanded[tdIndex] == -1) continue;
+
+            const string& typedefName = this->tdNew[tdIndex];
+
             // get the vector of strings from tdMap
             vector<string> expandedTokens = this->parser.tdMap[typedefName][0].declProp;
             
@@ -353,6 +378,9 @@ int dataTypeHolder::isCurrentTypeValid(){
                     // semantic analyzer will catch if it's genuinely invalid
                 }
             }
+
+            // mark as expanded
+            this->tdExpanded[tdIndex] = -1;
         }
     }
 
@@ -427,6 +455,8 @@ int dataTypeHolder::isCurrentTypeValid(){
         if((this->baseTypeArray.size() + this->trBaseArray.size() == 0) && sizeOrSignPresent) {
             this->baseTypeArray.push_back(KEYWORD_INT); // add base type as int
         } else{
+            
+
             cout << "Error: Exactly one base type required" << endl;
             return -1;        
         }
@@ -496,6 +526,7 @@ int dataTypeHolder::isCurrentTypeValid(){
             return 1; // valid only for var
         }
 
+
         return 0; // valid for both
 
         
@@ -514,12 +545,11 @@ bool dataTypeHolder::isPrevTokenValidForCurrentStar(TokenType prevTokenType){
     return false;
 }
 
-DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isFuncParam){
+DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isFuncParam, bool forceResetStatics){
 
-    // cout << "[NAME] Current token is : " << this->parser.tokens[this->parser.currentPos].data << "\n";
 
     bool static finalHelper = false;
-    
+
     bool static idFound = false; // flag to check if first id is found
     if(isFuncParam){
         idFound = false;
@@ -531,12 +561,23 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
     short unsigned tempInitBrack = initBrackCount;
 
     short addStarCount = 0; // pointor numbers
-    
+
     bool static isInit = false;
     static ExpressionNode* initExpr = NULL;
 
 
     bool static isFirstVar = true; // flag if the var is first in multiple decl
+
+    // When called from parseTypedef() for multiple declarators, force reset all statics
+    if(forceResetStatics){
+        finalHelper = false;
+        idFound = false;
+        bracketStackCount = 0;
+        initBrackCount = -1;
+        isInit = false;
+        initExpr = NULL;
+        isFirstVar = true;
+    }
 
     bool gotoHelper = false; // helper flag
     bool gotoHelper2 = false; // helper flag2
@@ -568,6 +609,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             }
 
             idFound = true; // flag to know the id is found
+
         } else if(current.type == OP_STAR){ // pointor 
             if(idFound){ // stars NOT allowed after var name is found
                 cout << "* not allowed after var name is alr defined\n";
@@ -918,16 +960,19 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
 
     if(isFirstVar && bracketStackCount == 0 && !finalHelper){ // if the var is first in multiple decl
+
         
         // get base token type
         TokenType baseType;
         if(typeHolder.baseTypeArray.size() == 1){
+
 
             baseType = typeHolder.baseTypeArray.front();
             
             // If baseType is INT (possibly auto-added when short/long/signed/unsigned present without explicit int)
             // Check if INT has 0 stars but short/long/signed/unsigned have stars - transfer them
             if(baseType == KEYWORD_INT){
+
                 // First check if INT already has stars
                 bool intHasStars = false;
                 for(size_t i=0 ; i<typeHolder.starDataArray.size() ; i++){
@@ -950,6 +995,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                     }
                 }
             }
+
         } else if(typeHolder.trBaseArray.size() == 1){
             baseType = HELPER_TOKEN;
         } else{
@@ -966,6 +1012,8 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             }
         }
 
+        
+
         if(indexIfExist == -1){ // base type doesnt alr exist in starData array
             // do nothing
         } else{ // base type alr exist in starData array
@@ -980,6 +1028,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
 
         }
+
     }
 
 
@@ -1005,6 +1054,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
     
 
     // now, have to put the algo to decide if this is var decl or func decl or func def
+
 
     if(current.type == COMMA){ // if multiple decl
 
@@ -1107,20 +1157,23 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
         short check = this->checkValidity();
 
+
         if(check == -1){
             exit(1);
         } else if(check == 1){ // var
+
             // validity check to make sure data type is valid for var
             if(typeHolder.isCurrentTypeValid() == 2){
                 cout << "Data Type NOT valid for vaiable\n";
                 exit(1);
             }
 
+
             // proceed with var decl
             // Create node for this variable
             VariableDeclarationNode* temp = new VariableDeclarationNode(&typeHolder , this , isInit , initExpr , this->isArray , this->arrayDimensions);
 
-            resetDataTypeAndNameObjectForNext(typeHolder);
+            resetDataTypeAndNameObjectForNext(typeHolder); 
 
             isFirstVar = true;
             isInit = false;
@@ -1238,7 +1291,7 @@ void varNameHolder::resetDataTypeAndNameObjectForNext(dataTypeHolder& typeHolder
     } else if(typeHolder.trBaseArray.size() == 1){
         baseType = HELPER_TOKEN;
     } else{
-        cout << "Unknown error of base type\n";
+        cout << "Unknown error of base type here also\n";
         exit(1);
     }
 
@@ -1893,6 +1946,7 @@ void dataTypeHolder::evaluateTypeCast(){
 
         // ID is valid TD entry, push it
         this->tdNew.push_back(this->parser.tokens[this->parser.currentPos].data);
+        this->tdExpanded.push_back(0); // initially mark this TD entry as not expanded
         this->parser.currentPos++;
         latestType = ID;
         goto evaluate_again;
@@ -1905,7 +1959,13 @@ bool dataTypeHolder::validateTypeCast(){
     // open up TD entry if exists and update the order arrays (do NOT reset them, keep them for future use and validation, keep the TD entry also)
     if(this->tdNew.size() > 0){
         // expand all typedefs and populate the arrays
-        for(const string& typedefName : this->tdNew){
+        for(size_t tdIndex = 0; tdIndex < this->tdNew.size(); tdIndex++){
+
+            // check if already expanded
+            if(tdIndex >= this->tdExpanded.size()) this->tdExpanded.push_back(0);
+            if(this->tdExpanded[tdIndex] == -1) continue;
+
+            const string& typedefName = this->tdNew[tdIndex];
             // get the vector of strings from tdMap
             vector<string> expandedTokens = this->parser.tdMap[typedefName][0].declProp;
             
@@ -2023,6 +2083,9 @@ bool dataTypeHolder::validateTypeCast(){
                     // semantic analyzer will catch if it's genuinely invalid
                 }
             }
+
+            // mark as expanded
+            this->tdExpanded[tdIndex] = -1;
         }
     }
 

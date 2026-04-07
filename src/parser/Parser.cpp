@@ -14,6 +14,14 @@ vector<ASTNode*> tempASTStorage;
 
 bool typedDefTracker = false;
 
+long long unsigned anonTracker = 0;
+
+string* anonTagNameGen(){
+    string* retVal = new string("ANON_TAG_" + to_string(anonTracker));
+    anonTracker++;
+    return retVal;
+}
+
 Parser::Parser(const vector<Token>& tokenList) {
     tokens = tokenList;
     currentPos = 0;
@@ -74,6 +82,8 @@ ASTNode** Parser::highLevelParse(){
         return parseDataTypeFoundDeclaration();
     } else if(current.type == KEYWORD_STRUCT || current.type == KEYWORD_UNION || current.type == KEYWORD_ENUM){ // covers parts of struct/enum/union without any data type prop before them
 
+        cout << "High level struct/union/enum found\n";
+
         if(this->tokens[this->currentPos+1].type == ID && this->tokens[this->currentPos+2].type != SEMICOLON && this->tokens[this->currentPos+2].type != LBRACE){ // it is just var decl, and not struct definition, switch to data type decl parsing
             goto itIsVarDeclInstead;
         }
@@ -86,11 +96,16 @@ ASTNode** Parser::highLevelParse(){
         
         if(isCurrentIdValidTdAlias()){ 
             // it has to be td alias if exist
+            
 
             if(isThisStringPresentAsKeyInTdMap(current.data)){
                 // it is present as key in td map
 
+
                 goto itIsVarDeclInstead;
+            }else{
+                cout << "Error: ID " << current.data << " found at high level parsing, but it is not a valid typedef alias\n";
+                exit(1);
             }
         } else{
             cout << "Unknown identifier found at high level parsing: " << current.data << "\n";
@@ -446,7 +461,15 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
     }
 
     // validate this data type (0 if valid for both, 1 if valid ONLY for var , 2 if valid ONLY for func , -1 if invalid)
+
+    // short retCode = 0;
+
     short retCode = currType.isCurrentTypeValid();
+
+
+
+    
+
     if(retCode == -1){
         cout << "Type is invalid\n";
         exit(1);
@@ -820,12 +843,19 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
     bool tagNameExist = false;
     Token tagName;
 
+    string* anonTagName = nullptr;
+
     vector<ASTNode*> list; // list to store struct decl node and maybe var decl nodes also if exist
 
     if(tokens[currentPos].type == ID){ // tagName exist
         tagNameExist = true;
         tagName = tokens[currentPos]; // save tagName in token
         currentPos++; // skip tagName
+    } else{
+        // if tagName doesnt exist, create a anonymous tagname for this [will be used for the validaiton later, but will not be exposed]
+
+        anonTagName = anonTagNameGen();
+        
     }
 
     if(tokens[currentPos].type == SEMICOLON){ // can be forward decl if tagName exists        
@@ -891,7 +921,13 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
 
     BlockExpressionNode* structBlock = nullptr;
 
-    this->typeRegisry[tagName.data] = "struct"; // might need tor revert it if the further code fails, take care !!!!!!!!!!!
+    // this->typeRegisry[tagName.data] = "struct"; // might need tor revert it if the further code fails, take care !!!!!!!!!!!
+
+    if(tagNameExist){
+        this->typeRegisry[tagName.data] = "struct";
+    } else{
+        this->typeRegisry[*anonTagName] = "struct";
+    }
 
     // cout << "Block parsing starting at " << this->tokens[this->currentPos-1].data << "\n";
     structBlock = parseBlock(*this); // parse the block
@@ -926,7 +962,15 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
 
         currentPos++; // skip ;
 
-        StructDefinitionNode* structDef = new StructDefinitionNode(tagNameExist , tagName.data , structBlock);
+        StructDefinitionNode* structDef;
+
+        if(tagNameExist){
+            structDef = new StructDefinitionNode(tagNameExist , tagName.data , structBlock);
+        } else{
+            structDef = new StructDefinitionNode(tagNameExist , *anonTagName , structBlock);
+        }
+
+        
 
         /*
             need to add the current new struct definition in the TR
@@ -949,7 +993,13 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
 
     // now there is some varName also afetr the }
 
-    StructDefinitionNode* structDef = new StructDefinitionNode(tagNameExist , tagName.data , structBlock);
+    StructDefinitionNode* structDef;
+
+    if(tagNameExist){
+        structDef = new StructDefinitionNode(tagNameExist , tagName.data , structBlock);
+    } else{
+        structDef = new StructDefinitionNode(tagNameExist , *anonTagName , structBlock);
+    }       
 
     list.push_back(structDef);
 
@@ -1043,11 +1093,12 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
         helperDeclName->trKeywordArray.push_back(KEYWORD_STRUCT);
 
         // Generate automatic name for anonymous structs if needed
-        if(tagName.data.empty()){
-            static int anonStructCounter = 0;
-            tagName.data = "__anon_struct_" + to_string(anonStructCounter++);
-        }
-        helperDeclName->trBaseArray.push_back(tagName.data);
+        // if(tagName.data.empty()){
+        //     static int anonStructCounter = 0;
+        //     tagName.data = "__anon_struct_" + to_string(anonStructCounter++);
+        // }
+        // helperDeclName->trBaseArray.push_back(tagName.data);
+        helperDeclName->trBaseArray.push_back(tagNameExist ? tagName.data : *anonTagName);
     }
 
     // dataTypeHolder* helper = nullptr;
@@ -1168,6 +1219,10 @@ ASTNode** Parser::parseTypedef() {
                             tempIndexHolder++; // skip struct tagName
                         } else{
                             // it is anon struct def with typedef, need to give it a name myself
+
+                            if(StructDefinitionNode* structDef = dynamic_cast<StructDefinitionNode*>(list.back())) {
+                                rhs->declProp.push_back(structDef->tagName);
+                            }
                         }
                     
 
@@ -1217,7 +1272,9 @@ ASTNode** Parser::parseTypedef() {
 
 
                 // cout << "Current token is : " << tokens[currentPos].data << "\n";
-                currentPos++; // skip ;
+
+                if(tokens[currentPos].type == SEMICOLON) currentPos++; // skip ;
+                
             
                 return arr;
 
@@ -1245,9 +1302,15 @@ ASTNode** Parser::parseTypedef() {
 
      // validation ????
 
-    varNameHolder* alias = new varNameHolder(*this);    
-    
-    DeclarationNode* parentObj = alias->getVarName(*original , false); 
+    bool isFirstDeclator = true; // Track if this is the first declarator in multi-declarator typedef
+    short indexSaver = tempIndexHolder; // Save index before looping through data type tokens
+
+    multiTypeDefDeclLabel: // Label for handling multiple declarators
+
+    varNameHolder* alias = new varNameHolder(*this);
+
+    // For subsequent declarators, force reset of static variables in getVarName()
+    DeclarationNode* parentObj = alias->getVarName(*original, false, !isFirstDeclator);
 
     tdMapPair* rhs = new tdMapPair;
 
@@ -1257,7 +1320,7 @@ ASTNode** Parser::parseTypedef() {
         rhs->nameProp = &funcObj->funcName;
     }
 
-    
+
 
     {
         addAgain:
@@ -1271,6 +1334,7 @@ ASTNode** Parser::parseTypedef() {
 
         // check if next one is some typedef of original parsing is done
         if(tokens[tempIndexHolder].type == KEYWORD_STRUCT){
+
             // this is pending for now
 
             rhs->declProp.push_back(tokens[tempIndexHolder].data);
@@ -1283,6 +1347,12 @@ ASTNode** Parser::parseTypedef() {
                 tempIndexHolder++; // skip struct tagName
             } else{
                 // it is anon struct def with typedef, need to give it a name myself
+
+                // get the anon struct name from the latest struct definition
+
+                if(StructDefinitionNode* structDef = dynamic_cast<StructDefinitionNode*>(list.back())) {
+                    rhs->declProp.push_back(structDef->tagName);
+                }
             }
 
             
@@ -1307,28 +1377,39 @@ ASTNode** Parser::parseTypedef() {
 
     // generate typedef ast
 
-    currentPos++; // skip ;
-
+    // Add the current declarator's typedef to the list and map
     list.push_back(new TypedefDeclarationNode(rhs->declProp , rhs->nameProp));
 
-    ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
-    for(uint64_t i = 0; i < list.size(); i++){
-        arr[i] = list[i];
-    }
-    arr[list.size()] = nullptr; // null terminate the arraya
-
-    // tdMap[rhs->nameProp->namePropArray[0].varName].push_back(rhs); 
-
     string typedefAliasName = rhs->nameProp->namePropArray[0].varName;
-    tdMap[typedefAliasName].push_back(*rhs); 
+    tdMap[typedefAliasName].push_back(*rhs);
 
-    
-    
+    // Check if there are more declarators
+    if(tokens[currentPos].type == COMMA){
+        // Multiple declarators in this typedef
 
-    return arr;
+        // Reset for next declarator in multiple typedef declaration
+        alias->resetDataTypeAndNameObjectForNext(*original);
 
-    
+        tempIndexHolder = indexSaver; // Reset tempIndexHolder to reprocess data type tokens for next declarator
+        currentPos++; // skip comma
 
+        isFirstDeclator = false; // Mark that we're on a subsequent declarator
+        goto multiTypeDefDeclLabel; // Go parse the next declarator
+    } else if(tokens[currentPos].type == SEMICOLON){
+        // End of typedef declaration
+        currentPos++; // skip ;
+
+        ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
+        for(uint64_t i = 0; i < list.size(); i++){
+            arr[i] = list[i];
+        }
+        arr[list.size()] = nullptr; // null terminate the array
+
+        return arr;
+    } else{
+        cout << "Expected ; or , after typedef declarator\n";
+        exit(1);
+    }
     // return new TypedefDeclarationNode(rhs->declProp , alias);
 
     

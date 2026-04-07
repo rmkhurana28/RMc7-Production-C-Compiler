@@ -95,6 +95,9 @@ typedef enum locationStack{
 // global variable to store the stack
 extern vector<locationStack> myStack;
 
+extern string* anonTagNameGen();
+
+
 class Parser {
     friend class dataTypeHolder; // allows dataTypeHolder to access private section of this class
     friend class varNameHolder; // allows varNameHolder to access private section of this class

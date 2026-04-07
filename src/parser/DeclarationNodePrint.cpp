@@ -560,11 +560,7 @@ void ForwardDeclarationNode::print(ofstream& out) {
 
 void StructDefinitionNode::print(ofstream& out) {
     out << "      Declaration Type: Struct Definition\n";
-    if(isTagNamePresent) {
-        out << "      Tag Name: " << tagName << "\n";
-    } else {
-        out << "      Anonymous Struct\n";
-    }
+    out << "      Tag Name: " << tagName << "\n";
     
     if(block && !block->expressions.empty()) {
         out << "      Struct Body (" << block->expressions.size() << " member declarations):\n";

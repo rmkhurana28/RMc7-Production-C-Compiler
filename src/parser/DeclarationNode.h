@@ -100,6 +100,7 @@ public:
 };
 
 class StructDefinitionNode : public DeclarationNode {
+    friend class Parser;
 private:
     bool isTagNamePresent;      // true if struct has a tag name
     string tagName;             // tag name (empty if anonymous)
