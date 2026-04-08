@@ -59,7 +59,23 @@ typedef struct Point { int x; int y; } Point;
 typedef int (*FuncPtr)(int);
 ```
 
-### 1.3 Type Qualifiers
+### 1.3 Typedef Expansion
+
+✅ Typedef aliases are fully expanded during declarator processing
+✅ Works in variables, function parameters, return types, and nested declarators
+✅ Supports multi-level alias chains
+
+**Examples:**
+```c
+typedef int *IP;
+IP a;              // int *
+IP (*arr)[10];     // pointer to array of int*
+
+typedef int (*FP)(int);
+FP f;              // function pointer
+```
+
+### 1.4 Type Qualifiers
 ✅ `const`  
 ✅ `volatile`  
 ✅ `restrict`
@@ -92,7 +108,7 @@ volatile volatile int _y;   // Duplicate volatile - NOT ALLOWED
 unsigned unsigned int _z;   // Duplicate unsigned - NOT ALLOWED
 ```
 
-### 1.4 Multiple Declarations
+### 1.5 Multiple Declarations
 
 ✅ **Basic multiple declarations:**
 ```c
@@ -661,7 +677,7 @@ The goal is to support full ISO C preprocessing, including:
 
 ## 8. Testing Status
 
-### Completed Tests (920+ test cases, 100% pass rate)
+### Completed Tests (1020+ test cases, 100% pass rate)
 
 - ✅ **Type System Validation:** 87 tests
 - ✅ **Declarator Parsing:** 100+ tests (simple pointers, arrays, complex nesting, function pointers)
@@ -670,7 +686,7 @@ The goal is to support full ISO C preprocessing, including:
 - ✅ **Type Cast & Sizeof:** ~370 tests
 - ✅ **Control Flow Statements:** ~100 tests (if/else, while, do-while, for, switch/case/default, break, continue, return, goto/labels, nested structures, function definitions)
 - ✅ **Struct Parsing:** 50+ tests (named, anonymous, self-referencing, nested, complex members)
-- ✅ **Typedef Parsing:** 150 tests (primitives, pointers, arrays, function pointers, struct typedefs, qualifiers)
+- ✅ **Typedef Parsing & Expansion:** 250 tests (primitives, pointers, arrays, function pointers, struct typedefs, qualifiers)
 
 ---
 

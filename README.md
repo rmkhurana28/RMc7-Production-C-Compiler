@@ -110,8 +110,8 @@ A complete reference for all supported syntax, declarators, types, operators, an
 ## 🏗️ Compiler Architecture
 
 ### **Pipeline Phases:**
-1. **Lexical Analysis** - Tokenization (In Progress)
-2. **Syntax Analysis** - Parsing & AST generation
+1. **Lexical Analysis** - Tokenization 
+2. **Syntax Analysis** - Parsing & AST generation (In Progress)
 3. **Semantic Analysis** - Type checking & symbol tables
 4. **Intermediate Code Generation** - Three-Address Code
 5. **Optimization** - Multiple optimization passes
@@ -147,7 +147,7 @@ A complete reference for all supported syntax, declarators, types, operators, an
 - ✅ Statement parsing (if/else, while, do-while, for, switch/case/default, break, continue, return, goto/labels) — ~100 test cases, 100% pass rate
 - ✅ Function definitions with body parsing and block expressions
 - ✅ Struct parsing (named, anonymous, self-referencing, nested) — 50+ test cases, 100% pass rate
-- ✅ Typedef parsing (primitive types, pointers, arrays, function pointers, structs) — 150 test cases, 100% pass rate
+- ✅ Typedef parsing (primitive types, pointers, arrays, function pointers, structs) — 250 test cases, 100% pass rate
 - ⏭️ Next: `union`, `enum` parsing
 
 ---

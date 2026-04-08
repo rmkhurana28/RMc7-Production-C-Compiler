@@ -22,6 +22,10 @@ extern vector<ASTNode*> tempASTStorage; // to store ast which are diffcult to ha
 
 extern bool typedDefTracker;
 
+extern varNameHolder* tempVarNameHolder;
+
+extern unordered_map<string, vector<tdMapPair>> tdMap;
+
 typedef enum locationStack{
     GLOBAL, // acting as a prent fro below 2
     GLOABL_VAR_DECL, // global var decl starting point
@@ -121,7 +125,8 @@ private:
 
     // hashmap to store new->old[] typedef alias
     // unordered_map<string, vector<string>> tdMap;
-    unordered_map<string, vector<tdMapPair>> tdMap;
+
+    // unordered_map<string, vector<tdMapPair>> tdMap;
 
     ASTNode** highLevelParse(); // to generate all the AST and return accordingly (current plan is to return an array of ast nodes, might need to add all of them to the high level array)
     

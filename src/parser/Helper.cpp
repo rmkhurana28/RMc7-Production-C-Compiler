@@ -258,7 +258,7 @@ int dataTypeHolder::isCurrentTypeValid(){
             const string& typedefName = this->tdNew[tdIndex];
 
             // get the vector of strings from tdMap
-            vector<string> expandedTokens = this->parser.tdMap[typedefName][0].declProp;
+            vector<string> expandedTokens = tdMap[typedefName][0].declProp;
             
             // process each token string and add to appropriate arrays
             // use index-based loop to handle consecutive stars properly
@@ -360,7 +360,7 @@ int dataTypeHolder::isCurrentTypeValid(){
                     // check if it's another typedef that needs recursive expansion
                     else if(this->parser.isThisStringPresentAsKeyInTdMap(tokenStr)){
                         // recursively expand this nested typedef
-                        vector<string> nestedTokens = this->parser.tdMap[tokenStr][0].declProp;
+                        vector<string> nestedTokens = tdMap[tokenStr][0].declProp;
                         // replace current typedef name with its expansion
                         expandedTokens.erase(expandedTokens.begin() + i); // remove typedef name
                         // insert expanded tokens at current position
@@ -377,6 +377,10 @@ int dataTypeHolder::isCurrentTypeValid(){
 
             // mark as expanded
             this->tdExpanded[tdIndex] = -1;
+
+            // tempVarNameHolder = tdMap[tdIndex]->nameProp;
+            tempVarNameHolder = tdMap[typedefName][0].nameProp;
+
         }
 
         // after expansion, patch starDataArray entries that were tagged HELPER_TOKEN with actual base type
@@ -387,6 +391,8 @@ int dataTypeHolder::isCurrentTypeValid(){
                 }
             }
         }
+
+        
     }
 
     // number of storage class prop can be 0-1
@@ -664,8 +670,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                         starData tempStarData({addStarCount , baseType}); // generate a starData object
                         typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array
                     } else{ // base type alr exist in starData array
-                        addAtTheEnd = typeHolder.starDataArray[indexIfExist].numOfStars;
-                        cout << "Add at the end value is " << addAtTheEnd << endl;
+                        addAtTheEnd = typeHolder.starDataArray[indexIfExist].numOfStars;                        
 
                         {
                             starData tempStarData({addStarCount , baseType}); // generate a starData object
@@ -982,6 +987,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
         current = this->parser.tokens[++this->parser.currentPos]; // advance token by 1
         
     }
+
 
 
     if(isFirstVar && bracketStackCount == 0 && !finalHelper){ // if the var is first in multiple decl
@@ -2007,7 +2013,7 @@ bool dataTypeHolder::validateTypeCast(){
 
             const string& typedefName = this->tdNew[tdIndex];
             // get the vector of strings from tdMap
-            vector<string> expandedTokens = this->parser.tdMap[typedefName][0].declProp;
+            vector<string> expandedTokens = tdMap[typedefName][0].declProp;
             
             // process each token string and add to appropriate arrays
             // use index-based loop to handle consecutive stars properly
@@ -2109,7 +2115,7 @@ bool dataTypeHolder::validateTypeCast(){
                     // check if it's another typedef that needs recursive expansion
                     else if(this->parser.isThisStringPresentAsKeyInTdMap(tokenStr)){
                         // recursively expand this nested typedef
-                        vector<string> nestedTokens = this->parser.tdMap[tokenStr][0].declProp;
+                        vector<string> nestedTokens = tdMap[tokenStr][0].declProp;
                         // replace current typedef name with its expansion
                         expandedTokens.erase(expandedTokens.begin() + i); // remove typedef name
                         // insert expanded tokens at current position

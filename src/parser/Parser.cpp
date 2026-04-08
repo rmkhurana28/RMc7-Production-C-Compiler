@@ -16,6 +16,10 @@ bool typedDefTracker = false;
 
 long long unsigned anonTracker = 0;
 
+varNameHolder* tempVarNameHolder = nullptr;
+
+unordered_map<string, vector<tdMapPair>> tdMap;
+
 string* anonTagNameGen(){
     string* retVal = new string("ANON_TAG_" + to_string(anonTracker));
     anonTracker++;
@@ -389,8 +393,8 @@ bool  Parser::isThisStringPresentAsKeyInTrHm(string key){
 
 bool Parser::isThisStringPresentAsKeyInTdMap(string key){
     // check if the given string is present as a key in typedef hashmap
-    auto search = this->tdMap.find(key);
-    if(search != this->tdMap.end()){
+    auto search = tdMap.find(key);
+    if(search != tdMap.end()){
         return true; // found
     }
     return false; // not found
@@ -491,6 +495,31 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
     if(retCode == 2){ // valid ONLY for func (void)
         temp = currName.getVarName(currType , false);
 
+        if(tempVarNameHolder != nullptr){
+
+
+            uint64_t orig = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.size();
+
+
+            // it had some td expansion logic, need to modify the varName accordingly
+
+            varNameHolder* modifiedVarName = new varNameHolder(*tempVarNameHolder); // copy the tempVarNameHolder to the new modified one
+
+            modifiedVarName->namePropArray[0] = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[0];
+
+            if(orig != 1){
+                for(uint64_t i=1 ; i<orig ; i++){
+                    // modifiedVarName->namePropArray.push_back(temp->varName.namePropArray[i]);
+                    modifiedVarName->namePropArray.push_back(static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[i]);
+                }
+            }
+
+            static_cast<VariableDeclarationNode*>(temp)->varName = *modifiedVarName; // assign the modified var name back to temp
+
+            tempVarNameHolder = nullptr; 
+            
+        }
+
         list.push_back(temp);
 
         // this->allAST.push_back(temp);
@@ -507,6 +536,34 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
         
         // this->allAST.push_back(temp);
 
+        if(tempVarNameHolder != nullptr){
+
+
+            uint64_t orig = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.size();
+
+
+            // it had some td expansion logic, need to modify the varName accordingly
+
+            varNameHolder* modifiedVarName = new varNameHolder(*tempVarNameHolder); // copy the tempVarNameHolder to the new modified one
+
+            modifiedVarName->namePropArray[0] = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[0];
+            
+
+            if(orig != 1){
+                for(uint64_t i=1 ; i<orig ; i++){
+                    // modifiedVarName->namePropArray.push_back(temp->varName.namePropArray[i]);
+                    modifiedVarName->namePropArray.push_back(static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[i]);
+                }
+            }
+
+            
+
+            static_cast<VariableDeclarationNode*>(temp)->varName = *modifiedVarName; // assign the modified var name back to temp
+
+            tempVarNameHolder = nullptr; 
+            
+        }
+
         list.push_back(temp);
 
 
@@ -522,6 +579,31 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
         // if(var) proceed var decl        
         temp = currName.getVarName(currType , false);
         // this->allAST.push_back(temp);
+
+        if(tempVarNameHolder != nullptr){
+
+
+            uint64_t orig = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.size();
+
+
+            // it had some td expansion logic, need to modify the varName accordingly
+
+            varNameHolder* modifiedVarName = new varNameHolder(*tempVarNameHolder); // copy the tempVarNameHolder to the new modified one
+
+            modifiedVarName->namePropArray[0] = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[0];
+
+            if(orig != 1){
+                for(uint64_t i=1 ; i<orig ; i++){
+                    // modifiedVarName->namePropArray.push_back(temp->varName.namePropArray[i]);
+                    modifiedVarName->namePropArray.push_back(static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[i]);
+                }
+            }
+
+            static_cast<VariableDeclarationNode*>(temp)->varName = *modifiedVarName; // assign the modified var name back to temp
+
+            tempVarNameHolder = nullptr; 
+            
+        }
 
         list.push_back(temp);
         
@@ -1396,6 +1478,7 @@ ASTNode** Parser::parseTypedef() {
 
     // Check if there are more declarators
     if(tokens[currentPos].type == COMMA){
+
         // Multiple declarators in this typedef
 
         // Reset for next declarator in multiple typedef declaration

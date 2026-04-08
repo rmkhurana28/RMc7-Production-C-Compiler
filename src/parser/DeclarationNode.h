@@ -16,6 +16,7 @@ class StatementNode;
 // Abstract base class for all declaration nodes
 // ============================================================================
 class DeclarationNode : public ASTNode {
+    friend class Parser;
 public:
     virtual ~DeclarationNode() {}
     virtual void print(ofstream& out) = 0; // Pure virtual print function
