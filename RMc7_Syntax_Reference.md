@@ -42,11 +42,11 @@ double pi = 3.14159;
 ```
 
 ### 1.2 Storage Class Specifiers
-✅ `auto`
-✅ `register`
-✅ `static`
-✅ `extern`
-✅ `typedef`
+✅ `auto`  
+✅ `register`  
+✅ `static`  
+✅ `extern`  
+✅ `typedef`  
 
 **Examples:**
 ```c
@@ -61,9 +61,9 @@ typedef int (*FuncPtr)(int);
 
 ### 1.3 Typedef Expansion
 
-✅ Typedef aliases are fully expanded during declarator processing
-✅ Works in variables, function parameters, return types, and nested declarators
-✅ Supports multi-level alias chains
+✅ Typedef aliases are fully expanded during declarator processing  
+✅ Works in variables, function parameters, return types, and nested declarators  
+✅ Supports multi-level alias chains  
 
 **Examples:**
 ```c
@@ -172,11 +172,11 @@ int *(*(**ptr)[10])(int);    // Pointer to pointer to array of pointers to funct
 ```
 
 ### 2.3 Function Parameters
-✅ Named parameters
-✅ Unnamed parameters (simple types only)
-✅ Variadic functions (`...`)
-✅ Empty parameter list `()`
-✅ `void` parameter list `(void)`
+✅ Named parameters  
+✅ Unnamed parameters (simple types only)  
+✅ Variadic functions (`...`)  
+✅ Empty parameter list `()`  
+✅ `void` parameter list `(void)`  
 
 **Examples:**
 ```c
@@ -217,14 +217,14 @@ int func(int (*(*_name)[10])(int));         // Complex nested WITH name - OK
 ## 3. Structured Types
 
 ### 3.1 Structures
-✅ `struct` declarations
-✅ `struct` definitions
-✅ Named structures
-✅ Anonymous structures
-✅ Self-referencing structures
-✅ Nested structures
-✅ Structure member access (`.`)
-✅ Structure pointer access (`->`)
+✅ `struct` declarations  
+✅ `struct` definitions  
+✅ Named structures  
+✅ Anonymous structures  
+✅ Self-referencing structures  
+✅ Nested structures  
+✅ Structure member access (`.`)  
+✅ Structure pointer access (`->`)  
 
 **Examples:**
 ```c
