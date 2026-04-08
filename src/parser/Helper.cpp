@@ -570,6 +570,8 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
     bool static isInit = false;
     static ExpressionNode* initExpr = NULL;
 
+    static int addAtTheEnd = -1;
+
 
     bool static isFirstVar = true; // flag if the var is first in multiple decl
 
@@ -590,10 +592,13 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
     Token current = this->parser.getCurrentToken(); // set the current properly
         
-    short indexIfExist; // helper flag 
+    short indexIfExist; // helper flag '
+    indexIfExist = -1;
 
     bool isVariad = false;
     vector<ParameterNode> paramList;
+
+    TokenType baseType;
 
     
 
@@ -623,7 +628,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             // update the var decl node
 
             // get the base type of var
-            TokenType baseType;
+            
             if(typeHolder.baseTypeArray.size() == 1){
                 baseType = typeHolder.baseTypeArray.front();
             } else if(typeHolder.trBaseArray.size() == 1){
@@ -642,28 +647,43 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 }
             }
 
+            
+            
+            
             // count the number of continous stars present
             addStarCount = 0;
             while(current.type == OP_STAR){
                 addStarCount++;
                 current = this->parser.tokens[++this->parser.currentPos];
             }
+            
+            // commenting this section out,might need to remove comment, if some test case fails !!!!!!!!!!!!!!!!!!!!!!!
+            {
+                if(!finalHelper){
+                    if(indexIfExist == -1){ // base type doesnt alr exist in starData array
+                        starData tempStarData({addStarCount , baseType}); // generate a starData object
+                        typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array
+                    } else{ // base type alr exist in starData array
+                        addAtTheEnd = typeHolder.starDataArray[indexIfExist].numOfStars;
+                        cout << "Add at the end value is " << addAtTheEnd << endl;
 
-            if(!finalHelper){
-                if(indexIfExist == -1){ // base type doesnt alr exist in starData array
-                    starData tempStarData({addStarCount , baseType}); // generate a starData object
-                    typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array
-                } else{ // base type alr exist in starData array
-                    typeHolder.starDataArray[indexIfExist].numOfStars += addStarCount; // update the number of stars in the starData
-                    addStarCount = typeHolder.starDataArray[indexIfExist].numOfStars; // might be issue, need to check properly
+                        {
+                            starData tempStarData({addStarCount , baseType}); // generate a starData object
+                            typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array
+                        }
 
-                    // typeHolder.starDataArray[indexIfExist].numOfStars = 0;
+                        // typeHolder.starDataArray[indexIfExist].numOfStars += addStarCount; // update the number of stars in the starData
+                        // addStarCount = typeHolder.starDataArray[indexIfExist].numOfStars; // might be issue, need to check properly
 
-                    // DON'T update addStarCount - keep it as the current iteration's star count, not the accumulated total
+                        // typeHolder.starDataArray[indexIfExist].numOfStars = 0;
+
+                        // DON'T update addStarCount - keep it as the current iteration's star count, not the accumulated total
+                    }
                 }
-            }
 
-            finalHelper = true;
+                finalHelper = true;
+
+            }
             
             
             // updation is done on the data type side
@@ -1009,7 +1029,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
         }
 
         // check if base type alr has some stars in starData (Valid only for first variable decl)
-        short indexIfExist = -1;
+        indexIfExist = -1;
         for(size_t i=0 ; i<typeHolder.starDataArray.size() ; i++){
             if(typeHolder.starDataArray[i].typeBeforeStar == baseType && typeHolder.starDataArray[i].numOfStars > 0){
                 indexIfExist = i;
@@ -1034,6 +1054,21 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
         }
 
+    }
+
+    if(isFirstVar && bracketStackCount == 0 && addAtTheEnd != -1 && finalHelper){
+
+
+        starData tempStarData({addAtTheEnd , baseType}); // generate a starData object
+        typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array
+
+        varNameProp temp;
+        temp.type = POINTOR;
+        temp.numPointor = addAtTheEnd;
+
+        this->namePropArray.push_back(temp);
+
+        addAtTheEnd = -1; // reset addAtTheEnd
     }
 
 
