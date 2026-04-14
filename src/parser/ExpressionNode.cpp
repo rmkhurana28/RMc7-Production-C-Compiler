@@ -154,3 +154,39 @@ BlockExpressionNode::~BlockExpressionNode() {
         delete expr;
     }
 }
+
+// enumComponentHolder constructor and destructor
+enumComponentHolder::enumComponentHolder(string enumName, ExpressionNode* enumValue) {
+    this->name = enumName;
+    this->value = enumValue;
+}
+
+enumComponentHolder::~enumComponentHolder() {
+    if (value != nullptr) {
+        delete value;
+    }
+}
+
+enumComponentHolder::enumComponentHolder(enumComponentHolder&& other) noexcept
+    : name(std::move(other.name)), value(other.value) {
+    other.value = nullptr;
+}
+
+enumComponentHolder& enumComponentHolder::operator=(enumComponentHolder&& other) noexcept {
+    if (this != &other) {
+        delete value;
+        name = std::move(other.name);
+        value = other.value;
+        other.value = nullptr;
+    }
+    return *this;
+}
+
+// EnumBlockExpressionNode constructor and destructor
+EnumBlockExpressionNode::EnumBlockExpressionNode(vector<enumComponentHolder> enums) {
+    this->components = std::move(enums);
+}
+
+EnumBlockExpressionNode::~EnumBlockExpressionNode() {
+    // vector destructor handles calling ~enumComponentHolder() on each element
+}

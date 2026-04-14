@@ -324,9 +324,11 @@ void printParametersRecursive(ofstream& out, const vector<ParameterNode>& params
         out << "\n";
         
         // Recursively print nested function parameters
+        int nestedFuncIndex = 0;
         for(const auto& nameProp : param.paramName.namePropArray) {
             if(nameProp.type == FUNC && !nameProp.funcParams.empty()) {
-                out << indent << "  Nested Function Parameters (" << nameProp.funcParams.size() << "):\n";
+                nestedFuncIndex++;
+                out << indent << "  Nested Function Parameters (" << nameProp.funcParams.size() << ") [FUNC #" << nestedFuncIndex << "]:\n";
                 printParametersRecursive(out, nameProp.funcParams, indent + "    ");
             }
         }
@@ -335,9 +337,11 @@ void printParametersRecursive(ofstream& out, const vector<ParameterNode>& params
 
 // Modified VariableDeclarationNode print to call the helper
 void VariableDeclarationNode::printParameters(ofstream& out) {
+    int funcIndex = 0;
     for(const auto& prop : varName.namePropArray) {
         if(prop.type == FUNC && !prop.funcParams.empty()) {
-            out << "      Parameters (" << prop.funcParams.size() << "):\n";
+            funcIndex++;
+            out << "      Parameters (" << prop.funcParams.size() << ") [FUNC #" << funcIndex << "]:\n";
             printParametersRecursive(out, prop.funcParams, "        ");
         }
     }
@@ -345,10 +349,15 @@ void VariableDeclarationNode::printParameters(ofstream& out) {
 
 void FunctionDeclarationNode::print(ofstream& out) {
     out << "      Return Type: ";
-    
+
     // Print return type
-    for(auto bt : funcDeclType.baseTypeArray) {
-        out << tokenToReadable(bt) << " ";
+    if(!funcDeclType.baseTypeArray.empty()) {
+        for(auto bt : funcDeclType.baseTypeArray) {
+            out << tokenToReadable(bt) << " ";
+        }
+    } else if(!funcDeclType.trKeywordArray.empty() && !funcDeclType.trBaseArray.empty()) {
+        // For struct/union return types
+        out << tokenToReadable(funcDeclType.trKeywordArray[0]) << " " << funcDeclType.trBaseArray[0] << " ";
     }
     
     // Print function name with full declarator sequence
@@ -454,39 +463,42 @@ void FunctionDeclarationNode::print(ofstream& out) {
 
 void FunctionDefinitionNode::print(ofstream& out) {
     out << "      Return Type: ";
-    
+
     // Print storage class
     for(auto sc : funcDefType.storageClassArray) {
         out << tokenToReadable(sc) << " ";
     }
-    
+
     // Print sign modifiers
     for(auto sm : funcDefType.signModifiersArray) {
         out << tokenToReadable(sm) << " ";
     }
-    
+
     // Print size modifiers
     for(auto szm : funcDefType.sizeModifiersArray) {
         out << tokenToReadable(szm) << " ";
     }
-    
+
     // Print qualifiers
     for(auto tq : funcDefType.typeQualifiersArray) {
         out << tokenToReadable(tq) << " ";
     }
-    
+
     // Print base type
     if(!funcDefType.baseTypeArray.empty()) {
         out << tokenToReadable(funcDefType.baseTypeArray[0]);
+    } else if(!funcDefType.trKeywordArray.empty() && !funcDefType.trBaseArray.empty()) {
+        // For struct/union return types
+        out << tokenToReadable(funcDefType.trKeywordArray[0]) << " " << funcDefType.trBaseArray[0];
     }
-    
+
     // Print stars from return type
     for(const auto& starData : funcDefType.starDataArray) {
         for(int j = 0; j < starData.numOfStars; j++) {
             out << "*";
         }
     }
-    
+
     out << "\n";
     
     out << "      Function Name: ";
@@ -526,7 +538,7 @@ void FunctionDefinitionNode::print(ofstream& out) {
                         ofstream tempFile(".temp_decl_output.txt");
                         decl->print(tempFile);
                         tempFile.close();
-                        
+
                         // Read back and add indentation to each line
                         ifstream tempRead(".temp_decl_output.txt");
                         string line;
@@ -538,7 +550,13 @@ void FunctionDefinitionNode::print(ofstream& out) {
                         tempRead.close();
                         remove(".temp_decl_output.txt");
                     } else {
-                        out << "        [Unknown node type]\n";
+                        // Check if it's an expression (e.g., BlockExpressionNode for nested blocks)
+                        ExpressionNode* expr = dynamic_cast<ExpressionNode*>(funcBody->expressions[i]);
+                        if(expr) {
+                            expr->print(out, "        ");
+                        } else {
+                            out << "        [Unknown node type]\n";
+                        }
                     }
                 }
             } else {
@@ -561,13 +579,13 @@ void ForwardDeclarationNode::print(ofstream& out) {
 void StructDefinitionNode::print(ofstream& out) {
     out << "      Declaration Type: Struct Definition\n";
     out << "      Tag Name: " << tagName << "\n";
-    
+
     if(block && !block->expressions.empty()) {
         out << "      Struct Body (" << block->expressions.size() << " member declarations):\n";
-        
+
         for(size_t i = 0; i < block->expressions.size(); i++) {
             out << "        ---- Member #" << (i+1) << " ----\n";
-            
+
             if(block->expressions[i]) {
                 // Try to cast to DeclarationNode for proper printing
                 DeclarationNode* memberDecl = dynamic_cast<DeclarationNode*>(block->expressions[i]);
@@ -576,7 +594,7 @@ void StructDefinitionNode::print(ofstream& out) {
                     ofstream tempFile("temp_member.txt");
                     memberDecl->print(tempFile);
                     tempFile.close();
-                    
+
                     // Read back with indentation
                     ifstream readFile("temp_member.txt");
                     string line;
@@ -593,6 +611,68 @@ void StructDefinitionNode::print(ofstream& out) {
         }
     } else {
         out << "      Struct Body: (empty)\n";
+    }
+}
+
+void UnionDefinitionNode::print(ofstream& out) {
+    out << "      Declaration Type: Union Definition\n";
+    out << "      Tag Name: " << tagName << "\n";
+
+    if(block && !block->expressions.empty()) {
+        out << "      Union Body (" << block->expressions.size() << " member declarations):\n";
+
+        for(size_t i = 0; i < block->expressions.size(); i++) {
+            out << "        ---- Member #" << (i+1) << " ----\n";
+
+            if(block->expressions[i]) {
+                // Try to cast to DeclarationNode for proper printing
+                DeclarationNode* memberDecl = dynamic_cast<DeclarationNode*>(block->expressions[i]);
+                if(memberDecl) {
+                    // Write to temp file to add indentation
+                    ofstream tempFile("temp_member.txt");
+                    memberDecl->print(tempFile);
+                    tempFile.close();
+
+                    // Read back with indentation
+                    ifstream readFile("temp_member.txt");
+                    string line;
+                    while(getline(readFile, line)) {
+                        out << "        " << line << "\n";
+                    }
+                    readFile.close();
+                } else {
+                    out << "        [Non-declaration node]\n";
+                }
+            } else {
+                out << "        [NULL member]\n";
+            }
+        }
+    } else {
+        out << "      Union Body: (empty)\n";
+    }
+}
+
+void EnumDefinitionNode::print(ofstream& out) {
+    out << "      Declaration Type: Enum Definition\n";
+    out << "      Tag Name: " << tagName << "\n";
+
+    if(block && !block->components.empty()) {
+        out << "      Enum Body (" << block->components.size() << " enumerators):\n";
+
+        for(size_t i = 0; i < block->components.size(); i++) {
+            out << "        ---- Enumerator #" << (i+1) << " ----\n";
+            out << "        Name: " << block->components[i].name << "\n";
+
+            if(block->components[i].value != nullptr) {
+                out << "        Value: ";
+                block->components[i].value->print(out, "");
+                out << "\n";
+            } else {
+                out << "        Value: (auto-assigned)\n";
+            }
+        }
+    } else {
+        out << "      Enum Body: (empty)\n";
     }
 }
 
@@ -617,6 +697,10 @@ void ProgramNode::printAST(ofstream& out) {
             out << "Forward Declaration";
         } else if(dynamic_cast<StructDefinitionNode*>(declarations[i])) {
             out << "Struct Definition";
+        } else if(dynamic_cast<UnionDefinitionNode*>(declarations[i])) {
+            out << "Union Definition";
+        } else if(dynamic_cast<EnumDefinitionNode*>(declarations[i])) {
+            out << "Enum Definition";
         } else if(dynamic_cast<TypedefDeclarationNode*>(declarations[i])) {
             out << "Typedef Declaration";
         } else {

@@ -107,6 +107,8 @@ class Parser {
     friend class varNameHolder; // allows varNameHolder to access private section of this class
     friend class ParameterNode;
     friend BlockExpressionNode* parseBlock(Parser& parser); // allows parseBlock function to access private members
+    friend class EnumBlockExpressionNode; // allows EnumBlockExpressionNode to access private members
+    friend EnumBlockExpressionNode* parseEnumBlock(Parser& parser); // allows parseEnumBlock function to access private members
 private:
     vector<Token> tokens;
     size_t currentPos;
@@ -169,8 +171,8 @@ private:
     
     // Structured types
     ASTNode** parseStruct(dataTypeHolder* helperDeclName);
-    DeclarationNode* parseEnum();
-    DeclarationNode* parseUnion();
+    ASTNode** parseEnum(dataTypeHolder* helperDeclName);
+    ASTNode** parseUnion(dataTypeHolder* helperDeclName);
     ASTNode** parseTypedef();
     
     // Jump statements

@@ -34,6 +34,22 @@ StructDefinitionNode::~StructDefinitionNode() {
     delete block;
 }
 
+UnionDefinitionNode::UnionDefinitionNode(bool hasTag, string tag, BlockExpressionNode* blk)
+    : isTagNamePresent(hasTag), tagName(tag), block(blk) {
+}
+
+UnionDefinitionNode::~UnionDefinitionNode() {
+    delete block;
+}
+
+EnumDefinitionNode::EnumDefinitionNode(bool hasTag, string tag, EnumBlockExpressionNode* blk)
+    : isTagNamePresent(hasTag), tagName(tag), block(blk) {
+}
+
+EnumDefinitionNode::~EnumDefinitionNode() {
+    delete block;
+}
+
 TypedefDeclarationNode::TypedefDeclarationNode(vector<string> tokens, varNameHolder* name)
     : baseTokens(tokens), nameProp(*name) {
 }

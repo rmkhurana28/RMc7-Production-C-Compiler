@@ -138,9 +138,15 @@ bool isThisTokenUnaryOp(TokenType op);
 // Forward declarations
 class Parser;
 class BlockExpressionNode;
+class EnumBlockExpressionNode;
 
 // Function to parse a block of statements
 BlockExpressionNode* parseBlock(Parser& parser);
+
+// Function to parse enum block
+EnumBlockExpressionNode* parseEnumBlock(Parser& parser);
+
+
 
 
 #endif

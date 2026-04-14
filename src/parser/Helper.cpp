@@ -162,7 +162,7 @@ int dataTypeHolder::getDataType(){
             // this->parser.currentPos -= 2;
 
             if(helpType == KEYWORD_STRUCT){
-                
+
                 ASTNode** tempStorage = this->parser.parseStruct(this);
 
                 short pushIndex = 0;
@@ -171,7 +171,33 @@ int dataTypeHolder::getDataType(){
                     pushIndex++;
                 }
 
-                
+
+
+                return 2;
+            } else if(helpType == KEYWORD_UNION){
+
+                ASTNode** tempStorage = this->parser.parseUnion(this);
+
+                short pushIndex = 0;
+                while(tempStorage != nullptr && tempStorage[pushIndex] != nullptr){
+                    tempASTStorage.push_back(tempStorage[pushIndex]);
+                    pushIndex++;
+                }
+
+
+
+                return 2;
+            } else if(helpType == KEYWORD_ENUM){
+
+                ASTNode** tempStorage = this->parser.parseEnum(this);
+
+                short pushIndex = 0;
+                while(tempStorage != nullptr && tempStorage[pushIndex] != nullptr){
+                    tempASTStorage.push_back(tempStorage[pushIndex]);
+                    pushIndex++;
+                }
+
+
 
                 return 2;
             }
@@ -1453,6 +1479,8 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
 
     if(needManualPushOfRBrackets == 1){
         expectedStack.push_back(RPAREN);
+    } else if(needManualPushOfRBrackets == 2){
+        expectedStack.push_back(RBRACE);
     } else if(needManualPushOfRBrackets == 3){
         expectedStack.push_back(RBRACKET);
     } else if(needManualPushOfRBrackets == 4){
@@ -1726,8 +1754,11 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
 
         if(currToken.type == RBRACE){
             if(!expectedStack.empty() &&  expectedStack.back() == RBRACE){
+                if(needManualPushOfRBrackets == 2){
+                    expectedStack.pop_back();
+                }
                 return left;
-            }            
+            }
             cout << "Unexpected } Found\n";
             exit(1);
         }
@@ -2334,7 +2365,80 @@ BlockExpressionNode* parseBlock(Parser& parser){
     parser.currentPos++; // skip }
 
     return new BlockExpressionNode(blockASTs);
-    
+
 }
+
+EnumBlockExpressionNode* parseEnumBlock(Parser& parser){
+    vector<enumComponentHolder> enumerators;
+
+    if(parser.tokens[parser.currentPos].type != LBRACE){
+        cout << "Expected { to start enum block\n";
+        exit(1);
+    }
+
+    parser.currentPos++; // skip {
+
+    while(parser.currentPos < parser.tokens.size() && parser.tokens[parser.currentPos].type != RBRACE){
+        // Check for identifier
+        if(parser.tokens[parser.currentPos].type != ID){
+            cout << "Expected identifier in enum block\n";
+            exit(1);
+        }
+
+        string enumName = parser.tokens[parser.currentPos].data;
+        parser.currentPos++; // skip identifier
+
+        ExpressionNode* enumValue = nullptr;
+
+        // Check if next token is = or ,
+        if(parser.currentPos < parser.tokens.size() && parser.tokens[parser.currentPos].type == OP_ASSIGN){
+            parser.currentPos++; // skip =
+
+            // Parse expression, stop at comma - only if valid expression follows
+            if(parser.currentPos < parser.tokens.size() && parser.tokens[parser.currentPos].type != RBRACE && parser.tokens[parser.currentPos].type != COMMA){
+                // peek ahead to check if this is the last enumerator
+                int peekPos = parser.currentPos;
+                int nestLevel = 0;
+                bool isLast = true;
+                while(peekPos < (int)parser.tokens.size()){
+                    TokenType t = parser.tokens[peekPos].type;
+                    if(t == LPAREN || t == LBRACKET) nestLevel++;
+                    else if(t == RPAREN || t == RBRACKET) nestLevel--;
+                    else if(nestLevel == 0 && t == COMMA){ isLast = false; break; }
+                    else if(nestLevel == 0 && t == RBRACE){ break; }
+                    peekPos++;
+                }
+
+                enumValue = parser.parseExpression(0, true, isLast ? 2 : -1);
+            }
+        }
+
+        // Create enumComponentHolder and add to vector
+        enumComponentHolder component(enumName, enumValue);
+        enumerators.push_back(std::move(component));
+
+        // Check for comma or close brace
+        if(parser.currentPos < parser.tokens.size() && parser.tokens[parser.currentPos].type == COMMA){
+            parser.currentPos++; // skip ,
+        } else if(parser.currentPos < parser.tokens.size() && parser.tokens[parser.currentPos].type != RBRACE){
+            cout << "Expected , or } in enum block at pos " << parser.currentPos << "\n";
+            exit(1);
+        } else if(parser.currentPos >= parser.tokens.size()){
+            cout << "Unexpected end of tokens in enum block\n";
+            exit(1);
+        }
+    }
+
+    if(parser.currentPos >= parser.tokens.size() || parser.tokens[parser.currentPos].type != RBRACE){
+        cout << "Expected } to close enum block\n";
+        exit(1);
+    }
+
+    parser.currentPos++; // skip }
+
+    return new EnumBlockExpressionNode(std::move(enumerators));
+
+}
+
 
 
