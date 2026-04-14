@@ -224,4 +224,36 @@ public:
     ~BlockExpressionNode();
 };
 
+// ============================================================================
+// ENUM SUPPORT
+// ============================================================================
+
+class enumComponentHolder {
+public:
+    string name; // enumerator name
+    ExpressionNode* value; // optional value expression (nullptr if not assigned)
+
+    enumComponentHolder(string enumName, ExpressionNode* enumValue = nullptr);
+    ~enumComponentHolder();
+
+    // Move semantics (transfer ownership of value pointer)
+    enumComponentHolder(enumComponentHolder&& other) noexcept;
+    enumComponentHolder& operator=(enumComponentHolder&& other) noexcept;
+
+    // Disable copy (raw pointer ownership)
+    enumComponentHolder(const enumComponentHolder&) = delete;
+    enumComponentHolder& operator=(const enumComponentHolder&) = delete;
+};
+
+class EnumBlockExpressionNode : public ExpressionNode {
+public:
+    vector<enumComponentHolder> components; // to store list of enumerators
+    void print(ofstream& out, const string& indent = "") const override;
+
+    EnumBlockExpressionNode(vector<enumComponentHolder> enums);
+    ~EnumBlockExpressionNode();
+};
+
+
+
 #endif

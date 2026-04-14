@@ -1,4 +1,6 @@
 #include "ExpressionNode.h"
+#include "StatementNode.h"
+#include "DeclarationNode.h"
 #include "Helper.h"
 #include "../lexer/Token.h"
 #include <fstream>
@@ -457,12 +459,59 @@ void BlockExpressionNode::print(ofstream& out, const string& indent) const {
     out << indent << "BlockExpression {\n";
     for (size_t i = 0; i < expressions.size(); i++) {
         if (expressions[i]) {
-            // expressions[i]->print(out, indent + "  ");
+            // Try to cast to ExpressionNode or StatementNode
+            ExpressionNode* exprNode = dynamic_cast<ExpressionNode*>(expressions[i]);
+            if(exprNode) {
+                exprNode->print(out, indent + "  ");
+            } else {
+                StatementNode* stmtNode = dynamic_cast<StatementNode*>(expressions[i]);
+                if(stmtNode) {
+                    stmtNode->print(out, indent + "  ");
+                } else {
+                    DeclarationNode* declNode = dynamic_cast<DeclarationNode*>(expressions[i]);
+                    if(declNode) {
+                        // Write to temp file to handle declaration printing
+                        ofstream tempFile(".temp_block_decl.txt");
+                        declNode->print(tempFile);
+                        tempFile.close();
+
+                        ifstream tempRead(".temp_block_decl.txt");
+                        string line;
+                        while(getline(tempRead, line)) {
+                            if(!line.empty()) {
+                                out << indent << "  " << line << "\n";
+                            }
+                        }
+                        tempRead.close();
+                        remove(".temp_block_decl.txt");
+                    }
+                }
+            }
             if (i < expressions.size() - 1) {
-                out << ",";
+                out << indent << ",";
             }
             out << "\n";
         }
+    }
+    out << indent << "}";
+}
+
+// ============================================================================
+// Enum Block Expression Node Print Function
+// ============================================================================
+
+void EnumBlockExpressionNode::print(ofstream& out, const string& indent) const {
+    out << indent << "EnumBlock {\n";
+    for (size_t i = 0; i < components.size(); i++) {
+        out << indent << "  " << components[i].name;
+        if (components[i].value != nullptr) {
+            out << " = ";
+            components[i].value->print(out, "");
+        }
+        if (i < components.size() - 1) {
+            out << ",";
+        }
+        out << "\n";
     }
     out << indent << "}";
 }

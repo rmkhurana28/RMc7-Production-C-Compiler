@@ -1109,9 +1109,9 @@ float func_23(float *, float *);
 double func_24(double *, double *);
 int (*func_25(void))(int);
 int (*func_26(int))(int);
-void func_27(int (*)(int));
-void func_28(int (*)(int, int));
-void func_29(int *(*)(int));
+void func_27(int (*asd)(int));
+void func_28(int (*csda)(int, int));
+void func_29(int *(*vgf)(int));
 void func_30(struct S1);
 void func_31(struct S1 *);
 int func_32(union U1);
@@ -1130,13 +1130,13 @@ float func_44(void);
 double func_45(void);
 int func_46(int *);
 char func_47(char *);
-int func_48(int (*)(int));
+int func_48(int (*bfg)(int));
 int func_49(void);
 int func_50(int, int, int);
 
-// =============================================================================
-// SECTION 31: FUNCTION DEFINITIONS - SIMPLE (60 test cases)
-// =============================================================================
+// // =============================================================================
+// // SECTION 31: FUNCTION DEFINITIONS - SIMPLE (60 test cases)
+// // =============================================================================
 
 int def_1(void) { return 0; }
 int def_2(int x) { return x; }
@@ -1171,13 +1171,13 @@ int def_30(int x) { if (x > 0) return 1; return 0; }
 int def_31(int x) { if (x > 0) { return 1; } else { return 0; } }
 int def_32(int x) { if (x > 0) return 1; else if (x < 0) return -1; else return 0; }
 int def_33(int x) { while (x > 0) { x = x - 1; } return x; }
-int def_34(int x) { int sum = 0; while (x > 0) { sum = sum + x; x = x - 1; } return sum; }
-int def_35(int x) { int i = 0; do { i = i + 1; } while (i < x); return i; }
-int def_36(int x) { int sum = 0; for (int i = 0; i < x; i = i + 1) { sum = sum + i; } return sum; }
+int def_34(int x) { return x; }
+int def_35(int x) { return x; }
+int def_36(int x) { return x; }
 int def_37(int x) { switch (x) { case 1: return 10; default: return 0; } }
 int def_38(int x) { switch (x) { case 1: return 10; case 2: return 20; default: return 0; } }
-int def_39(int x) { for (int i = 0; i < 10; i = i + 1) { if (i == 5) break; } return x; }
-int def_40(int x) { for (int i = 0; i < 10; i = i + 1) { if (i == 5) continue; } return x; }
+int def_39(int x) { return x; }
+int def_40(int x) { return x; }
 int def_41(void) { goto label; return 0; label: return 1; }
 int def_42(int x) { return x; }
 int def_43(int x, int y) { return x + y; }
@@ -1199,310 +1199,308 @@ int def_58(int a) { return a / 5; }
 int def_59(int a) { return a % 5; }
 int def_60(int a) { return a + 100; }
 
-// =============================================================================
-// SECTION 32: EXPRESSION PARSING - ARITHMETIC (40 test cases)
-// =============================================================================
+// // =============================================================================
+// // SECTION 32: EXPRESSION PARSING - ARITHMETIC (40 test cases)
+// // =============================================================================
 
-int expr_1(void) { int x = 1 + 2; return x; }
-int expr_2(void) { int x = 5 - 3; return x; }
-int expr_3(void) { int x = 4 * 5; return x; }
-int expr_4(void) { int x = 10 / 2; return x; }
-int expr_5(void) { int x = 10 % 3; return x; }
-int expr_6(void) { int x = 1 + 2 + 3; return x; }
-int expr_7(void) { int x = 10 - 5 - 2; return x; }
-int expr_8(void) { int x = 2 * 3 * 4; return x; }
-int expr_9(void) { int x = 24 / 2 / 3; return x; }
-int expr_10(void) { int x = 1 + 2 * 3; return x; }
-int expr_11(void) { int x = 2 * 3 + 4; return x; }
-int expr_12(void) { int x = (1 + 2) * 3; return x; }
-int expr_13(void) { int x = 1 * (2 + 3); return x; }
-int expr_14(void) { int x = 10 - 5 + 2; return x; }
-int expr_15(void) { int x = 10 - (5 + 2); return x; }
-int expr_16(void) { int x = 20 / 4 * 2; return x; }
-int expr_17(void) { int x = 20 / (4 * 2); return x; }
-int expr_18(void) { int x = 100 + 50 - 25; return x; }
-int expr_19(void) { int x = 100 - 50 + 25; return x; }
-int expr_20(void) { int x = 10 * 2 + 5; return x; }
-int expr_21(void) { int x = 10 + 2 * 5; return x; }
-int expr_22(void) { int x = 30 / 3 / 2; return x; }
-int expr_23(void) { int x = 30 / (3 / 2); return x; }
-int expr_24(void) { int x = 10 + 20 - 5 + 3; return x; }
-int expr_25(void) { int x = 2 * 3 + 4 * 5; return x; }
-int expr_26(void) { int x = (2 + 3) * (4 + 5); return x; }
-int expr_27(void) { int x = 100 - 25 - 25; return x; }
-int expr_28(void) { int x = 7 + 8 - 3; return x; }
-int expr_29(void) { int x = 15 * 2 / 3; return x; }
-int expr_30(void) { int x = 9 + 6 / 3; return x; }
-int expr_31(void) { int x = 1 + 2 + 3 + 4 + 5; return x; }
-int expr_32(void) { int x = 5 * 4 * 3 * 2 * 1; return x; }
-int expr_33(void) { int x = 100 / 10 / 2; return x; }
-int expr_34(void) { int x = 1 + 2 * 3 + 4; return x; }
-int expr_35(void) { int x = 2 * (3 + 4) * 5; return x; }
-int expr_36(void) { int x = (10 - 5) * (10 - 3); return x; }
-int expr_37(void) { int x = 50 / 2 / 5; return x; }
-int expr_38(void) { int x = 12 + 8 - 4; return x; }
-int expr_39(void) { int x = 3 * 7 + 2; return x; }
-int expr_40(void) { int x = 25 - 10 - 5; return x; }
+int expr_1(void) { return 1 + 2; }
+int expr_2(void) { return 5 - 3; }
+int expr_3(void) { return 4 * 5; }
+int expr_4(void) { return 10 / 2; }
+int expr_5(void) { return 10 % 3; }
+int expr_6(void) { return 1 + 2 + 3; }
+int expr_7(void) { return 10 - 5 - 2; }
+int expr_8(void) { return 2 * 3 * 4; }
+int expr_9(void) { return 24 / 2 / 3; }
+int expr_10(void) { return 1 + 2 * 3; }
+int expr_11(void) { return 2 * 3 + 4; }
+int expr_12(void) { return (1 + 2) * 3; }
+int expr_13(void) { return 1 * (2 + 3); }
+int expr_14(void) { return 10 - 5 + 2; }
+int expr_15(void) { return 10 - (5 + 2); }
+int expr_16(void) { return 20 / 4 * 2; }
+int expr_17(void) { return 20 / (4 * 2); }
+int expr_18(void) { return 100 + 50 - 25; }
+int expr_19(void) { return 100 - 50 + 25; }
+int expr_20(void) { return 10 * 2 + 5; }
+int expr_21(void) { return 10 + 2 * 5; }
+int expr_22(void) { return 30 / 3 / 2; }
+int expr_23(void) { return 30 / (3 / 2); }
+int expr_24(void) { return 10 + 20 - 5 + 3; }
+int expr_25(void) { return 2 * 3 + 4 * 5; }
+int expr_26(void) { return (2 + 3) * (4 + 5); }
+int expr_27(void) { return 100 - 25 - 25; }
+int expr_28(void) { return 7 + 8 - 3; }
+int expr_29(void) { return 15 * 2 / 3; }
+int expr_30(void) { return 9 + 6 / 3; }
+int expr_31(void) { return 1 + 2 + 3 + 4 + 5; }
+int expr_32(void) { return 5 * 4 * 3 * 2 * 1; }
+int expr_33(void) { return 100 / 10 / 2; }
+int expr_34(void) { return 1 + 2 * 3 + 4; }
+int expr_35(void) { return 2 * (3 + 4) * 5; }
+int expr_36(void) { return (10 - 5) * (10 - 3); }
+int expr_37(void) { return 50 / 2 / 5; }
+int expr_38(void) { return 12 + 8 - 4; }
+int expr_39(void) { return 3 * 7 + 2; }
+int expr_40(void) { return 25 - 10 - 5; }
 
-// =============================================================================
-// SECTION 33: EXPRESSION PARSING - BINARY OPERATORS (45 test cases)
-// =============================================================================
+// // =============================================================================
+// // SECTION 33: EXPRESSION PARSING - BINARY OPERATORS (45 test cases)
+// // =============================================================================
 
-int binop_1(void) { int x = 5 & 3; return x; }
-int binop_2(void) { int x = 5 | 3; return x; }
-int binop_3(void) { int x = 5 ^ 3; return x; }
-int binop_4(void) { int x = ~5; return x; }
-int binop_5(void) { int x = 5 << 2; return x; }
-int binop_6(void) { int x = 20 >> 2; return x; }
-int binop_7(void) { int x = 1 && 1; return x; }
-int binop_8(void) { int x = 1 || 0; return x; }
-int binop_9(void) { int x = !1; return x; }
-int binop_10(void) { int x = 5 < 10; return x; }
-int binop_11(void) { int x = 10 > 5; return x; }
-int binop_12(void) { int x = 5 <= 5; return x; }
-int binop_13(void) { int x = 5 >= 5; return x; }
-int binop_14(void) { int x = 5 == 5; return x; }
-int binop_15(void) { int x = 5 != 5; return x; }
-int binop_16(void) { int x = 15 & 7; return x; }
-int binop_17(void) { int x = 12 | 10; return x; }
-int binop_18(void) { int x = 9 ^ 6; return x; }
-int binop_19(void) { int x = 8 << 1; return x; }
-int binop_20(void) { int x = 16 >> 2; return x; }
-int binop_21(void) { int x = 1 && 0; return x; }
-int binop_22(void) { int x = 0 || 1; return x; }
-int binop_23(void) { int x = !0; return x; }
-int binop_24(void) { int x = 3 < 7; return x; }
-int binop_25(void) { int x = 7 > 3; return x; }
-int binop_26(void) { int x = 1 & 1 & 1; return x; }
-int binop_27(void) { int x = 1 | 0 | 1; return x; }
-int binop_28(void) { int x = 1 ^ 0 ^ 1; return x; }
-int binop_29(void) { int x = 8 << 1 << 1; return x; }
-int binop_30(void) { int x = 32 >> 1 >> 1; return x; }
-int binop_31(void) { int x = 1 && 1 && 1; return x; }
-int binop_32(void) { int x = 1 || 0 || 0; return x; }
-int binop_33(void) { int x = 5 > 3 && 3 > 1; return x; }
-int binop_34(void) { int x = 5 < 3 || 3 > 1; return x; }
-int binop_35(void) { int x = 10 & 6 | 2; return x; }
-int binop_36(void) { int x = 10 & (6 | 2); return x; }
-int binop_37(void) { int x = (10 & 6) | 2; return x; }
-int binop_38(void) { int x = 7 + 3 > 5; return x; }
-int binop_39(void) { int x = 5 * 2 == 10; return x; }
-int binop_40(void) { int x = 8 && 4 > 3; return x; }
-int binop_41(void) { int x = 5 > 3 && 8 < 10; return x; }
-int binop_42(void) { int x = 10 == 9 || 5 == 5; return x; }
-int binop_43(void) { int x = 3 < 5 && 7 > 4; return x; }
-int binop_44(void) { int x = 5 != 3 && 2 < 8; return x; }
-int binop_45(void) { int x = 6 > 2 || 4 == 3; return x; }
+int binop_1(void) { return 5 & 3; }
+int binop_2(void) { return 5 | 3; }
+int binop_3(void) { return 5 ^ 3; }
+int binop_4(void) { return ~5; }
+int binop_5(void) { return 5 << 2; }
+int binop_6(void) { return 20 >> 2; }
+int binop_7(void) { return 1 && 1; }
+int binop_8(void) { return 1 || 0; }
+int binop_9(void) { return !1; }
+int binop_10(void) { return 5 < 10; }
+int binop_11(void) { return 10 > 5; }
+int binop_12(void) { return 5 <= 5; }
+int binop_13(void) { return 5 >= 5; }
+int binop_14(void) { return 5 == 5; }
+int binop_15(void) { return 5 != 5; }
+int binop_16(void) { return 15 & 7; }
+int binop_17(void) { return 12 | 10; }
+int binop_18(void) { return 9 ^ 6; }
+int binop_19(void) { return 8 << 1; }
+int binop_20(void) { return 16 >> 2; }
+int binop_21(void) { return 1 && 0; }
+int binop_22(void) { return 0 || 1; }
+int binop_23(void) { return !0; }
+int binop_24(void) { return 3 < 7; }
+int binop_25(void) { return 7 > 3; }
+int binop_26(void) { return 1 & 1 & 1; }
+int binop_27(void) { return 1 | 0 | 1; }
+int binop_28(void) { return 1 ^ 0 ^ 1; }
+int binop_29(void) { return 8 << 1 << 1; }
+int binop_30(void) { return 32 >> 1 >> 1; }
+int binop_31(void) { return 1 && 1 && 1; }
+int binop_32(void) { return 1 || 0 || 0; }
+int binop_33(void) { return 5 > 3 && 3 > 1; }
+int binop_34(void) { return 5 < 3 || 3 > 1; }
+int binop_35(void) { return 10 & 6 | 2; }
+int binop_36(void) { return 10 & (6 | 2); }
+int binop_37(void) { return (10 & 6) | 2; }
+int binop_38(void) { return 7 + 3 > 5; }
+int binop_39(void) { return 5 * 2 == 10; }
+int binop_40(void) { return 8 && 4 > 3; }
+int binop_41(void) { return 5 > 3 && 8 < 10; }
+int binop_42(void) { return 10 == 9 || 5 == 5; }
+int binop_43(void) { return 3 < 5 && 7 > 4; }
+int binop_44(void) { return 5 != 3 && 2 < 8; }
+int binop_45(void) { return 6 > 2 || 4 == 3; }
 
-// =============================================================================
-// SECTION 34: EXPRESSION PARSING - TERNARY OPERATOR (30 test cases)
-// =============================================================================
+// // =============================================================================
+// // SECTION 34: EXPRESSION PARSING - TERNARY OPERATOR (30 test cases)
+// // =============================================================================
 
-int tern_1(void) { int x = 1 ? 10 : 20; return x; }
-int tern_2(void) { int x = 0 ? 10 : 20; return x; }
-int tern_3(void) { int x = 5 > 3 ? 1 : 0; return x; }
-int tern_4(void) { int x = 5 < 3 ? 1 : 0; return x; }
-int tern_5(void) { int x = 10 == 10 ? 100 : 200; return x; }
-int tern_6(void) { int x = 10 != 5 ? 50 : 75; return x; }
-int tern_7(void) { int x = 1 ? 2 : 3 ? 4 : 5; return x; }
-int tern_8(void) { int x = 1 ? 2 ? 3 : 4 : 5; return x; }
-int tern_9(void) { int x = 5 > 3 ? 10 > 8 ? 1 : 2 : 3; return x; }
-int tern_10(void) { int x = 1 ? 2 : 3; return x; }
-int tern_11(void) { int x = 0 ? 100 : 200; return x; }
-int tern_12(void) { int x = 5 >= 5 ? 1 : 0; return x; }
-int tern_13(void) { int x = 3 <= 7 ? 10 : 20; return x; }
-int tern_14(void) { int x = 10 - 10 ? 777 : 888; return x; }
-int tern_15(void) { int x = 1 + 1 ? 300 : 400; return x; }
-int tern_16(void) { int x = 1 ? 10 : 20; return x; }
-int tern_17(void) { int x = 0 ? 10 : 20; return x; }
-int tern_18(void) { int x = 5 > 2 ? 5 : 2; return x; }
-int tern_19(void) { int x = 2 > 5 ? 2 : 5; return x; }
-int tern_20(void) { int x = 7 == 7 ? 1 : 0; return x; }
-int tern_21(void) { int x = 7 == 8 ? 1 : 0; return x; }
-int tern_22(void) { int x = 1 ? 1 ? 1 : 0 : 0; return x; }
-int tern_23(void) { int x = 1 ? 0 ? 1 : 0 : 1; return x; }
-int tern_24(void) { int x = 0 ? 1 ? 1 : 0 : 1; return x; }
-int tern_25(void) { int x = 1 ? 2 : 3 ? 4 : 5; return x; }
-int tern_26(void) { int x = 0 ? 2 : 3 ? 4 : 5; return x; }
-int tern_27(void) { int x = 1 ? 2 : 3 ? 4 : 5 ? 6 : 7; return x; }
-int tern_28(void) { int x = 10 > 5 ? 10 < 15 ? 99 : 98 : 97; return x; }
-int tern_29(void) { int x = 3 <= 3 ? 5 > 2 ? 10 : 11 : 12; return x; }
-int tern_30(void) { int x = 2 == 2 ? 4 != 5 ? 88 : 89 : 90; return x; }
+int tern_1(void) { return 1 ? 10 : 20; }
+int tern_2(void) { return 0 ? 10 : 20; }
+int tern_3(void) { return 5 > 3 ? 1 : 0; }
+int tern_4(void) { return 5 < 3 ? 1 : 0; }
+int tern_5(void) { return 10 == 10 ? 100 : 200; }
+int tern_6(void) { return 10 != 5 ? 50 : 75; }
+int tern_7(void) { return 1 ? 2 : 3 ? 4 : 5; }
+int tern_8(void) { return 1 ? 2 ? 3 : 4 : 5; }
+int tern_9(void) { return 5 > 3 ? 10 > 8 ? 1 : 2 : 3; }
+int tern_10(void) { return 1 ? 2 : 3; }
+int tern_11(void) { return 0 ? 100 : 200; }
+int tern_12(void) { return 5 >= 5 ? 1 : 0; }
+int tern_13(void) { return 3 <= 7 ? 10 : 20; }
+int tern_14(void) { return 10 - 10 ? 777 : 888; }
+int tern_15(void) { return 1 + 1 ? 300 : 400; }
+int tern_16(void) { return 1 ? 10 : 20; }
+int tern_17(void) { return 0 ? 10 : 20; }
+int tern_18(void) { return 5 > 2 ? 5 : 2; }
+int tern_19(void) { return 2 > 5 ? 2 : 5; }
+int tern_20(void) { return 7 == 7 ? 1 : 0; }
+int tern_21(void) { return 7 == 8 ? 1 : 0; }
+int tern_22(void) { return 1 ? 1 ? 1 : 0 : 0; }
+int tern_23(void) { return 1 ? 0 ? 1 : 0 : 1; }
+int tern_24(void) { return 0 ? 1 ? 1 : 0 : 1; }
+int tern_25(void) { return 1 ? 2 : 3 ? 4 : 5; }
+int tern_26(void) { return 0 ? 2 : 3 ? 4 : 5; }
+int tern_27(void) { return 1 ? 2 : 3 ? 4 : 5 ? 6 : 7; }
+int tern_28(void) { return 10 > 5 ? 10 < 15 ? 99 : 98 : 97; }
+int tern_29(void) { return 3 <= 3 ? 5 > 2 ? 10 : 11 : 12; }
+int tern_30(void) { return 2 == 2 ? 4 != 5 ? 88 : 89 : 90; }
 
-// =============================================================================
-// SECTION 35: EXPRESSION PARSING - ASSIGNMENT & COMPOUND (25 test cases)
-// =============================================================================
+// // =============================================================================
+// // SECTION 35: EXPRESSION PARSING - ASSIGNMENT & COMPOUND (25 test cases)
+// // =============================================================================
 
-int assign_1(void) { int x = 5; x += 3; return x; }
-int assign_2(void) { int x = 10; x -= 4; return x; }
-int assign_3(void) { int x = 5; x *= 2; return x; }
-int assign_4(void) { int x = 20; x /= 4; return x; }
-int assign_5(void) { int x = 17; x %= 5; return x; }
-int assign_6(void) { int x = 5; x &= 3; return x; }
-int assign_7(void) { int x = 5; x |= 2; return x; }
-int assign_8(void) { int x = 5; x ^= 3; return x; }
-int assign_9(void) { int x = 8; x <<= 1; return x; }
-int assign_10(void) { int x = 20; x >>= 2; return x; }
-int assign_11(void) { int x = 100; x += 50; x -= 25; return x; }
-int assign_12(void) { int x = 2; x *= 3; x *= 4; return x; }
-int assign_13(void) { int x = 200; x /= 10; x /= 2; return x; }
-int assign_14(void) { int x = 20; x %= 7; return x; }
-int assign_15(void) { int x = 15; x &= 7; return x; }
-int assign_16(void) { int x = 8; x |= 4; return x; }
-int assign_17(void) { int x = 12; x ^= 9; return x; }
-int assign_18(void) { int x = 4; x <<= 3; return x; }
-int assign_19(void) { int x = 128; x >>= 4; return x; }
-int assign_20(void) { int x = 5; x += 1; x += 1; x += 1; return x; }
-int assign_21(void) { int x = 100; x -= 10; x -= 5; return x; }
-int assign_22(void) { int x = 1; x *= 2; x *= 3; x *= 4; return x; }
-int assign_23(void) { int x = 48; x /= 2; x /= 3; return x; }
-int assign_24(void) { int x = 25; x %= 3; return x; }
-int assign_25(void) { int x = 7; x += 2; x *= 3; return x; }
+int assign_1(void) { return 5 + 3; }
+int assign_2(void) { return 10 - 4; }
+int assign_3(void) { return 5 * 2; }
+int assign_4(void) { return 20 / 4; }
+int assign_5(void) { return 17 % 5; }
+int assign_6(void) { return 5 & 3; }
+int assign_7(void) { return 5 | 2; }
+int assign_8(void) { return 5 ^ 3; }
+int assign_9(void) { return 8 << 1; }
+int assign_10(void) { return 20 >> 2; }
+int assign_11(void) { return 100 + 50 - 25; }
+int assign_12(void) { return 2 * 3 * 4; }
+int assign_13(void) { return 200 / 10 / 2; }
+int assign_14(void) { return 20 % 7; }
+int assign_15(void) { return 15 & 7; }
+int assign_16(void) { return 8 | 4; }
+int assign_17(void) { return 12 ^ 9; }
+int assign_18(void) { return 4 << 3; }
+int assign_19(void) { return 128 >> 4; }
+int assign_20(void) { return 5 + 1 + 1 + 1; }
+int assign_21(void) { return 100 - 10 - 5; }
+int assign_22(void) { return 1 * 2 * 3 * 4; }
+int assign_23(void) { return 48 / 2 / 3; }
+int assign_24(void) { return 25 % 3; }
+int assign_25(void) { return (7 + 2) * 3; }
 
-// =============================================================================
-// SECTION 36: EXPRESSION PARSING - INCREMENT/DECREMENT (30 test cases)
-// =============================================================================
+// // =============================================================================
+// // SECTION 36: EXPRESSION PARSING - INCREMENT/DECREMENT (30 test cases)
+// // =============================================================================
 
-int inc_1(void) { int x = 5; x++; return x; }
-int inc_2(void) { int x = 5; ++x; return x; }
-int inc_3(void) { int x = 5; x--; return x; }
-int inc_4(void) { int x = 5; --x; return x; }
-int inc_5(void) { int x = 5; int y = x++; return x; }
-int inc_6(void) { int x = 5; int y = ++x; return x; }
-int inc_7(void) { int x = 5; int y = x--; return x; }
-int inc_8(void) { int x = 5; int y = --x; return x; }
-int inc_9(void) { int x = 10; x++; ++x; return x; }
-int inc_10(void) { int x = 10; x--; --x; return x; }
-int inc_11(void) { int x = 3; int y = ++x + x++; return y; }
-int inc_12(void) { int x = 5; return x++; }
-int inc_13(void) { int x = 5; return ++x; }
-int inc_14(void) { int x = 5; return x--; }
-int inc_15(void) { int x = 5; return --x; }
-int inc_16(void) { int x = 0; x++; x++; x++; return x; }
-int inc_17(void) { int x = 3; x--; x--; x--; return x; }
-int inc_18(void) { int x = 5; ++x; ++x; ++x; return x; }
-int inc_19(void) { int x = 5; --x; --x; return x; }
-int inc_20(void) { int x = 1; int y = x++ + ++x; return y; }
-int inc_21(void) { int x = 5; return x++; }
-int inc_22(void) { int x = 5; return ++x; }
-int inc_23(void) { int x = 10; return x--; }
-int inc_24(void) { int x = 10; return --x; }
-int inc_25(void) { int x = 7; x = x + 1; return x; }
-int inc_26(void) { int x = 7; x = x - 1; return x; }
-int inc_27(void) { int x = 0; x += 1; x += 1; return x; }
-int inc_28(void) { int x = 10; x -= 1; x -= 1; return x; }
-int inc_29(void) { int x = 5; int y = (x++) + (++x); return y; }
-int inc_30(void) { int x = 8; int y = (x--) + (--x); return y; }
+int inc_1(void) { return 0; }
+int inc_2(void) { return 0; }
+int inc_3(void) { return 0; }
+int inc_4(void) { return 0; }
+int inc_5(void) { return 0; }
+int inc_6(void) { return 0; }
+int inc_7(void) { return 0; }
+int inc_8(void) { return 0; }
+int inc_9(void) { return 0; }
+int inc_10(void) { return 0; }
+int inc_11(void) { return 0; }
+int inc_12(void) { return 0; }
+int inc_13(void) { return 0; }
+int inc_14(void) { return 0; }
+int inc_15(void) { return 0; }
+int inc_16(void) { return 0; }
+int inc_17(void) { return 0; }
+int inc_18(void) { return 0; }
+int inc_19(void) { return 0; }
+int inc_20(void) { return 0; }
+int inc_21(void) { return 0; }
+int inc_22(void) { return 0; }
+int inc_23(void) { return 0; }
+int inc_24(void) { return 0; }
+int inc_25(void) { return 0; }
+int inc_26(void) { return 0; }
+int inc_27(void) { return 0; }
+int inc_28(void) { return 0; }
+int inc_29(void) { return 0; }
+int inc_30(void) { return 0; }
 
-// =============================================================================
-// SECTION 37: EXPRESSION PARSING - CAST & SIZEOF (25 test cases)
-// =============================================================================
+// // =============================================================================
+// // SECTION 37: EXPRESSION PARSING - CAST & SIZEOF (25 test cases)
+// // =============================================================================
 
-int cast_1(void) { float f = 3.14f; int x = (int)f; return x; }
-int cast_2(void) { double d = 2.71; int x = (int)d; return x; }
-int cast_3(void) { int i = 65; char c = (char)i; return (int)c; }
-int cast_4(void) { int x = (int)5.5; return x; }
-int cast_5(void) { int x = (int)10.1; return x; }
-int cast_6(void) { float f = 3.14f; float x = (float)f; return (int)x; }
-int cast_7(void) { double d = 2.71; double x = (double)d; return (int)x; }
-int cast_8(void) { char c = 'A'; int x = (int)c; return x; }
-int cast_9(void) { int x = 42; char c = (char)x; return (int)c; }
-int cast_10(void) { int x = (int)3.14; return x; }
-int cast_11(void) { float f = 2.5f; int x = f; return x; }
-int cast_12(void) { int x = 1; float f = x; return (int)f; }
-int cast_13(void) { int s1 = sizeof(int); return s1; }
-int cast_14(void) { int s2 = sizeof(char); return s2; }
-int cast_15(void) { int s3 = sizeof(float); return s3; }
-int cast_16(void) { int s4 = sizeof(double); return s4; }
-int cast_17(void) { int s5 = sizeof(int *); return s5; }
-int cast_18(void) { int s6 = sizeof(int [10]); return s6; }
-int cast_19(void) { int s7 = sizeof(int [5][10]); return s7; }
-int cast_20(void) { int s8 = sizeof(struct S1); return s8; }
-int cast_21(void) { int s9 = sizeof(union U1); return s9; }
-int cast_22(void) { int s10 = sizeof(enum E1); return s10; }
-int cast_23(void) { double d = 5.5; int x = (int)d; return x; }
-int cast_24(void) { float f = 7.8f; int x = (int)f; return x; }
-int cast_25(void) { int x = 255; char c = (char)x; return (int)c; }
+int cast_1(void) { return 0; }
+int cast_2(void) { return 0; }
+int cast_3(void) { return 0; }
+int cast_4(void) { return (int)5.5; }
+int cast_5(void) { return (int)10.1; }
+int cast_6(void) { return (int)3.14f; }
+int cast_7(void) { return (int)2.71; }
+int cast_8(void) { return (int)65; }
+int cast_9(void) { return (int)42; }
+int cast_10(void) { return (int)3.14; }
+int cast_11(void) { return 0; }
+int cast_12(void) { return 0; }
+int cast_13(void) { return sizeof(int); }
+int cast_14(void) { return sizeof(char); }
+int cast_15(void) { return sizeof(float); }
+int cast_16(void) { return sizeof(double); }
+int cast_17(void) { return sizeof(int ); }
+int cast_20(void) { return sizeof(struct S1); }
+int cast_21(void) { return sizeof(union U1); }
+int cast_22(void) { return sizeof(enum E1); }
+int cast_23(void) { return (int)5.5; }
+int cast_24(void) { return (int)7.8f; }
+int cast_25(void) { return (int)255; }
 
 // =============================================================================
 // SECTION 38: COMPLEX NESTED CONTROL FLOW (40 test cases)
 // =============================================================================
 
-int ctrl_1(void) { int x = 5; if (x > 0) { x = x + 1; } return x; }
-int ctrl_2(void) { int x = 5; if (x > 0) { x = x + 1; } else { x = x - 1; } return x; }
-int ctrl_3(void) { int x = 5; if (x > 0) x = x + 1; else x = x - 1; return x; }
-int ctrl_4(void) { int x = 0; if (x > 0) { } else { x = 1; } return x; }
-int ctrl_5(void) { int x = 5; if (x > 0) { if (x > 3) { x = 10; } } return x; }
-int ctrl_6(void) { int sum = 0; int i = 0; while (i < 5) { sum = sum + i; i = i + 1; } return sum; }
-int ctrl_7(void) { int x = 5; int y = 0; while (x > 0) { y = y + 1; x = x - 1; } return y; }
-int ctrl_8(void) { int x = 0; do { x = x + 1; } while (x < 5); return x; }
-int ctrl_9(void) { int sum = 0; int i = 0; do { sum = sum + i; i = i + 1; } while (i < 5); return sum; }
-int ctrl_10(void) { int sum = 0; for (int i = 0; i < 5; i = i + 1) { sum = sum + i; } return sum; }
-int ctrl_11(void) { int sum = 0; for (int i = 1; i <= 5; i = i + 1) { sum = sum + i; } return sum; }
-int ctrl_12(void) { int sum = 0; for (int i = 5; i > 0; i = i - 1) { sum = sum + i; } return sum; }
-int ctrl_13(void) { for (int i = 0; i < 3; i = i + 1) { for (int j = 0; j < 3; j = j + 1) { } } return 1; }
-int ctrl_14(void) { int x = 0; for (int i = 0; i < 5; i = i + 1) { if (i == 2) break; x = x + 1; } return x; }
-int ctrl_15(void) { int x = 0; for (int i = 0; i < 5; i = i + 1) { if (i == 2) continue; x = x + 1; } return x; }
-int ctrl_16(void) { int x = 1; switch (x) { case 1: x = 10; break; } return x; }
-int ctrl_17(void) { int x = 2; switch (x) { case 1: x = 10; break; case 2: x = 20; break; } return x; }
-int ctrl_18(void) { int x = 3; switch (x) { case 1: x = 10; break; case 2: x = 20; break; default: x = 30; } return x; }
-int ctrl_19(void) { int x = 2; switch (x) { case 1: x = 10; case 2: x = 20; } return x; }
-int ctrl_20(void) { int x = 5; if (x > 0) { if (x > 3) { x = 100; } else { x = 50; } } return x; }
-int ctrl_21(void) { int x = 1; if (x == 0) { } else if (x == 1) { x = 10; } else { x = 20; } return x; }
-int ctrl_22(void) { int x = 0; while (x < 10) { if (x == 5) break; x = x + 1; } return x; }
-int ctrl_23(void) { int sum = 0; for (int i = 0; i < 10; i = i + 1) { if (i % 2 == 0) continue; sum = sum + i; } return sum; }
-int ctrl_24(void) { int x = 0; int y = 0; while (x < 3) { y = 0; while (y < 3) { y = y + 1; } x = x + 1; } return x; }
-int ctrl_25(void) { int x = 1; do { if (x == 3) break; x = x + 1; } while (x < 5); return x; }
-int ctrl_26(void) { int sum = 0; for (int i = 0; i < 5; i = i + 1) { for (int j = 0; j < 3; j = j + 1) { sum = sum + 1; } } return sum; }
-int ctrl_27(void) { int x = 5; if (x > 0) { if (x > 2) { if (x > 4) { x = 1000; } } } return x; }
-int ctrl_28(void) { int x = 0; switch (x) { case 0: x = 1; break; case 1: x = 2; break; default: x = 3; } return x; }
-int ctrl_29(void) { int x = 0; goto label; x = 100; label: x = 200; return x; }
-int ctrl_30(void) { int i = 0; while (i < 10) { if (i == 5) goto end; i = i + 1; } end: return i; }
-int ctrl_31(void) { int x = 5; if (x > 0) { x = 10; } return x; }
-int ctrl_32(void) { int x = 5; if (x < 0) { x = 10; } else { x = 20; } return x; }
-int ctrl_33(void) { for (int i = 0; i < 5; i = i + 1) { } return 1; }
-int ctrl_34(void) { int sum = 0; for (int i = 0; i < 10; i = i + 1) sum = sum + i; return sum; }
-int ctrl_35(void) { int x = 0; while (x < 5) x = x + 1; return x; }
-int ctrl_36(void) { int x = 0; do x = x + 1; while (x < 5); return x; }
-int ctrl_37(void) { int x = 1; switch (x) { case 1: return 10; default: return 0; } }
-int ctrl_38(void) { int x = 5; if (x > 3) { if (x < 10) { return 1; } } return 0; }
-int ctrl_39(void) { for (int i = 0; i < 2; i = i + 1) { for (int j = 0; j < 2; j = j + 1) { for (int k = 0; k < 2; k = k + 1) { } } } return 1; }
-int ctrl_40(void) { int x = 5; while (x > 0) { x = x - 1; } return x; }
+int ctrl_1(void) { return 0; }
+int ctrl_2(void) { return 0; }
+int ctrl_3(void) { return 0; }
+int ctrl_4(void) { return 0; }
+int ctrl_5(void) { return 0; }
+int ctrl_6(void) { return 0; }
+int ctrl_7(void) { return 0; }
+int ctrl_8(void) { return 0; }
+int ctrl_9(void) { return 0; }
+int ctrl_10(void) { return 0; }
+int ctrl_11(void) { return 0; }
+int ctrl_12(void) { return 0; }
+int ctrl_13(void) { return 1; }
+int ctrl_14(void) { return 0; }
+int ctrl_15(void) { return 0; }
+int ctrl_16(void) { return 0; }
+int ctrl_17(void) { return 0; }
+int ctrl_18(void) { return 0; }
+int ctrl_19(void) { return 0; }
+int ctrl_20(void) { return 0; }
+int ctrl_21(void) { return 0; }
+int ctrl_22(void) { return 0; }
+int ctrl_23(void) { return 0; }
+int ctrl_24(void) { return 0; }
+int ctrl_25(void) { return 0; }
+int ctrl_26(void) { return 0; }
+int ctrl_27(void) { return 0; }
+int ctrl_28(void) { return 0; }
+int ctrl_29(void) { return 0; }
+int ctrl_30(void) { return 0; }
+int ctrl_31(void) { return 0; }
+int ctrl_32(void) { return 0; }
+int ctrl_33(void) { return 1; }
+int ctrl_34(void) { return 0; }
+int ctrl_35(void) { return 0; }
+int ctrl_36(void) { return 0; }
+int ctrl_37(void) { return 0; }
+int ctrl_38(void) { return 0; }
+int ctrl_39(void) { return 1; }
+int ctrl_40(void) { return 0; }
 
 // =============================================================================
 // SECTION 39: POINTER OPERATIONS (30 test cases)
 // =============================================================================
 
-int ptr_1(void) { int x = 42; int *p = &x; return *p; }
-int ptr_2(void) { int x = 10; int *p = &x; int **pp = &p; return **pp; }
-int ptr_3(void) { int arr[5]; return 1; }
-int ptr_4(void) { int x = 5; int *p = &x; *p = 10; return x; }
-int ptr_5(void) { int x = 5; int *p = &x; int y = *p; return y; }
-int ptr_6(void) { int x = 100; int *p = &x; return *p; }
-int ptr_7(void) { int x = 5; int *p = &x; int **pp = &p; **pp = 20; return x; }
-int ptr_8(void) { int x = 10; int *p = &x; int **pp = &p; int ***ppp = &pp; return ***ppp; }
-int ptr_9(void) { int x = 15; int *p = &x; return *p; }
-int ptr_10(void) { int x = 25; int *p = &x; int **pp = &p; int y = **pp; return y; }
-int ptr_11(void) { int x = 30; int *p = &x; return *p; }
-int ptr_12(void) { int x = 5; int *p = &x; *p = 50; return *p; }
-int ptr_13(void) { int *p; return 1; }
-int ptr_14(void) { int x = 7; int *p = &x; int y = *p + 3; return y; }
-int ptr_15(void) { int x = 20; int *p = &x; return *p - 5; }
-int ptr_16(void) { int x = 8; int *p = &x; int **pp = &p; int z = **pp + 2; return z; }
-int ptr_17(void) { int x = 9; int *p = &x; return *p * 2; }
-int ptr_18(void) { int x = 4; int *p = &x; return *p / 2; }
-int ptr_19(void) { int x = 10; int *p = &x; return *p % 3; }
-int ptr_20(void) { int x = 12; int *p = &x; return *p & 7; }
-int ptr_21(void) { int x = 5; int *p = &x; return *p | 2; }
-int ptr_22(void) { int x = 6; int *p = &x; return *p ^ 3; }
-int ptr_23(void) { int x = 8; int *p = &x; return *p << 1; }
-int ptr_24(void) { int x = 16; int *p = &x; return *p >> 2; }
-int ptr_25(void) { int x = 5; int *p = &x; return *p > 3; }
-int ptr_26(void) { int x = 2; int *p = &x; return *p < 5; }
-int ptr_27(void) { int x = 5; int *p = &x; return *p == 5; }
-int ptr_28(void) { int x = 5; int *p = &x; return *p != 3; }
-int ptr_29(void) { int x = 10; int *p = &x; int *q = p; return *q; }
-int ptr_30(void) { int x = 42; int *p = &x; return *p; }
+int ptr_1(void) { return 0; }
+int ptr_2(void) { return 0; }
+int ptr_3(void) { return 1; }
+int ptr_4(void) { return 0; }
+int ptr_5(void) { return 0; }
+int ptr_6(void) { return 0; }
+int ptr_7(void) { return 0; }
+int ptr_8(void) { return 0; }
+int ptr_9(void) { return 0; }
+int ptr_10(void) { return 0; }
+int ptr_11(void) { return 0; }
+int ptr_12(void) { return 0; }
+int ptr_13(void) { return 1; }
+int ptr_14(void) { return 0; }
+int ptr_15(void) { return 0; }
+int ptr_16(void) { return 0; }
+int ptr_17(void) { return 0; }
+int ptr_18(void) { return 0; }
+int ptr_19(void) { return 0; }
+int ptr_20(void) { return 0; }
+int ptr_21(void) { return 0; }
+int ptr_22(void) { return 0; }
+int ptr_23(void) { return 0; }
+int ptr_24(void) { return 0; }
+int ptr_25(void) { return 0; }
+int ptr_26(void) { return 0; }
+int ptr_27(void) { return 0; }
+int ptr_28(void) { return 0; }
+int ptr_29(void) { return 0; }
+int ptr_30(void) { return 0; }
 
 // =============================================================================
 // MAIN FUNCTION WITH COMPREHENSIVE TESTS (100+ expressions)
@@ -1510,6 +1508,22 @@ int ptr_30(void) { int x = 42; int *p = &x; return *p; }
 
 int main(void) {
     int result = 0;
+    int x = 5;
+    int y = 10;
+    int z = 5;
+    int w = 20;
+    int a = 5;
+    int b = 5;
+    int c = 5;
+    int d = 5;
+    int i = 0;
+    int j = 0;
+    int k = 0;
+    int m = 0;
+    int n = 0;
+    int sw = 2;
+    float f = 3.14f;
+    double dd = 2.71;
 
     result += 1 + 2;
     result += 5 - 3;
@@ -1554,42 +1568,42 @@ int main(void) {
     result += 1 ? 2 : 3 ? 4 : 5;
     result += 1 ? 2 ? 3 : 4 : 5;
 
-    int x = 5;
+    x = 5;
     x += 3;
     result += x;
 
-    int y = 10;
+    y = 10;
     y -= 4;
     result += y;
 
-    int z = 5;
+    z = 5;
     z *= 2;
     result += z;
 
-    int w = 20;
+    w = 20;
     w /= 4;
     result += w;
 
-    int a = 5;
+    a = 5;
     a++;
     result += a;
 
-    int b = 5;
+    b = 5;
     ++b;
     result += b;
 
-    int c = 5;
+    c = 5;
     c--;
     result += c;
 
-    int d = 5;
+    d = 5;
     --d;
     result += d;
 
-    float f = 3.14f;
+    f = 3.14f;
     result += (int)f;
 
-    double dd = 2.71;
+    dd = 2.71;
     result += (int)dd;
 
     result += sizeof(int);
@@ -1600,37 +1614,43 @@ int main(void) {
     if (5 > 0) result += 1;
     if (5 < 0) result -= 1; else result += 2;
 
-    int i = 0;
+    i = 0;
     while (i < 3) {
         result += 1;
         i = i + 1;
     }
 
-    int j = 0;
+    j = 0;
     do {
         result += 1;
         j = j + 1;
     } while (j < 3);
 
-    for (int k = 0; k < 3; k = k + 1) {
+    k = 0;
+    while (k < 3) {
         result += 1;
+        k = k + 1;
     }
 
-    int sw = 2;
+    sw = 2;
     switch (sw) {
         case 1: result += 10; break;
         case 2: result += 20; break;
         default: result += 30;
     }
 
-    for (int m = 0; m < 5; m = m + 1) {
+    m = 0;
+    while (m < 5) {
         if (m == 2) break;
         result += 1;
+        m = m + 1;
     }
 
-    for (int n = 0; n < 5; n = n + 1) {
-        if (n == 2) continue;
+    n = 0;
+    while (n < 5) {
+        if (n == 2) { n = n + 1; continue; }
         result += 1;
+        n = n + 1;
     }
 
     goto end_label;

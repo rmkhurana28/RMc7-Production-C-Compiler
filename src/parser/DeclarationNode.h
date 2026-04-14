@@ -113,10 +113,30 @@ public:
     void print(ofstream& out) override;
 };
 
-class UnionDeclarationNode : public DeclarationNode {
+class UnionDefinitionNode : public DeclarationNode {
+    friend class Parser;
+private:
+    bool isTagNamePresent;      // true if union has a tag name
+    string tagName;             // tag name (empty if anonymous)
+    BlockExpressionNode* block; // union body
+
 public:
-    UnionDeclarationNode() {}
-    ~UnionDeclarationNode() {}
+    UnionDefinitionNode(bool hasTag, string tag, BlockExpressionNode* blk);
+    ~UnionDefinitionNode();
+    void print(ofstream& out) override;
+};
+
+class EnumDefinitionNode : public DeclarationNode {
+    friend class Parser;
+private:
+    bool isTagNamePresent;        // true if enum has a tag name
+    string tagName;               // tag name (empty if anonymous)
+    EnumBlockExpressionNode* block; // enum body
+
+public:
+    EnumDefinitionNode(bool hasTag, string tag, EnumBlockExpressionNode* blk);
+    ~EnumDefinitionNode();
+    void print(ofstream& out) override;
 };
 
 class EnumDeclarationNode : public DeclarationNode {

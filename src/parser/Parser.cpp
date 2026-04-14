@@ -91,8 +91,12 @@ ASTNode** Parser::highLevelParse(){
             goto itIsVarDeclInstead;
         }
 
-        if(current.type == KEYWORD_STRUCT){            
-            return parseStruct(nullptr);            
+        if(current.type == KEYWORD_STRUCT){
+            return parseStruct(nullptr);
+        } else if(current.type == KEYWORD_UNION){
+            return parseUnion(nullptr);
+        } else if(current.type == KEYWORD_ENUM){
+            return parseEnum(nullptr);
         }
     } else if(current.type == ID){ // can be related to typedef or type registry, might need to check
         // now, we need to check if this id can be part of typedef alias or not, if yes, then need to use lookup to decide how to proceed
@@ -222,21 +226,36 @@ ASTNode** Parser::startParsingOfCurrentToken() {
         }
         // If not a definition, fall through to data type parsing
         goto itIsVarDeclInstead;
-    } 
+    }
+    else if(current.type == KEYWORD_UNION) {
+        // Only call parseUnion if this appears to be a union definition (has LBRACE)
+        // Check: next token must be ID, and token after that could be LBRACE for definition
+        if(currentPos + 2 < tokens.size() &&
+           tokens[currentPos + 1].type == ID &&
+           tokens[currentPos + 2].type == LBRACE) {
+            // This is a union definition
+            ASTNode** myHelper = this->parseUnion(nullptr);
+            return myHelper;
+        }
+        // If not a definition, fall through to data type parsing
+        goto itIsVarDeclInstead;
+    }
     else if(current.type == KEYWORD_ENUM) {
-    //     return this->parseEnum();
-    // } else if(current.type == KEYWORD_UNION) {
-    //     return this->parseUnion();
-    // } else if(current.type == KEYWORD_TYPEDEF) {
-    //     return this->parseTypedef();
-    } 
+        if(this->tokens[this->currentPos+1].type == ID &&
+           this->tokens[this->currentPos+2].type == LBRACE) {
+            // This is an enum definition
+            ASTNode** myHelper = this->parseEnum(nullptr);
+            return myHelper;
+        }
+        // If not a definition, fall through to data type parsing
+        goto itIsVarDeclInstead;
+    }
     // Check if it's a declaration (starts with type/storage class)
     else if(isThisTokenDataTypeOrPropToken(current)) {
         itIsVarDeclInstead:
         return parseDataTypeFoundDeclaration();
     } else if(current.type == ID && isThisStringPresentAsKeyInTdMap(current.data)){
         // it is valid td alias, so it has to be declaration
-        cout << "Here\n";
         goto itIsVarDeclInstead;
     } else if(current.type == LBRACE){
         // it is a block statement, can be part of function definition or control flow statement, but we will parse it as block statement here and later decide how to use it based on the parent node
@@ -264,14 +283,12 @@ DeclarationNode* Parser::parseCurrentDecl(){
     // use if else to find the best parser for current node
     // if(isThisTokenDataTypeOrPropToken(this->tokens[this->currentPos])){ // found some data type or prop
         // call the parser fucntion with data type as first token
-        this->parseDataTypeFoundDeclaration();
-        // grab the last node that was pushed to allAST and return it
-        if(!allAST.empty()){
-            ASTNode* last = allAST.back();
-            allAST.pop_back();
-            return dynamic_cast<DeclarationNode*>(last);
+        ASTNode** result = this->parseDataTypeFoundDeclaration();
+        // grab the first node from the returned array
+        if(result != nullptr && result[0] != nullptr){
+            return dynamic_cast<DeclarationNode*>(result[0]);
         }
-    // } 
+    // }
     return nullptr;
 }
 
@@ -445,7 +462,7 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
     //     return nullptr;
     // }
 
-    if(retValueDecl == 2){ // struct definition found, need to call the struct definition func with proper token 
+    if(retValueDecl == 2){ // struct/union definition found, need to call the struct definition func with proper token 
         // return nullptr; 
 
 
@@ -491,30 +508,40 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
     // now, the type decl is valid
 
     varNameHolder currName = varNameHolder(*this);
-    
+
     if(retCode == 2){ // valid ONLY for func (void)
-        temp = currName.getVarName(currType , false);
+        temp = currName.getVarName(currType , false, true);
 
         if(tempVarNameHolder != nullptr){
 
 
-            uint64_t orig = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.size();
+            // uint64_t orig = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.size();
+
+            {
+                uint64_t tempVarNameSize = tempVarNameHolder->namePropArray.size();
+
+                if(tempVarNameSize != 1){
+                    for(uint64_t i=1 ; i<tempVarNameSize ; i++){
+                        static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.push_back(tempVarNameHolder->namePropArray[i]);
+                    }
+                }
+            }
 
 
             // it had some td expansion logic, need to modify the varName accordingly
 
-            varNameHolder* modifiedVarName = new varNameHolder(*tempVarNameHolder); // copy the tempVarNameHolder to the new modified one
+            // varNameHolder* modifiedVarName = new varNameHolder(*tempVarNameHolder); // copy the tempVarNameHolder to the new modified one
 
-            modifiedVarName->namePropArray[0] = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[0];
+            // modifiedVarName->namePropArray[0] = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[0];
 
-            if(orig != 1){
-                for(uint64_t i=1 ; i<orig ; i++){
-                    // modifiedVarName->namePropArray.push_back(temp->varName.namePropArray[i]);
-                    modifiedVarName->namePropArray.push_back(static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[i]);
-                }
-            }
+            // if(orig != 1){
+            //     for(uint64_t i=1 ; i<orig ; i++){
+            //         // modifiedVarName->namePropArray.push_back(temp->varName.namePropArray[i]);
+            //         modifiedVarName->namePropArray.push_back(static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[i]);
+            //     }
+            // }
 
-            static_cast<VariableDeclarationNode*>(temp)->varName = *modifiedVarName; // assign the modified var name back to temp
+            // static_cast<VariableDeclarationNode*>(temp)->varName = *modifiedVarName; // assign the modified var name back to temp
 
             tempVarNameHolder = nullptr; 
             
@@ -532,33 +559,43 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
         }
     } else if(retCode == 1){ // valid ONLY for var
         multiDecl:
-        temp = currName.getVarName(currType , false);
+        temp = currName.getVarName(currType , false, true);
         
         // this->allAST.push_back(temp);
 
         if(tempVarNameHolder != nullptr){
 
 
-            uint64_t orig = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.size();
+            // uint64_t orig = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.size();
+
+            {
+                uint64_t tempVarNameSize = tempVarNameHolder->namePropArray.size();
+
+                if(tempVarNameSize != 1){
+                    for(uint64_t i=1 ; i<tempVarNameSize ; i++){
+                        static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.push_back(tempVarNameHolder->namePropArray[i]);
+                    }
+                }
+            }
 
 
             // it had some td expansion logic, need to modify the varName accordingly
 
-            varNameHolder* modifiedVarName = new varNameHolder(*tempVarNameHolder); // copy the tempVarNameHolder to the new modified one
+            // varNameHolder* modifiedVarName = new varNameHolder(*tempVarNameHolder); // copy the tempVarNameHolder to the new modified one
 
-            modifiedVarName->namePropArray[0] = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[0];
+            // modifiedVarName->namePropArray[0] = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[0];
             
 
-            if(orig != 1){
-                for(uint64_t i=1 ; i<orig ; i++){
-                    // modifiedVarName->namePropArray.push_back(temp->varName.namePropArray[i]);
-                    modifiedVarName->namePropArray.push_back(static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[i]);
-                }
-            }
+            // if(orig != 1){
+            //     for(uint64_t i=1 ; i<orig ; i++){
+            //         // modifiedVarName->namePropArray.push_back(temp->varName.namePropArray[i]);
+            //         modifiedVarName->namePropArray.push_back(static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[i]);
+            //     }
+            // }
 
             
 
-            static_cast<VariableDeclarationNode*>(temp)->varName = *modifiedVarName; // assign the modified var name back to temp
+            // static_cast<VariableDeclarationNode*>(temp)->varName = *modifiedVarName; // assign the modified var name back to temp
 
             tempVarNameHolder = nullptr; 
             
@@ -577,29 +614,40 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
         // lookup algo to check if it is var or func decl
         
         // if(var) proceed var decl        
-        temp = currName.getVarName(currType , false);
+        temp = currName.getVarName(currType , false, true);
         // this->allAST.push_back(temp);
 
         if(tempVarNameHolder != nullptr){
 
 
-            uint64_t orig = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.size();
+            // store the original size of varName array before modification
+            // uint64_t orig = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.size();
+
+            {
+                uint64_t tempVarNameSize = tempVarNameHolder->namePropArray.size();
+
+                if(tempVarNameSize != 1){
+                    for(uint64_t i=1 ; i<tempVarNameSize ; i++){
+                        static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.push_back(tempVarNameHolder->namePropArray[i]);
+                    }
+                }
+            }            
 
 
             // it had some td expansion logic, need to modify the varName accordingly
 
-            varNameHolder* modifiedVarName = new varNameHolder(*tempVarNameHolder); // copy the tempVarNameHolder to the new modified one
+            // varNameHolder* modifiedVarName = new varNameHolder(*tempVarNameHolder); // copy the tempVarNameHolder to the new modified one
 
-            modifiedVarName->namePropArray[0] = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[0];
+            // modifiedVarName->namePropArray[0] = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[0];
 
-            if(orig != 1){
-                for(uint64_t i=1 ; i<orig ; i++){
-                    // modifiedVarName->namePropArray.push_back(temp->varName.namePropArray[i]);
-                    modifiedVarName->namePropArray.push_back(static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[i]);
-                }
-            }
+            // if(orig != 1){
+            //     for(uint64_t i=1 ; i<orig ; i++){
+            //         // modifiedVarName->namePropArray.push_back(temp->varName.namePropArray[i]);
+            //         modifiedVarName->namePropArray.push_back(static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[i]);
+            //     }
+            // }
 
-            static_cast<VariableDeclarationNode*>(temp)->varName = *modifiedVarName; // assign the modified var name back to temp
+            // static_cast<VariableDeclarationNode*>(temp)->varName = *modifiedVarName; // assign the modified var name back to temp
 
             tempVarNameHolder = nullptr; 
             
@@ -1155,9 +1203,9 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
 
 
 
-        // add this as base type is NOT present 
+        // add this as base type is NOT present
         helperDeclName->trKeywordArray.push_back(KEYWORD_STRUCT);
-        helperDeclName->trBaseArray.push_back(tagName.data);
+        helperDeclName->trBaseArray.push_back(tagNameExist ? tagName.data : *anonTagName);
     }
 
     
@@ -1230,17 +1278,479 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
     
 }
 
-DeclarationNode* Parser::parseEnum() {
-    cout << "enum parsing isn't implemented yet\n";
-    exit(1);
-    return nullptr;
+ASTNode** Parser::parseEnum(dataTypeHolder* helperDeclName) {
+
+    currentPos++; // skip keyword enum
+
+    bool tagNameExist = false;
+    Token tagName;
+
+    string* anonTagName = nullptr;
+
+    vector<ASTNode*> list; // list to store enum decl node and maybe var decl nodes also if exist
+
+    if(tokens[currentPos].type == ID){ // tagName exist
+        tagNameExist = true;
+        tagName = tokens[currentPos]; // save tagName in token
+        currentPos++; // skip tagName
+    } else{
+        // if tagName doesnt exist, create a anonymous tagname for this
+        anonTagName = anonTagNameGen();
+    }
+
+    // Enum forward declarations are NOT allowed - must have definition
+    if(tokens[currentPos].type != LBRACE){
+        /*
+            this may be enum var decl or error, but definitely not enum definition.
+            switch the control flow to the var decl side
+        */
+
+        currentPos -= 2;
+
+        return nullptr; // indicating the need to shift the control flow properly
+    }
+
+    // if the control flow reaches here, it is enum definition.
+
+    EnumBlockExpressionNode* enumBlock = nullptr;
+
+    if(tagNameExist){
+        this->typeRegisry[tagName.data] = "enum";
+    } else{
+        this->typeRegisry[*anonTagName] = "enum";
+    }
+
+    enumBlock = parseEnumBlock(*this); // parse the enum block
+
+
+    if(tokens[currentPos].type == SEMICOLON){
+        if(!tagNameExist){
+            cout << "Expected atleast one out of tagName or varName for enum definition\n";
+            exit(1);
+        }
+
+        if(typedDefTracker){
+            cout << "typedef enum definition without typedef name NOT allowed\n";
+            exit(1);
+        }
+
+        if(helperDeclName != nullptr){
+            cout << "var is NOT decl , hence extern/volatile/restrict/const/static NOT allowed\n";
+            exit(1);
+        }
+
+        currentPos++; // skip ;
+
+        EnumDefinitionNode* enumDef;
+
+        if(tagNameExist){
+            enumDef = new EnumDefinitionNode(tagNameExist , tagName.data , enumBlock);
+        } else{
+            enumDef = new EnumDefinitionNode(tagNameExist , *anonTagName , enumBlock);
+        }
+
+        list.push_back(enumDef);
+
+        ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
+        for(uint64_t i = 0; i < list.size(); i++){
+            arr[i] = list[i];
+        }
+        arr[list.size()] = nullptr; // null terminate the array
+
+        return arr;
+    }
+
+    // now there is some varName also after the }
+
+    EnumDefinitionNode* enumDef;
+
+    if(tagNameExist){
+        enumDef = new EnumDefinitionNode(tagNameExist , tagName.data , enumBlock);
+    } else{
+        enumDef = new EnumDefinitionNode(tagNameExist , *anonTagName , enumBlock);
+    }
+
+    list.push_back(enumDef);
+
+    // helperDeclName validation algo (same as struct)
+    if(helperDeclName){
+
+        {
+            if(helperDeclName->signModifiersArray.size() != 0){
+                cout << "Error in sign\n";
+                exit(1);
+            }
+
+            if(helperDeclName->sizeModifiersArray.size() != 0){
+                cout << "Error in size\n";
+                exit(1);
+            }
+
+            if(helperDeclName->storageClassArray.size() > 1){
+                cout << "Error is storage class size\n";
+                exit(1);
+            } else if(helperDeclName->storageClassArray.size() == 1){
+                if(helperDeclName->storageClassArray.back() == KEYWORD_AUTO || helperDeclName->storageClassArray.back() == KEYWORD_REGISTER){
+                    cout << "auto/register NOT allowed\n";
+                    exit(1);
+                }
+            }
+
+            if(helperDeclName->typeQualifiersArray.size() > 3){
+                cout << "Error in type qualifier\n";
+                exit(1);
+            } else if(helperDeclName->typeQualifiersArray.size() > 1){
+                for(long unsigned i=0 ; i<helperDeclName->typeQualifiersArray.size() ; i++){
+                    for(long unsigned j=0 ; j<helperDeclName->typeQualifiersArray.size() ; j++){
+                        if(i == j) continue;
+
+                        if(helperDeclName->typeQualifiersArray[i] == helperDeclName->typeQualifiersArray[j]){
+                            cout << "Dublicate type qualifiers NOT allowed\n";
+                            exit(1);
+                        }
+                    }
+                }
+            }
+        }
+
+        // add this as base type is NOT present
+        helperDeclName->trKeywordArray.push_back(KEYWORD_ENUM);
+        helperDeclName->trBaseArray.push_back(tagNameExist ? tagName.data : *anonTagName);
+    }
+
+    getEnumVarAgain:
+
+    varNameHolder* enumVarName = new varNameHolder(*this);
+
+    if(!helperDeclName){
+        helperDeclName = new dataTypeHolder(*this);
+        helperDeclName->trKeywordArray.push_back(KEYWORD_ENUM);
+        helperDeclName->trBaseArray.push_back(tagNameExist ? tagName.data : *anonTagName);
+    }
+
+    list.push_back(enumVarName->getVarName(*helperDeclName, false));
+
+    if(tokens[currentPos].type == COMMA){
+        currentPos++; // skip ,
+        goto getEnumVarAgain;
+    }
+
+    if(tokens[currentPos].type != SEMICOLON){
+        cout << "Expected ; here to close it\n";
+        exit(1);
+    }
+
+    currentPos++; // skip ;
+
+    ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
+    for(uint64_t i = 0; i < list.size(); i++){
+        arr[i] = list[i];
+    }
+    arr[list.size()] = nullptr; // null terminate the array
+
+    return arr;
 }
 
-DeclarationNode* Parser::parseUnion() {
-    cout << "union parsing isn't implemented yet\n";
-    exit(1);
-    return nullptr;
+
+ASTNode** Parser::parseUnion(dataTypeHolder* helperDeclName) {
+
+    currentPos++; // skip keyword union
+
+    bool tagNameExist = false;
+    Token tagName;
+
+    string* anonTagName = nullptr;
+
+    vector<ASTNode*> list; // list to store union decl node and maybe var decl nodes also if exist
+
+    if(tokens[currentPos].type == ID){ // tagName exist
+        tagNameExist = true;
+        tagName = tokens[currentPos]; // save tagName in token
+        currentPos++; // skip tagName
+    } else{
+        // if tagName doesnt exist, create a anonymous tagname for this [will be used for the validaiton later, but will not be exposed]
+
+        anonTagName = anonTagNameGen();
+
+    }
+
+    if(tokens[currentPos].type == SEMICOLON){ // can be forward decl if tagName exists
+        if(!tagNameExist){
+            cout << "Expected tagName for forward decl\n";
+            exit(1);
+        }
+
+        if(typedDefTracker){ // if typedef is there, then either ID is exepceted or definition is expeceted
+            cout << "typedef union forward decl NOT allowed\n";
+            exit(1);
+        }
+
+        currentPos++; // skip ;
+
+        this->typeRegisry[tagName.data] = "union"; // adding in type registry to add forw decl
+
+
+        ForwardDeclarationNode* fwdDecl = new ForwardDeclarationNode(KEYWORD_UNION , tagName.data);
+
+        list.push_back(fwdDecl);
+
+        ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
+        for(uint64_t i = 0; i < list.size(); i++){
+            arr[i] = list[i];
+        }
+        arr[list.size()] = nullptr; // null terminate the array
+
+
+        return arr;
+
+        // this->allAST.push_back(fwdDecl);
+        // return fwdDecl; // return for startParsing to collect
+
+    } else if(tokens[currentPos].type == ID){
+
+        if(typedDefTracker){
+            // it is typedef , not var decl
+        } else{
+            // it is var decl
+        }
+
+    }
+
+
+
+    if(tokens[currentPos].type != LBRACE){
+        /*
+            this may be union var decl or error, but definitely not union definition.
+
+            switch the control flow to the var decl side
+        */
+
+        currentPos -= 2;
+
+        return nullptr; // indicating the need to shift the control flow properly
+    }
+
+    // if the control flow reaches here, it is union definition.
+
+    BlockExpressionNode* unionBlock = nullptr;
+
+    // this->typeRegisry[tagName.data] = "union"; // might need tor revert it if the further code fails, take care !!!!!!!!!!!
+
+    if(tagNameExist){
+        this->typeRegisry[tagName.data] = "union";
+    } else{
+        this->typeRegisry[*anonTagName] = "union";
+    }
+
+    // cout << "Block parsing starting at " << this->tokens[this->currentPos-1].data << "\n";
+    unionBlock = parseBlock(*this); // parse the block
+
+
+
+    if(tokens[currentPos].type == SEMICOLON){
+        if(!tagNameExist){
+            cout << "Expected atleast one out of tagName or varName for union definition\n";
+            exit(1);
+        }
+
+        if(typedDefTracker){
+            cout << "typedef union definition without typedef name NOT allowed\n";
+            exit(1);
+        }
+
+        /*
+
+            now, since no var is declared wiht it, it cna NOT have any specifier like extern/volatile/restrict/const/static
+
+            check the data type prop for this and reject if any of them exists
+
+        */
+
+
+
+        if(helperDeclName != nullptr){
+            cout << "var is NOT decl , hence extern/volatile/restrict/const/static NOT allowed\n";
+            exit(1);
+        }
+
+        currentPos++; // skip ;
+
+        UnionDefinitionNode* unionDef;
+
+        if(tagNameExist){
+            unionDef = new UnionDefinitionNode(tagNameExist , tagName.data , unionBlock);
+        } else{
+            unionDef = new UnionDefinitionNode(tagNameExist , *anonTagName , unionBlock);
+        }
+
+
+
+        /*
+            need to add the current new union definition in the TR
+        */
+
+        list.push_back(unionDef);
+
+        ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
+        for(uint64_t i = 0; i < list.size(); i++){
+            arr[i] = list[i];
+        }
+        arr[list.size()] = nullptr; // null terminate the arraya
+
+        return arr;
+
+        // this->allAST.push_back(unionDef);
+        // return unionDef; // return for startParsing to collect
+
+    }
+
+    // now there is some varName also afetr the }
+
+    UnionDefinitionNode* unionDef;
+
+    if(tagNameExist){
+        unionDef = new UnionDefinitionNode(tagNameExist , tagName.data , unionBlock);
+    } else{
+        unionDef = new UnionDefinitionNode(tagNameExist , *anonTagName , unionBlock);
+    }
+
+    list.push_back(unionDef);
+
+
+    // this->allAST.push_back(unionDef);
+
+    /*
+        if it came from dataTypeDecl, it has some specifiers like extern/volatile/restrict/const/static , we here need to validate it and the manually add union tagName to it in the dataType object
+    */
+
+    // validity of data type prop array is STILL not checked so far
+
+    // helperDeclName validaiton algo
+    if(helperDeclName){
+
+        {
+            if(helperDeclName->signModifiersArray.size() != 0){ // signed/unsigned NOT allowed
+                cout << "Error in sign\n";
+                exit(1);
+            }
+
+            if(helperDeclName->sizeModifiersArray.size() != 0){ // size modifiers NOT allowed
+                cout << "Error in size\n";
+                exit(1);
+            }
+
+            if(helperDeclName->storageClassArray.size() > 1){ // multiple storage class NOT allowed
+                cout << "Error is storage class size\n";
+                exit(1);
+            } else if(helperDeclName->storageClassArray.size() == 1){ // if there is a storage class, it should not be auto or register
+                if(helperDeclName->storageClassArray.back() == KEYWORD_AUTO || helperDeclName->storageClassArray.back() == KEYWORD_REGISTER){
+                    cout << "auto/register NOT allowed\n";
+                    exit(1);
+                }
+            }
+
+            if(helperDeclName->typeQualifiersArray.size() > 3){ // max 3 type qualifiers allowed
+                cout << "Error in type qualifier\n";
+                exit(1);
+            } else if(helperDeclName->typeQualifiersArray.size() > 1){ // if there are more than 1 type qualifiers, they should not be same
+                for(long unsigned i=0 ; i<helperDeclName->typeQualifiersArray.size() ; i++){
+                    for(long unsigned j=0 ; j<helperDeclName->typeQualifiersArray.size() ; j++){
+                        if(i == j) continue;
+
+                        if(helperDeclName->typeQualifiersArray[i] == helperDeclName->typeQualifiersArray[j]){
+                            cout << "Dublicate type qualifiers NOT allowed\n";
+                            exit(1);
+                        }
+                    }
+                }
+            }
+
+            /*
+                this validation is pending rn, that restrict always require * with the var
+
+                might add this in semantic phase
+            */
+
+
+        }
+
+
+
+        // add this as base type is NOT present
+        helperDeclName->trKeywordArray.push_back(KEYWORD_UNION);
+        helperDeclName->trBaseArray.push_back(tagNameExist ? tagName.data : *anonTagName);
+    }
+
+
+
+
+
+
+    getVarAgain:
+
+
+    /*
+
+        so, now the var decl also exist with the union definition
+        now, it is needed to check the data type prop object to check it's validaity for this
+
+    */
+
+
+    varNameHolder* unionVarName = new varNameHolder(*this);
+
+    if(!helperDeclName){
+        helperDeclName = new dataTypeHolder(*this);
+
+        // helperDeclName->baseTypeArray.push_back(HELPER_TOKEN);
+        helperDeclName->trKeywordArray.push_back(KEYWORD_UNION);
+
+        // Generate automatic name for anonymous unions if needed
+        // if(tagName.data.empty()){
+        //     static int anonUnionCounter = 0;
+        //     tagName.data = "__anon_union_" + to_string(anonUnionCounter++);
+        // }
+        // helperDeclName->trBaseArray.push_back(tagName.data);
+        helperDeclName->trBaseArray.push_back(tagNameExist ? tagName.data : *anonTagName);
+    }
+
+    // dataTypeHolder* helper = nullptr;
+
+    list.push_back(unionVarName->getVarName(*helperDeclName, false));
+
+    // this->allDeclNodes.push_back(unionVarName->getVarName(*helperDeclName, false));
+
+
+    // this->allAST.push_back(new DeclarationNode(helperDeclName , unionVarName));
+
+    // generate union decl node
+
+    if(tokens[currentPos].type == COMMA){
+
+        currentPos++; // skipp ,
+        goto getVarAgain;
+    }
+
+    if(tokens[currentPos].type != SEMICOLON){
+        cout << "Expected ; here to close it\n";
+        exit(1);
+    }
+
+    currentPos++; // skip ;
+
+    // return union definition node for startParsing to collect
+
+    ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
+    for(uint64_t i = 0; i < list.size(); i++){
+        arr[i] = list[i];
+    }
+    arr[list.size()] = nullptr; // null terminate the arraya
+
+    return arr;
+    // return unionDef;
+
 }
+
 
 ASTNode** Parser::parseTypedef() {
     
@@ -1260,7 +1770,7 @@ ASTNode** Parser::parseTypedef() {
     original->isCurrentTypeValid();
 
 
-    if(retValueDecl == 2){ // struct definition 
+    if(retValueDecl == 2){ // struct/union definition 
         
         // convert tempASTStorage to arrya and push all to list
         for(uint64_t i=0 ; i<tempASTStorage.size(); i++){
@@ -1298,25 +1808,29 @@ ASTNode** Parser::parseTypedef() {
                     }
                 
                     // check if next one is some typedef of original parsing is done
-                    if(tokens[tempIndexHolder].type == KEYWORD_STRUCT){
+                    if(tokens[tempIndexHolder].type == KEYWORD_STRUCT || tokens[tempIndexHolder].type == KEYWORD_UNION || tokens[tempIndexHolder].type == KEYWORD_ENUM){
                         // this is pending for now
-                    
+
                         rhs->declProp.push_back(tokens[tempIndexHolder].data);
-                    
-                        tempIndexHolder++; // skip struct keyword
-                    
-                        if(tokens[tempIndexHolder].type == ID){ // struct tagName also exist
+
+                        tempIndexHolder++; // skip struct/union/enum keyword
+
+                        if(tokens[tempIndexHolder].type == ID){ // struct/union/enum tagName also exist
                             rhs->declProp.push_back(tokens[tempIndexHolder].data);
-                        
-                            tempIndexHolder++; // skip struct tagName
+
+                            tempIndexHolder++; // skip struct/union/enum tagName
                         } else{
-                            // it is anon struct def with typedef, need to give it a name myself
+                            // it is anon struct/union/enum def with typedef, need to give it a name myself
 
                             if(StructDefinitionNode* structDef = dynamic_cast<StructDefinitionNode*>(list.back())) {
                                 rhs->declProp.push_back(structDef->tagName);
+                            } else if(UnionDefinitionNode* unionDef = dynamic_cast<UnionDefinitionNode*>(list.back())) {
+                                rhs->declProp.push_back(unionDef->tagName);
+                            } else if(EnumDefinitionNode* enumDef = dynamic_cast<EnumDefinitionNode*>(list.back())) {
+                                rhs->declProp.push_back(enumDef->tagName);
                             }
                         }
-                    
+
 
                     }
                 
@@ -1426,29 +1940,33 @@ ASTNode** Parser::parseTypedef() {
         }
 
         // check if next one is some typedef of original parsing is done
-        if(tokens[tempIndexHolder].type == KEYWORD_STRUCT){
+        if(tokens[tempIndexHolder].type == KEYWORD_STRUCT || tokens[tempIndexHolder].type == KEYWORD_UNION || tokens[tempIndexHolder].type == KEYWORD_ENUM){
 
             // this is pending for now
 
             rhs->declProp.push_back(tokens[tempIndexHolder].data);
 
-            tempIndexHolder++; // skip struct keyword
+            tempIndexHolder++; // skip struct/union/enum keyword
 
-            if(tokens[tempIndexHolder].type == ID){ // struct tagName also exist
+            if(tokens[tempIndexHolder].type == ID){ // struct/union/enum tagName also exist
                 rhs->declProp.push_back(tokens[tempIndexHolder].data);
 
-                tempIndexHolder++; // skip struct tagName
+                tempIndexHolder++; // skip struct/union/enum tagName
             } else{
-                // it is anon struct def with typedef, need to give it a name myself
+                // it is anon struct/union/enum def with typedef, need to give it a name myself
 
-                // get the anon struct name from the latest struct definition
+                // get the anon struct/union/enum name from the latest definition
 
                 if(StructDefinitionNode* structDef = dynamic_cast<StructDefinitionNode*>(list.back())) {
                     rhs->declProp.push_back(structDef->tagName);
+                } else if(UnionDefinitionNode* unionDef = dynamic_cast<UnionDefinitionNode*>(list.back())) {
+                    rhs->declProp.push_back(unionDef->tagName);
+                } else if(EnumDefinitionNode* enumDef = dynamic_cast<EnumDefinitionNode*>(list.back())) {
+                    rhs->declProp.push_back(enumDef->tagName);
                 }
             }
 
-            
+
         }
 
         if(tokens[tempIndexHolder].type == ID){

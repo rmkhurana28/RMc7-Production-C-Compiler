@@ -1,10 +1,7 @@
 # RMc7 Syntax Reference
 
-**Version:** Phase 1 Complete | Phase 2 In Progress (~90%)  
+**Version:** Phase 1 Complete | Phase 2 In Progress (~95%)  
 **Target:** 90-95% ISO C Core Features
-
-> **Note:** This syntax reference describes only the syntactic structure of the language.  
-> ➡️ Position-validity rules (e.g., checking whether `break` appears inside a loop or `case` inside a switch) are not yet implemented and are planned as an upcoming feature.
 
 ---
 
@@ -61,9 +58,9 @@ typedef int (*FuncPtr)(int);
 
 ### 1.3 Typedef Expansion
 
-✅ Typedef aliases are fully expanded during declarator processing  
-✅ Works in variables, function parameters, return types, and nested declarators  
-✅ Supports multi-level alias chains  
+✅ Typedef aliases are fully expanded during declarator processing
+✅ Works in variables, function parameters, return types, and nested declarators
+✅ Supports multi-level alias chains
 
 **Examples:**
 ```c
@@ -75,10 +72,14 @@ typedef int (*FP)(int);
 FP f;              // function pointer
 ```
 
+> **Known Issue:** Multiple aliases in a single typedef statement (e.g., `typedef int newInt, myInt;`) are partially supported. The first alias is registered correctly, but subsequent aliases may not be registered in all cases. **Workaround:** Use separate typedef statements for each alias: `typedef int newInt; typedef int myInt;`
+
+> **Known Limitation :** When a typedef alias contains a pointer (e.g., `typedef int *P;`) and that alias is used in a variable declaration with a qualifier (e.g., `const P a;`), the output may be incorrect. **Workaround:** Avoid this pattern. Use non-pointer typedefs with explicit pointer declarators instead: `typedef int I; const I *a;`
+
 ### 1.4 Type Qualifiers
 ✅ `const`  
 ✅ `volatile`  
-✅ `restrict`
+✅ `restrict`  
 
 **Examples:**
 ```c
@@ -92,6 +93,8 @@ int *restrict ptr;
 The same type qualifier or modifier cannot appear more than once in a declaration.
 
 > **Note:** `long long` is **allowed** - this is a valid size modifier combination, not a duplicate.
+
+> **Known Limitation :** Qualifiers placed **after** the `*` in pointer declarations may produce incorrect output. For example, `int *const p;` (const pointer to int) may be misparsed. **Workaround:** Place qualifiers before the base type instead: `const int *p` (pointer to const int).
 
 **Supported:**
 ```c
@@ -118,7 +121,7 @@ int *p, **pp, arr[10];
 
 ❌ **Private type qualifiers in subsequent declarators:**
 
-**Design Rule:** In multiple declarations, subsequent declarators (after the first) cannot introduce their own private type qualifiers. Type qualifiers in the base type apply to all declarators. Standard pointer declarator rules apply.
+**Design Rule:** In multiple declarations, subsequent declarators (after the first) cannot introduce their own private type qualifiers. Type qualifiers in the base type apply to all declarators. Standard pointer declarator rules apply. Currently, there is a bug which is parsing the private type qualifiers wrong (even for first variable), so avoid using them for now.
 
 **Supported:**
 ```c
@@ -277,16 +280,115 @@ person.addr.city[0] = 'N';
 - Anonymous structures are allowed and automatically named by the compiler
 - Self-referencing is allowed (e.g., linked lists, trees)
 
+> **Note:** Bit fields (`:`) are **not yet supported** and may be added in future versions.
+
 ### 3.2 Unions
-➡️ `union` declarations  
-➡️ `union` definitions  
-➡️ Union member access
+✅ `union` declarations
+✅ `union` definitions
+✅ Named unions
+✅ Anonymous unions
+✅ Forward declarations
+✅ Union member access (`.`)
+✅ Union pointer access (`->`)
+
+**Examples:**
+```c
+// Simple union definition
+union Data {
+    int i;
+    float f;
+    char c;
+};
+union Data d;
+
+// Inline definition with variable
+union Value {
+    int int_val;
+    float float_val;
+} val1;
+
+// Anonymous union
+union {
+    int x;
+    float y;
+} u_anon;
+
+// Forward declaration
+union Status;
+union Status *status_ptr;
+
+// Member access (same as struct)
+d.i = 10;
+d.f = 3.14;
+data_ptr->c = 'A';
+```
+
+**Design Rules:**
+- Unions can be declared, defined, or both in a single statement
+- Union names are identifiers and must be used with the `union` keyword when referencing the type (unless typedef'd)
+- Anonymous unions are allowed and automatically named by the compiler
+- All members share the same memory space (size = largest member)
+
+> **Note:** Bit fields (`:`) are **not yet supported** and may be added in future versions.
 
 ### 3.3 Enumerations
-➡️ `enum` declarations  
-➡️ `enum` definitions  
-➡️ Explicit enumerator values  
-➡️ Anonymous enums
+✅ `enum` declarations  
+✅ `enum` definitions  
+✅ Explicit enumerator values  
+✅ Implicit enumerator values (auto-assign)  
+✅ Anonymous enums   
+
+**Examples:**
+```c
+// Simple enum
+enum Color {
+    RED,
+    GREEN,
+    BLUE
+};
+
+// Enum with explicit values
+enum Status {
+    OK = 0,
+    ERROR = 1,
+    PENDING = 2
+};
+
+// Mixed explicit and implicit
+enum Mixed {
+    M1,
+    M2 = 5,
+    M3        // Auto-assigned as 6
+};
+
+// Inline with variable declaration
+enum Direction {
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT
+} dir;
+
+// Anonymous enum
+enum {
+    FIRST,
+    SECOND,
+    THIRD
+} anon_var;
+
+// Enum usage
+enum Color c = RED;
+enum Status s = OK;
+int val = c;  // Enum values are integers
+```
+
+**Design Rules:**
+- Enumerations must have a definition (forward declarations are **not allowed**)
+- Enumerator names are identifiers without any type specifier
+- Enumerator values are optional; if omitted, auto-assigned sequentially starting from 0 (or previous value + 1)
+- Enum names are identifiers and must be used with the `enum` keyword when referencing the type (unless typedef'd)
+- Anonymous enums are allowed and automatically named by the compiler
+- Enumerations are fundamentally integer types
 
 ---
 
@@ -310,6 +412,8 @@ x                    // Identifier
 sizeof(int)          // sizeof
 (int)3.14            // Type cast
 ```
+
+> **Note:** Hexadecimal (0x), octal (0), and binary (0b) integer literals are **not yet supported**. Only decimal literals are supported. This may be added in future versions.
 
 **Design Rules for `sizeof` and type casts:**
 
@@ -677,7 +781,7 @@ The goal is to support full ISO C preprocessing, including:
 
 ## 8. Testing Status
 
-### Completed Tests (1020+ test cases, 100% pass rate)
+### Completed Tests (1220+ test cases, 100% pass rate)
 
 - ✅ **Type System Validation:** 87 tests
 - ✅ **Declarator Parsing:** 100+ tests (simple pointers, arrays, complex nesting, function pointers)
@@ -686,7 +790,9 @@ The goal is to support full ISO C preprocessing, including:
 - ✅ **Type Cast & Sizeof:** ~370 tests
 - ✅ **Control Flow Statements:** ~100 tests (if/else, while, do-while, for, switch/case/default, break, continue, return, goto/labels, nested structures, function definitions)
 - ✅ **Struct Parsing:** 50+ tests (named, anonymous, self-referencing, nested, complex members)
-- ✅ **Typedef Parsing & Expansion:** 250 tests (primitives, pointers, arrays, function pointers, struct typedefs, qualifiers)
+- ✅ **Union Parsing:** 100+ tests (named, anonymous, forward declarations, nested, complex members)
+- ✅ **Enum Parsing:** 100+ tests (named, anonymous, explicit values, implicit values)
+- ✅ **Typedef Parsing & Expansion:** 250 tests (primitives, pointers, arrays, function pointers, struct typedefs, union typedefs, enum typedefs, qualifiers)
 
 ---
 
@@ -707,12 +813,16 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 
 **Target:** 90-95% ISO C core features
 
-**Current Coverage (Parser Phase):** ~90%
+**Current Coverage (Parser Phase):** ~95%
 - ✅ Complete type system
 - ✅ Complete declarator system
 - ✅ Complete expression system
 - ✅ Statement system (complete)
 - ✅ Function definitions (complete)
+- ✅ Struct parsing (complete)
+- ✅ Union parsing (complete)
+- ✅ Enum parsing (complete)
+- ✅ Typedef system (complete)
 - 🟡 Diagnostic Engine (in progress)
 - ➡️ Preprocessor
 
@@ -722,11 +832,10 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 
 **Completed:**
 - ✅ **Phase 1:** Lexical Analysis (100%)
-- ✅ **Phase 2 (90%):** Type system, declarators, expressions, statements, function definitions, struct parsing, typedef parsing
+- ✅ **Phase 2 (95%):** Type system, declarators, expressions, statements, function definitions, struct parsing, union parsing, enum parsing, typedef parsing
 
 **In Progress:**
 - 🟡 Diagnostic Engine
-- 🟡 `union`, `enum` parsing 
 
 **Upcoming:**
 - ➡️ Position-validity rules (semantic context checks)
