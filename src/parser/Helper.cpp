@@ -1496,15 +1496,15 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
 
     
     if(currToken.type == INT_LITERAL){ // int
-        left = new IntLiteralNode(stoi(currToken.data));        
+        left = new IntLiteralNode(currToken.data);
     } else if(currToken.type == CHAR_LITERAL){ // char
-        left = new CharLiteralNode(currToken.data[0]);
+        left = new CharLiteralNode(currToken.data.substr(1, currToken.data.length() - 2));
     } else if(currToken.type == STRING_LITERAL){ // string
         left = new StringLiteralNode(currToken.data);
     } else if(currToken.type == FLOAT_LITERAL){ // float
-        left = new FloatLiteralNode(stof(currToken.data));
+        left = new FloatLiteralNode(currToken.data);
     } else if(currToken.type == DOUBLE_LITERAL){ // double
-        left = new DoubleLiteralNode(stod(currToken.data));
+        left = new DoubleLiteralNode(currToken.data);
     } else if(currToken.type == ID){ // ID
         left = new IdentifierNode(currToken.data);
     } else if(isThisTokenUnaryOp(currToken.type)){ // unary operand found 

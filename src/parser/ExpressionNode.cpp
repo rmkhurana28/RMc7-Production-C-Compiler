@@ -2,19 +2,19 @@
 #include "Helper.h"
 
 // Literal node constructors
-IntLiteralNode::IntLiteralNode(int value) {
+IntLiteralNode::IntLiteralNode(string value) {
     this->numLiteralValue = value;
 }
 
-FloatLiteralNode::FloatLiteralNode(float value) {
+FloatLiteralNode::FloatLiteralNode(string value) {
     this->floatLiteralValue = value;
 }
 
-DoubleLiteralNode::DoubleLiteralNode(double value) {
+DoubleLiteralNode::DoubleLiteralNode(string value) {
     this->doubleLiteralValue = value;
 }
 
-CharLiteralNode::CharLiteralNode(char value) {
+CharLiteralNode::CharLiteralNode(string value) {
     this->charLiteralValue = value;
 }
 

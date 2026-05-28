@@ -39,40 +39,40 @@ protected:
 
 class IntLiteralNode : public LiteralNode {
 private:
-    int numLiteralValue;
+    string numLiteralValue;
 
 public:
-    IntLiteralNode(int value);
+    IntLiteralNode(string value);
     ~IntLiteralNode() {}
     void print(ofstream& out, const string& indent = "") const override;
 };
 
 class FloatLiteralNode : public LiteralNode {
 private:
-    float floatLiteralValue;
+    string floatLiteralValue;
 
 public:
-    FloatLiteralNode(float value);
+    FloatLiteralNode(string value);
     ~FloatLiteralNode() {}
     void print(ofstream& out, const string& indent = "") const override;
 };
 
 class DoubleLiteralNode : public LiteralNode {
 private:
-    double doubleLiteralValue;
+    string doubleLiteralValue;
 
 public:
-    DoubleLiteralNode(double value);
+    DoubleLiteralNode(string value);
     void print(ofstream& out, const string& indent = "") const override;
     ~DoubleLiteralNode() {}
 };
 
 class CharLiteralNode : public LiteralNode {
 private:
-    char charLiteralValue;
+    string charLiteralValue;
 
 public:
-    CharLiteralNode(char value);
+    CharLiteralNode(string value);
     void print(ofstream& out, const string& indent = "") const override;
     ~CharLiteralNode() {}
 };
