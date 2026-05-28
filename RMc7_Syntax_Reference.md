@@ -1,6 +1,6 @@
 # RMc7 Syntax Reference
 
-**Version:** Phase 1 Complete | Phase 2 In Progress (~95%)  
+**Version:** Phase 1 Complete | Phase 2 In Progress (~96%)  
 **Target:** 90-95% ISO C Core Features
 
 ---
@@ -58,9 +58,9 @@ typedef int (*FuncPtr)(int);
 
 ### 1.3 Typedef Expansion
 
-✅ Typedef aliases are fully expanded during declarator processing
-✅ Works in variables, function parameters, return types, and nested declarators
-✅ Supports multi-level alias chains
+✅ Typedef aliases are fully expanded during declarator processing  
+✅ Works in variables, function parameters, return types, and nested declarators  
+✅ Supports multi-level alias chains  
 
 **Examples:**
 ```c
@@ -283,13 +283,13 @@ person.addr.city[0] = 'N';
 > **Note:** Bit fields (`:`) are **not yet supported** and may be added in future versions.
 
 ### 3.2 Unions
-✅ `union` declarations
-✅ `union` definitions
-✅ Named unions
-✅ Anonymous unions
-✅ Forward declarations
-✅ Union member access (`.`)
-✅ Union pointer access (`->`)
+✅ `union` declarations  
+✅ `union` definitions  
+✅ Named unions  
+✅ Anonymous unions  
+✅ Forward declarations  
+✅ Union member access (`.`)  
+✅ Union pointer access (`->`)  
 
 **Examples:**
 ```c
@@ -395,11 +395,11 @@ int val = c;  // Enum values are integers
 ## 4. Expressions
 
 ### 4.1 Primary Expressions
-✅ Identifiers  
-✅ Constants (integer, float, char, string)  
-✅ Parenthesized expressions  
-✅ `sizeof` operator  
-✅ Type casts
+✅ Identifiers    
+✅ Constants (integer, float, char, string)    
+✅ Parenthesized expressions    
+✅ `sizeof` operator    
+✅ Type casts  
 
 **Examples:**
 ```c
@@ -413,7 +413,55 @@ sizeof(int)          // sizeof
 (int)3.14            // Type cast
 ```
 
-> **Note:** Hexadecimal (0x), octal (0), and binary (0b) integer literals are **not yet supported**. Only decimal literals are supported. This may be added in future versions.
+### 4.1.1 Integer Literals
+✅ Decimal integers  
+✅ Hexadecimal integers (`0x`, `0X` prefix)  
+✅ Octal integers (`0` prefix)  
+✅ Integer suffixes (`L`, `U`, `LL`, `UL`, `ULL`)  
+
+**Examples:**
+```c
+42                   // Decimal
+0xFF                 // Hexadecimal
+0777                 // Octal
+42L                  // Long
+999U                 // Unsigned
+0xFFUL               // Hex unsigned long
+```
+
+### 4.1.2 Floating-Point Literals
+✅ Decimal floats  
+✅ Scientific notation (`e`, `E` exponent)  
+✅ Leading decimals (`.5`, `.5e2`)  
+✅ Trailing decimals (`5.`, `5.e2`)  
+✅ Float suffixes (`f`, `F`, `l`, `L`)  
+✅ Hexadecimal floats (`0x1.8p3`) - C99  
+
+**Examples:**
+```c
+3.14                 // Decimal float
+1e-3                 // Scientific notation
+.5                   // Leading decimal
+5.e2                 // Trailing decimal
+.5e2f                // Leading decimal with exponent and suffix
+0x1.8p3              // Hexadecimal float (C99)
+```
+
+### 4.1.3 Character & String Literals
+✅ Character constants  
+✅ String literals  
+✅ Escape sequences (all 13 ISO C: `\a`, `\b`, `\f`, `\n`, `\r`, `\t`, `\v`, `\\`, `\'`, `\"`, `\0`)  
+✅ Octal escape sequences (`\ooo`)  
+✅ Hexadecimal escape sequences (`\xhh`)  
+
+**Examples:**
+```c
+'A'                  // Character
+'\n'                 // Escape sequence
+"Hello\nWorld"       // String with escape
+'\101'               // Octal escape
+'\x41'               // Hexadecimal escape
+```
 
 **Design Rules for `sizeof` and type casts:**
 
@@ -781,7 +829,7 @@ The goal is to support full ISO C preprocessing, including:
 
 ## 8. Testing Status
 
-### Completed Tests (1220+ test cases, 100% pass rate)
+### Completed Tests (1300+ test cases, 100% pass rate)
 
 - ✅ **Type System Validation:** 87 tests
 - ✅ **Declarator Parsing:** 100+ tests (simple pointers, arrays, complex nesting, function pointers)
@@ -793,6 +841,8 @@ The goal is to support full ISO C preprocessing, including:
 - ✅ **Union Parsing:** 100+ tests (named, anonymous, forward declarations, nested, complex members)
 - ✅ **Enum Parsing:** 100+ tests (named, anonymous, explicit values, implicit values)
 - ✅ **Typedef Parsing & Expansion:** 250 tests (primitives, pointers, arrays, function pointers, struct typedefs, union typedefs, enum typedefs, qualifiers)
+- ✅ **Number Literal Formats:** 80+ tests (hex, octal, scientific notation, suffixes, hex floats, leading/trailing decimals)
+- ✅ **Escape Sequences:** 40+ tests (all 13 standard escapes, octal, hexadecimal)
 
 ---
 
@@ -813,7 +863,7 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 
 **Target:** 90-95% ISO C core features
 
-**Current Coverage (Parser Phase):** ~95%
+**Current Coverage (Parser Phase):** ~96%
 - ✅ Complete type system
 - ✅ Complete declarator system
 - ✅ Complete expression system
@@ -823,6 +873,8 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 - ✅ Union parsing (complete)
 - ✅ Enum parsing (complete)
 - ✅ Typedef system (complete)
+- ✅ Number literal formats (hex, octal, scientific, suffixes, hex floats)
+- ✅ Character & string escape sequences (complete ISO C set)
 - 🟡 Diagnostic Engine (in progress)
 - ➡️ Preprocessor
 
@@ -832,7 +884,7 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 
 **Completed:**
 - ✅ **Phase 1:** Lexical Analysis (100%)
-- ✅ **Phase 2 (95%):** Type system, declarators, expressions, statements, function definitions, struct parsing, union parsing, enum parsing, typedef parsing
+- ✅ **Phase 2 (96%):** Type system, declarators, expressions, statements, function definitions, struct parsing, union parsing, enum parsing, typedef parsing, number literal formats, escape sequences
 
 **In Progress:**
 - 🟡 Diagnostic Engine

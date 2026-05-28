@@ -43,7 +43,7 @@ vector<Token> Lexer::startTokenization(){
         
         if(c == ' ') this->skipWhiteSpaces(); // skip all white spaces
         else if(isalpha(c) || c == '_') tokenList.push_back(this->evaluateAlphabetOrUnderScore());// a-z or A-Z or _
-        else if(isdigit(c)){ // 0-9
+        else if(isdigit(c) || (c == '.' && this->currentPos + 1 < this->source.length() && isdigit(this->getNextChar()))){ // 0-9 or .5
             tokenList.push_back(this->evaluateNumber());
         } else if(c == '\'') tokenList.push_back(this->evaluateSingleQuote()); // store 'W' in the token
         else if(c == '\"') tokenList.push_back(this->evaluateDoubleQuote()); // store "WORD" in the token
@@ -461,24 +461,145 @@ void Lexer::handleMultiComment(){
 }
 
 Token Lexer::evaluateNumber(){
-    string temp;    
+    string temp;
 
-    bool isDecimal = false;
-    
-    evaluate_number : 
-    while(isdigit(this->getCurrentChar()) && this->currentPos < this->source.length()){
-        temp += this->getCurrentCharAndAdvanceOne();
-    }
+    // STEP 1: Detect format and collect number part
+    char first = this->getCurrentChar();
 
-    if(this->getCurrentChar() == '.' && this->currentPos < this->source.length()){
-        isDecimal = true;
-        temp += this->getCurrentCharAndAdvanceOne(); // Add the decimal point to temp
-        goto evaluate_number;
-    }
+    // LEADING DECIMAL: .5, .5e2, .5f, etc.
+    if(first == '.') {
+        temp += this->getCurrentCharAndAdvanceOne(); // consume '.'
 
-    if(isDecimal){
-        if((this->getCurrentChar() == 'f' || this->getCurrentChar() == 'F') && this->currentPos < this->source.length()){
+        // Collect digits after decimal
+        while(isdigit(this->getCurrentChar()) && this->currentPos < this->source.length()) {
             temp += this->getCurrentCharAndAdvanceOne();
+        }
+
+        // Check for scientific notation (e or E)
+        if((this->getCurrentChar() == 'e' || this->getCurrentChar() == 'E') &&
+           this->currentPos < this->source.length()) {
+            temp += this->getCurrentCharAndAdvanceOne(); // 'e' or 'E'
+
+            // Optional +/-
+            if((this->getCurrentChar() == '+' || this->getCurrentChar() == '-') &&
+               this->currentPos < this->source.length()) {
+                temp += this->getCurrentCharAndAdvanceOne();
+            }
+
+            // Collect exponent digits
+            while(isdigit(this->getCurrentChar()) && this->currentPos < this->source.length()) {
+                temp += this->getCurrentCharAndAdvanceOne();
+            }
+        }
+
+        // Collect suffixes (f, F, l, L, u, U in any order)
+        while(this->currentPos < this->source.length()) {
+            char c = this->getCurrentChar();
+            if(c == 'f' || c == 'F' || c == 'l' || c == 'L' || c == 'u' || c == 'U') {
+                temp += this->getCurrentCharAndAdvanceOne();
+            } else {
+                break;
+            }
+        }
+
+        Token tok;
+        tok.data = temp;
+        tok.type = this->getTokenTypeOf(temp);
+        tok.line = this->currentLine;
+        tok.column = this->currentColumn++;
+        return tok;
+    }
+
+    // HEX mode: 0x or 0X
+    if(first == '0' && (this->getNextChar() == 'x' || this->getNextChar() == 'X')) {
+        temp += this->getCurrentCharAndAdvanceOne(); // '0'
+        temp += this->getCurrentCharAndAdvanceOne(); // 'x' or 'X'
+
+        // Collect hex digits (0-9, a-f, A-F)
+        while((isdigit(this->getCurrentChar()) ||
+               (tolower(this->getCurrentChar()) >= 'a' && tolower(this->getCurrentChar()) <= 'f')) &&
+              this->currentPos < this->source.length()) {
+            temp += this->getCurrentCharAndAdvanceOne();
+        }
+
+        // Check for hex float (decimal point)
+        if(this->getCurrentChar() == '.' && this->currentPos < this->source.length()) {
+            temp += this->getCurrentCharAndAdvanceOne(); // '.'
+
+            // Collect hex digits after decimal
+            while((isdigit(this->getCurrentChar()) ||
+                   (tolower(this->getCurrentChar()) >= 'a' && tolower(this->getCurrentChar()) <= 'f')) &&
+                  this->currentPos < this->source.length()) {
+                temp += this->getCurrentCharAndAdvanceOne();
+            }
+        }
+
+        // Check for hex float exponent (p or P)
+        if((this->getCurrentChar() == 'p' || this->getCurrentChar() == 'P') &&
+           this->currentPos < this->source.length()) {
+            temp += this->getCurrentCharAndAdvanceOne(); // 'p' or 'P'
+
+            if((this->getCurrentChar() == '+' || this->getCurrentChar() == '-') &&
+               this->currentPos < this->source.length()) {
+                temp += this->getCurrentCharAndAdvanceOne();
+            }
+
+            // Collect exponent digits
+            while(isdigit(this->getCurrentChar()) && this->currentPos < this->source.length()) {
+                temp += this->getCurrentCharAndAdvanceOne();
+            }
+        }
+    }
+    // OCTAL mode: 0 followed by digits 0-7
+    else if(first == '0' && isdigit(this->getNextChar()) && this->getNextChar() <= '7') {
+        // Collect octal digits (0-7)
+        while(isdigit(this->getCurrentChar()) && this->getCurrentChar() <= '7' &&
+              this->currentPos < this->source.length()) {
+            temp += this->getCurrentCharAndAdvanceOne();
+        }
+    }
+    // DECIMAL mode (including decimal floats)
+    else {
+        // Collect decimal digits
+        while(isdigit(this->getCurrentChar()) && this->currentPos < this->source.length()) {
+            temp += this->getCurrentCharAndAdvanceOne();
+        }
+
+        // Check for decimal point
+        if(this->getCurrentChar() == '.' && this->currentPos < this->source.length()) {
+            temp += this->getCurrentCharAndAdvanceOne(); // '.'
+
+            // Collect digits after decimal (optional for cases like 5. or 5.e2)
+            while(isdigit(this->getCurrentChar()) && this->currentPos < this->source.length()) {
+                temp += this->getCurrentCharAndAdvanceOne();
+            }
+        }
+    }
+
+    // STEP 2: Check for scientific notation (e or E)
+    if((this->getCurrentChar() == 'e' || this->getCurrentChar() == 'E') &&
+       this->currentPos < this->source.length()) {
+        temp += this->getCurrentCharAndAdvanceOne(); // 'e' or 'E'
+
+        // Optional +/-
+        if((this->getCurrentChar() == '+' || this->getCurrentChar() == '-') &&
+           this->currentPos < this->source.length()) {
+            temp += this->getCurrentCharAndAdvanceOne();
+        }
+
+        // Collect exponent digits
+        while(isdigit(this->getCurrentChar()) && this->currentPos < this->source.length()) {
+            temp += this->getCurrentCharAndAdvanceOne();
+        }
+    }
+
+    // STEP 3: Collect suffixes (f, F, l, L, u, U in any order)
+    while(this->currentPos < this->source.length()) {
+        char c = this->getCurrentChar();
+        if(c == 'f' || c == 'F' || c == 'l' || c == 'L' || c == 'u' || c == 'U') {
+            temp += this->getCurrentCharAndAdvanceOne();
+        } else {
+            break;
         }
     }
 
@@ -502,39 +623,63 @@ TokenType Lexer::getTokenTypeOf(string data){
     if(!data.empty() && data[0] == '\'' && data[data.length()-1] == '\'') {
         return CHAR_LITERAL;
     }
-    
+
     // String Literal - starts and ends with double quote
     if(!data.empty() && data[0] == '\"' && data[data.length()-1] == '\"') {
         return STRING_LITERAL;
     }
-    
-    // Numeric Literals - check if first character is a digit or decimal point with digits
+
+    // Numeric Literals - check if first character is a digit or decimal point
     if(!data.empty() && (isdigit(data[0]) || (data[0] == '.' && data.length() > 1))) {
-        bool hasDecimal = false;
-        bool endsWithF = false;
-        
-        // Check for decimal point
+        bool hasDecimal = false;      // decimal point (.)
+        bool hasExponent = false;      // e or E (decimal) or p or P (hex)
+        bool hasHexPrefix = false;     // 0x or 0X
+        bool endsWithF = false;        // f or F suffix
+
+        // Check for hex prefix (0x or 0X)
+        if(data.length() > 1 && data[0] == '0' && (data[1] == 'x' || data[1] == 'X')) {
+            hasHexPrefix = true;
+        }
+
+        // Check for decimal point or exponent
         for(size_t i = 0; i < data.length(); i++) {
             if(data[i] == '.') {
                 hasDecimal = true;
+            } else if(!hasHexPrefix && (data[i] == 'e' || data[i] == 'E')) {
+                // For non-hex numbers: e/E indicates scientific notation
+                hasExponent = true;
+            } else if(data[i] == 'p' || data[i] == 'P') {
+                // For hex floats: p/P indicates binary exponent
+                hasExponent = true;
             }
         }
-        
-        // Check if last character is 'f' or 'F'
-        if(data[data.length()-1] == 'f' || data[data.length()-1] == 'F') {
+
+        // Check if ends with 'f' or 'F' (suffix)
+        // For pure hex integers (0x... with no decimal/exponent), F is a hex digit, not a suffix
+        bool isPureHexInteger = (hasHexPrefix && !hasDecimal && !hasExponent);
+        if(!data.empty() && !isPureHexInteger && (data[data.length()-1] == 'f' || data[data.length()-1] == 'F')) {
             endsWithF = true;
         }
-        
+
         // Determine numeric type
-        if(!hasDecimal) {
-            return INT_LITERAL;  // No decimal point -> integer
-        } else if(endsWithF) {
-            return FLOAT_LITERAL;  // Has decimal + ends with 'f'/'F' -> float
-        } else {
-            return DOUBLE_LITERAL;  // Has decimal, no 'f' at end -> double
+        // Integer: hex integer (0x...) or decimal/octal integer without decimal/exponent/suffix
+        if(hasHexPrefix && !hasDecimal && !hasExponent) {
+            return INT_LITERAL;
+        }
+        // Float: has 'f' or 'F' suffix (works for both decimal and hex floats)
+        else if(endsWithF) {
+            return FLOAT_LITERAL;
+        }
+        // Double: has decimal point or scientific notation (e/E or p/P)
+        else if(hasDecimal || hasExponent) {
+            return DOUBLE_LITERAL;
+        }
+        // Integer: otherwise (decimal/octal integer with or without L/U/LL suffixes)
+        else {
+            return INT_LITERAL;
         }
     }
-    
+
     // Keywords - Data Types
     if(data == "int") return KEYWORD_INT;
     if(data == "double") return KEYWORD_DOUBLE;
