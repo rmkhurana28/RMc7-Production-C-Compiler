@@ -1,219 +1,43 @@
 /*
-    HARD VALID ISO C PARSING TESTS
-    (Adjusted for your declaration grammar)
+ * Final Verification Test - bool and _Bool Support
+ * All valid patterns from C99
+ */
 
-    No:
-    - pointer declarators in declarations
-    - complex declarator syntax
-
-    Still stresses:
-    - precedence
-    - associativity
-    - maximal munch
-    - postfix/prefix
-    - arrays
-    - function calls
-    - ternary parsing
-    - nested expressions
-*/
+/* Global declarations */
+bool global1;
+_Bool global2;
+const bool const_global1;
+const _Bool const_global2;
+volatile bool vol_global1;
+volatile _Bool vol_global2;
+static bool static_global1;
+static _Bool static_global2;
 
 int main(void)
 {
-    int a = 1;
-    int b = 2;
-    int c = 3;
-    int d = 4;
+    /* Basic bool and _Bool */
+    bool b1;
+    _Bool b2;
 
-    int arr[10];
+    /* With initializers */
+    bool b3 = 1;
+    _Bool b4 = 0;
 
-    /* =========================================================
-       OPERATOR PRECEDENCE
-       ========================================================= */
+    /* Pointers */
+    bool *p1;
+    _Bool *p2;
+    bool **pp1;
+    _Bool **pp2;
 
-    int x1 =
-        a + b * c - d / a % b << 2 >> 1;
+    /* Arrays */
+    bool arr1[5];
+    _Bool arr2[10];
 
-    int x2 =
-        a || b && c | d ^ a & b == c != d < a <= b > c >= d;
+    /* With qualifiers */
+    const bool cb1;
+    const _Bool cb2;
+    volatile bool vb1;
+    volatile _Bool vb2;
 
-    int x3 =
-        a + b * c << d & a ^ b | c && d || a;
-
-    /* =========================================================
-       DEEPLY NESTED EXPRESSIONS
-       ========================================================= */
-
-    int x4 =
-        (((((((((a + b)))))))));
-
-    int x5 =
-        (a + (b * (c + (d * (a + b)))));
-
-    /* =========================================================
-       TERNARY ASSOCIATIVITY
-       ========================================================= */
-
-    int x6 =
-        a ? b : c ? d : a;
-
-    int x7 =
-        a ? (b ? c : d) : a;
-
-    int x8 =
-        a ? b + c : d * a + b;
-
-    int x9 =
-        a + b ? c << d : a & b;
-
-    /* =========================================================
-       PREFIX / POSTFIX
-       ========================================================= */
-
-    int x10 =
-        a+++b;
-
-    int x11 =
-        a---b;
-
-    int x12 =
-        ++a + --b * c++;
-
-    /* =========================================================
-       ARRAY EXPRESSIONS
-       ========================================================= */
-
-    int x13 =
-        arr[a + b * c];
-
-    int x14 =
-        arr[arr[a]];
-
-    int x15 =
-        arr[a] + arr[b * c];
-
-    int x16 =
-        arr[a + b]++;
-
-    int x17 =
-        ++arr[a];
-
-    /* =========================================================
-       FUNCTION CALL NESTING
-       ========================================================= */
-
-    foo();
-
-    foo(a);
-
-    foo(a, b, c);
-
-    foo(foo(a), foo(b, c));
-
-    foo(
-        a + b,
-        foo(c + d),
-        arr[a + b]
-    );
-
-    int x18 =
-        foo(a)(b);
-
-    int x19 =
-        foo(a + b * c)(d ? a : b);
-
-    /* =========================================================
-       GROUPING / PARENTHESIS CHAOS
-       ========================================================= */
-
-    int x20 =
-        (a) + (b);
-
-    int x21 =
-        (((a)));
-
-    int x22 =
-        (a + b) * (c + d);
-
-    int x23 =
-        (((a + b) * (c + d)));
-
-    /* =========================================================
-       COMMA OPERATOR
-       ========================================================= */
-
-    int x24 =
-        (a++, b++, c++);
-
-    int x25 =
-        (a = b, b = c, c = d);
-
-    /* =========================================================
-       ASSIGNMENT ASSOCIATIVITY
-       ========================================================= */
-
-    a = b = c = d;
-
-    arr[a] = arr[b] = arr[c];
-
-    /* =========================================================
-       LARGE COMBINED EXPRESSIONS
-       ========================================================= */
-
-    int x26 =
-        (a+++b*--c<<2&d^a||b&&c?d:a+b*c);
-
-    int x27 =
-        foo(
-            a ? b : c,
-            ++a * --b,
-            arr[a+b*c]
-        ) + (a && b || c);
-
-    int x28 =
-        (((a+b)*(c+d))<<(a?b:c))&(d|a^b);
-
-    /* =========================================================
-       FOR LOOPS
-       ========================================================= */
-
-    for (;;)
-    {
-    }
-
-    for (a = 0; a < 10; a++)
-    {
-    }
-
-    for (a = 0, b = 10; a < b; a++, b--)
-    {
-    }
-
-    /* =========================================================
-       NESTED CONDITIONALS
-       ========================================================= */
-
-    if (a)
-    {
-        if (b)
-        {
-            if (c)
-            {
-                a = b + c;
-            }
-            else
-            {
-                a = b - c;
-            }
-        }
-        else
-        {
-            a = 0;
-        }
-    }
-
-    /* =========================================================
-       RETURN
-       ========================================================= */
-
-    return a ? b : (c ? d : a + b * c);
+    return 0;
 }

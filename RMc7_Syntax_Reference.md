@@ -1,6 +1,6 @@
 # RMc7 Syntax Reference
 
-**Version:** Phase 1 Complete | Phase 2 In Progress (~96%)  
+**Version:** Phase 1 Complete | Phase 2 In Progress (~98%)  
 **Target:** 90-95% ISO C Core Features
 
 ---
@@ -17,18 +17,20 @@
 ## 1. Declarations
 
 ### 1.1 Basic Type Specifiers
-✅ `int`  
-✅ `char`  
-✅ `float`  
-✅ `double`  
-✅ `void`  
-✅ `short`  
-✅ `long`  
-✅ `long long`  
-✅ `signed`  
-✅ `unsigned`  
-🟡 `bool` (will be added for convenience)  
-🟡 `_Bool`
+✅ `int`
+✅ `char`
+✅ `float`
+✅ `double`
+✅ `void`
+✅ `short`
+✅ `long`
+✅ `long long`
+✅ `signed`
+✅ `unsigned`
+✅ `bool` (added for convenience)
+✅ `_Bool`
+
+**Note:** `bool` and `_Bool` are treated as identical types for simplicity and convenience. Both keywords produce the same KEYWORD_BOOL token and follow identical parsing/validation rules.
 
 **Examples:**
 ```c
@@ -863,7 +865,7 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 
 **Target:** 90-95% ISO C core features
 
-**Current Coverage (Parser Phase):** ~96%
+**Current Coverage (Parser Phase):** ~98%
 - ✅ Complete type system
 - ✅ Complete declarator system
 - ✅ Complete expression system
@@ -884,7 +886,7 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 
 **Completed:**
 - ✅ **Phase 1:** Lexical Analysis (100%)
-- ✅ **Phase 2 (96%):** Type system, declarators, expressions, statements, function definitions, struct parsing, union parsing, enum parsing, typedef parsing, number literal formats, escape sequences
+- ✅ **Phase 2 (98%):** Type system, declarators, expressions, statements, function definitions, struct parsing, union parsing, enum parsing, typedef parsing, number literal formats, escape sequences
 
 **In Progress:**
 - 🟡 Diagnostic Engine

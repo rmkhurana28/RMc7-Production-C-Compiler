@@ -546,7 +546,14 @@ int dataTypeHolder::isCurrentTypeValid(){
 
             return 1; // valid only for var (rule)
         }
-        
+
+    } else if(this->baseTypeArray.size() == 1 && this->baseTypeArray.back() == KEYWORD_BOOL){ // base type is bool
+        if(this->sizeModifiersArray.size() != 0) return -1; // size modifiers NOT allowed for bool
+        if(this->signModifiersArray.size() != 0) return -1; // sign modifiers NOT allowed for bool
+
+        if(this->storageClassArray.size() > 0 && (this->storageClassArray.back() == KEYWORD_AUTO || this->storageClassArray.back() == KEYWORD_REGISTER)) return 1; // auto/register NOT allowed for functions
+
+        return 0; // always valid for bool
     } else{ // base type is either float/double/struct/enum/union        
         if(this->signModifiersArray.size() > 0 || this->sizeModifiersArray.size() > 0){ // sign and size modifiers NOT allowed for these base types
             if(this->baseTypeArray.size() != 1 || this->baseTypeArray.front() != KEYWORD_DOUBLE) return -1; // base type is NOT double, so return -1 , invalid

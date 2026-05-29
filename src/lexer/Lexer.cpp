@@ -685,6 +685,7 @@ TokenType Lexer::getTokenTypeOf(string data){
     if(data == "double") return KEYWORD_DOUBLE;
     if(data == "float") return KEYWORD_FLOAT;
     if(data == "bool") return KEYWORD_BOOL;
+    if(data == "_Bool") return KEYWORD_BOOL;
     if(data == "char") return KEYWORD_CHAR;
     if(data == "void") return KEYWORD_VOID;
     if(data == "short") return KEYWORD_SHORT;
