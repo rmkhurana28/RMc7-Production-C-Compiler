@@ -17,18 +17,18 @@
 ## 1. Declarations
 
 ### 1.1 Basic Type Specifiers
-✅ `int`
-✅ `char`
-✅ `float`
-✅ `double`
-✅ `void`
-✅ `short`
-✅ `long`
-✅ `long long`
-✅ `signed`
-✅ `unsigned`
-✅ `bool` (added for convenience)
-✅ `_Bool`
+✅ `int`  
+✅ `char`  
+✅ `float`  
+✅ `double`  
+✅ `void`  
+✅ `short`  
+✅ `long`  
+✅ `long long`  
+✅ `signed`  
+✅ `unsigned`  
+✅ `bool` (added for convenience)  
+✅ `_Bool`  
 
 **Note:** `bool` and `_Bool` are treated as identical types for simplicity and convenience. Both keywords produce the same KEYWORD_BOOL token and follow identical parsing/validation rules.
 
