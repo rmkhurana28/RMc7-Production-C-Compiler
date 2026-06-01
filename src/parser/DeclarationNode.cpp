@@ -91,10 +91,8 @@ vector<ParameterNode> ParameterNode::evaluateParams(Parser& parser){
     }
     if(check == 2){
 
-        /*
-            need to add special chekc to allow only void here
-        */
-
+        
+        // special check if the param is just void, required since void(just "void") generally not allowed for variable data type
         if(paramType.baseTypeArray.size() == 1 && paramType.baseTypeArray[0] == KEYWORD_VOID){
             // void is valid as param, but without varname
 
@@ -109,8 +107,9 @@ vector<ParameterNode> ParameterNode::evaluateParams(Parser& parser){
     }
 
     
-
+    
     if(parser.tokens[parser.currentPos].type != COMMA && parser.tokens[parser.currentPos].type != RPAREN){ // evaluate ONYL if names are available after data type
+
         // get name
         paramName.getVarName(paramType , true);
 
@@ -120,37 +119,45 @@ vector<ParameterNode> ParameterNode::evaluateParams(Parser& parser){
             cout << "Param name invalid\n";
             exit(1);
         }
+        
         if(check == 2){
             cout << "Param name not valid for variable\n";
             exit(1);
         }
     }
     
-
+    
     if(parser.tokens[parser.currentPos].type == COMMA){ //  multiple decl 
         ParameterNode temp(&paramType , &paramName);
         myParamArray.push_back(temp);
         
-        if(parser.tokens[parser.currentPos+1].type == OP_DOT){ // varaidic func
+        // check if this is varaidic func
+        if(parser.tokens[parser.currentPos+1].type == OP_DOT){ // varaidic must start with .
             if(parser.tokens[parser.currentPos+2].type != OP_DOT || parser.tokens[parser.currentPos+3].type != OP_DOT){ // must be ... to be variadic
-                // error
+
+                // full varaidic not found, but dot found
                 cout << "Must be ...\n";
                 exit(1);
             }
+
             parser.currentPos += 4; // skip , and ...
+
+            // after varaidic param, it should close the paren
             if(parser.tokens[parser.currentPos].type != RPAREN){
-                // error
+                
+                // expected ) to close the func param bracket
                 cout << "Expected )\n";
                 exit(1);
             }
+            
             // currently at )
             
-        } else {
+        } else { // it is multi param, skip , and proceed toe vlauate further params
             parser.currentPos++; // skip ,
             goto multiParams;
         }
         
-    } else if(parser.tokens[parser.currentPos].type == RPAREN){
+    } else if(parser.tokens[parser.currentPos].type == RPAREN){ // add param to the parameter node
         ParameterNode temp(&paramType , &paramName);
         myParamArray.push_back(temp);
         // currently at )

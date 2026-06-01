@@ -10,16 +10,21 @@ using namespace std;
 // Define the global myStack variable
 vector<locationStack> myStack;
 
+// this is ast storage, used to add ast to the array in some special edge cases
 vector<ASTNode*> tempASTStorage;
 
+// bool that tells if current one is typedef tracker or not
 bool typedDefTracker = false;
 
+// counter to keep track of number of anonymous names generated so far,
 long long unsigned anonTracker = 0;
 
 varNameHolder* tempVarNameHolder = nullptr;
 
+// typedef hashmap
 unordered_map<string, vector<tdMapPair>> tdMap;
 
+// func generating anon name whenever called
 string* anonTagNameGen(){
     string* retVal = new string("ANON_TAG_" + to_string(anonTracker));
     anonTracker++;
@@ -37,80 +42,63 @@ Parser::~Parser() {
 
 ProgramNode* Parser::startParsing() {
     // Main parsing logic will go here
-    // This will return the root of the AST (ProgramNode)
-
-    // generate all relavent AST
-    // keep parsing untill tokens are finished
-    while(this->currentPos < tokens.size()){
-        // ASTNode* node = startParsingOfCurrentToken();
+    // This will return the root of the AST (ProgramNode)    
+    
+    while(this->currentPos < tokens.size()){ // keep parsing untill tokens are finished
         ASTNode** node = highLevelParse();
 
         // add nodes in node to allast
         for(int i = 0; node != nullptr && node[i] != nullptr; i++){
             allAST.push_back(node[i]);
         }
-
-        
-        
-        // if(node != nullptr) {
-        //     // Check if it's a statement
-        //     StatementNode* stmt = dynamic_cast<StatementNode*>(node);
-        //     if(stmt != nullptr) {
-        //         allStmts.push_back(stmt);
-        //     }
-        //     // Check if it's a declaration
-        //     DeclarationNode* decl = dynamic_cast<DeclarationNode*>(node);
-        //     if(decl != nullptr) {
-        //         allDeclNodes.push_back(decl);
-        //     }
-        // }
+                
     }
 
-    // generating program node containing an array of all decl nodes
-    // ProgramNode* myRootNode = new ProgramNode(allDeclNodes);
+    // generating program node containing an array of all decl nodes    
     ProgramNode* myRootNode = new ProgramNode(allAST);
 
     // returning the program node as root node
     return myRootNode;
 }
 
-ASTNode** Parser::highLevelParse(){
-    Token current = this->tokens[this->currentPos];
+ASTNode** Parser::highLevelParse(){ // entire parsing algo sequence-control is implemented here
+    
+    // setting current to the current token
+    Token current = this->tokens[this->currentPos]; 
     
 
     if(current.type == KEYWORD_TYPEDEF){ // typedef always comes as first word if it is typedef
-        return parseTypedef();
+        return parseTypedef(); 
         
     } else if(isThisTokenDataTypeOrPropToken(current)){ // for global var decl, func decl, froward decl, extern 
-        itIsVarDeclInstead:                
+        itIsVarDeclInstead: // came from struct/enum/union when that keyword corresponds to the var decl and not their own definition or came from td map alias name
         return parseDataTypeFoundDeclaration();
+
     } else if(current.type == KEYWORD_STRUCT || current.type == KEYWORD_UNION || current.type == KEYWORD_ENUM){ // covers parts of struct/enum/union without any data type prop before them
 
-
-        if(this->tokens[this->currentPos+1].type == ID && this->tokens[this->currentPos+2].type != SEMICOLON && this->tokens[this->currentPos+2].type != LBRACE){ // it is just var decl, and not struct definition, switch to data type decl parsing
-            goto itIsVarDeclInstead;
+        if(this->tokens[this->currentPos+1].type == ID && this->tokens[this->currentPos+2].type != SEMICOLON && this->tokens[this->currentPos+2].type != LBRACE){ // it is just var decl, and not struct/enum/union definition, switch to data type decl parsing
+            goto itIsVarDeclInstead; 
         }
 
-        if(current.type == KEYWORD_STRUCT){
+        if(current.type == KEYWORD_STRUCT){ // parse struct
             return parseStruct(nullptr);
-        } else if(current.type == KEYWORD_UNION){
+        } else if(current.type == KEYWORD_UNION){ // parse union
             return parseUnion(nullptr);
-        } else if(current.type == KEYWORD_ENUM){
+        } else if(current.type == KEYWORD_ENUM){ // parse enum
             return parseEnum(nullptr);
         }
     } else if(current.type == ID){ // can be related to typedef or type registry, might need to check
+        
         // now, we need to check if this id can be part of typedef alias or not, if yes, then need to use lookup to decide how to proceed
         
-        if(isCurrentIdValidTdAlias()){ 
+        if(isCurrentIdValidTdAlias()){  // checking if it is actually acting as a tdAlias by using look-up algo or if it is just another ID
             // it has to be td alias if exist
-            
 
-            if(isThisStringPresentAsKeyInTdMap(current.data)){
+            if(isThisStringPresentAsKeyInTdMap(current.data)){ // checking if ID is presetnas key in typedef hashmap
                 // it is present as key in td map
-
-
                 goto itIsVarDeclInstead;
-            }else{
+
+            }else{ 
                 cout << "Error: ID " << current.data << " found at high level parsing, but it is not a valid typedef alias\n";
                 exit(1);
             }
@@ -120,7 +108,7 @@ ASTNode** Parser::highLevelParse(){
         }
         
     }
-    else{ 
+    else{ // unknown token found, not present in td Alias also
         cout << "high level unknown token found\n";
         cout << "Token data: " << current.data << "\n";
 
@@ -130,36 +118,37 @@ ASTNode** Parser::highLevelParse(){
     return nullptr;
 }
 
-ASTNode** Parser::startParsingOfCurrentToken() {
-    Token current = this->tokens[this->currentPos];
+ASTNode** Parser::startParsingOfCurrentToken() { // entire if-else sequence control is implemented here for current token
+
+    Token current = this->tokens[this->currentPos]; // set current to the current token properly
     
     // Check for control flow statements
-    if(current.type == KEYWORD_IF) {
+    if(current.type == KEYWORD_IF) { // parse if
         StatementNode* ans = this->parseIf();
         ASTNode** dummy = new ASTNode*[2];
         dummy[0] = ans;
         dummy[1] = nullptr;
         return dummy;
-    } else if(current.type == KEYWORD_FOR) {
+    } else if(current.type == KEYWORD_FOR) { // parse for
         StatementNode* ans = this->parseFor();
         ASTNode** dummy = new ASTNode*[2];
         dummy[0] = ans;
         dummy[1] = nullptr;
         return dummy;
-    } else if(current.type == KEYWORD_WHILE) {
+    } else if(current.type == KEYWORD_WHILE) { // parse while
         StatementNode* ans = this->parseWhile();
         ASTNode** dummy = new ASTNode*[2];
         dummy[0] = ans;
         dummy[1] = nullptr;
         return dummy;
-    } else if(current.type == KEYWORD_DO){
+    } else if(current.type == KEYWORD_DO){ // parse do-while
         StatementNode* ans = this->parseDoWhile();
         ASTNode** dummy = new ASTNode*[2];
         dummy[0] = ans;
         dummy[1] = nullptr;
         return dummy;
     } 
-    else if(current.type == KEYWORD_SWITCH) {
+    else if(current.type == KEYWORD_SWITCH) { // parse switch
         StatementNode* ans = this->parseSwitch();
         ASTNode** dummy = new ASTNode*[2];
         dummy[0] = ans;
@@ -167,13 +156,13 @@ ASTNode** Parser::startParsingOfCurrentToken() {
         return dummy;
     }
     // Check for case/default labels
-    else if(current.type == KEYWORD_CASE) {
+    else if(current.type == KEYWORD_CASE) { // parse case
         StatementNode* ans = this->parseCaseLabel();
         ASTNode** dummy = new ASTNode*[2];
         dummy[0] = ans;
         dummy[1] = nullptr;
         return dummy;
-    } else if(current.type == KEYWORD_DEFAULT) {
+    } else if(current.type == KEYWORD_DEFAULT) { // parse default
         StatementNode* ans = this->parseDefaultLabel();
         ASTNode** dummy = new ASTNode*[2];
         dummy[0] = ans;
@@ -181,32 +170,32 @@ ASTNode** Parser::startParsingOfCurrentToken() {
         return dummy;
     }
     // Check for jump statements
-    else if(current.type == KEYWORD_RETURN) {
+    else if(current.type == KEYWORD_RETURN) { // parse return
         StatementNode* ans = this->parseReturn();
         ASTNode** dummy = new ASTNode*[2];
         dummy[0] = ans;
         dummy[1] = nullptr;
         return dummy;
-    } else if(current.type == KEYWORD_CONTINUE) {
+    } else if(current.type == KEYWORD_CONTINUE) { // parse continue
         StatementNode* ans = this->parseContinue();
         ASTNode** dummy = new ASTNode*[2];
         dummy[0] = ans;
         dummy[1] = nullptr;
         return dummy;
-    } else if(current.type == KEYWORD_BREAK) {
+    } else if(current.type == KEYWORD_BREAK) { // parse break
         StatementNode* ans = this->parseBreak();
         ASTNode** dummy = new ASTNode*[2];
         dummy[0] = ans;
         dummy[1] = nullptr;
         return dummy;
-    } else if(current.type == KEYWORD_GOTO) {
+    } else if(current.type == KEYWORD_GOTO) { // parse goto
         StatementNode* ans = this->parseGoto();
         ASTNode** dummy = new ASTNode*[2];
         dummy[0] = ans;
         dummy[1] = nullptr;
         return dummy;
     }
-    else if(current.type == ID && tokens[currentPos+1].type == OP_COLON){
+    else if(current.type == ID && tokens[currentPos+1].type == OP_COLON){ // parse label
         StatementNode* ans = this->parseLabel();
         ASTNode** dummy = new ASTNode*[2];
         dummy[0] = ans;
@@ -214,55 +203,62 @@ ASTNode** Parser::startParsingOfCurrentToken() {
         return dummy;
     }
     // Check for structured types
-    else if(current.type == KEYWORD_STRUCT) {
+    else if(current.type == KEYWORD_STRUCT) { // parse struct definition (this covers inside a block, not global one)
         // Only call parseStruct if this appears to be a struct definition (has LBRACE)
-        // Check: next token must be ID, and token after that could be LBRACE for definition
-        if(currentPos + 2 < tokens.size() &&
-           tokens[currentPos + 1].type == ID &&
-           tokens[currentPos + 2].type == LBRACE) {
+        // Check: next token must be ID, and token after that must be LBRACE for definition
+        if(currentPos + 2 < tokens.size() && tokens[currentPos + 1].type == ID && tokens[currentPos + 2].type == LBRACE) {
+
             // This is a struct definition
             ASTNode** myHelper = this->parseStruct(nullptr);
+            
             return myHelper;
         }
+
         // If not a definition, fall through to data type parsing
         goto itIsVarDeclInstead;
     }
-    else if(current.type == KEYWORD_UNION) {
+    else if(current.type == KEYWORD_UNION) { // parse union definiton (this covers inside a block, not global one)
         // Only call parseUnion if this appears to be a union definition (has LBRACE)
-        // Check: next token must be ID, and token after that could be LBRACE for definition
-        if(currentPos + 2 < tokens.size() &&
-           tokens[currentPos + 1].type == ID &&
-           tokens[currentPos + 2].type == LBRACE) {
+        // Check: next token must be ID, and token after that musta be LBRACE for definition
+        if(currentPos + 2 < tokens.size() && tokens[currentPos + 1].type == ID && tokens[currentPos + 2].type == LBRACE) {
+
             // This is a union definition
             ASTNode** myHelper = this->parseUnion(nullptr);
+
             return myHelper;
         }
+        
         // If not a definition, fall through to data type parsing
         goto itIsVarDeclInstead;
     }
-    else if(current.type == KEYWORD_ENUM) {
-        if(this->tokens[this->currentPos+1].type == ID &&
-           this->tokens[this->currentPos+2].type == LBRACE) {
+    else if(current.type == KEYWORD_ENUM) { // parse enum definition (this covers inside a block, not global one)
+        if(currentPos + 2 < tokens.size() && tokens[currentPos+1].type == ID && tokens[currentPos+2].type == LBRACE) {
+
             // This is an enum definition
             ASTNode** myHelper = this->parseEnum(nullptr);
+
             return myHelper;
         }
+
         // If not a definition, fall through to data type parsing
         goto itIsVarDeclInstead;
     }
-    // Check if it's a declaration (starts with type/storage class)
-    else if(isThisTokenDataTypeOrPropToken(current)) {
+    
+    // Check if it's a declaration (starts with type/storage/signed/short/long)
+    else if(isThisTokenDataTypeOrPropToken(current)) { // data type or it's any prop
         itIsVarDeclInstead:
         return parseDataTypeFoundDeclaration();
-    } else if(current.type == ID && isThisStringPresentAsKeyInTdMap(current.data)){
+    } else if(current.type == ID && isThisStringPresentAsKeyInTdMap(current.data)){ 
         // it is valid td alias, so it has to be declaration
         goto itIsVarDeclInstead;
-    } else if(current.type == LBRACE){
+    } else if(current.type == LBRACE){ // parse block
+
         // it is a block statement, can be part of function definition or control flow statement, but we will parse it as block statement here and later decide how to use it based on the parent node
         ASTNode* ans = parseBlock(*this);
         ASTNode** dummy = new ASTNode*[2];
         dummy[0] = ans;
         dummy[1] = nullptr;
+
         return dummy;
         
     }
@@ -279,7 +275,11 @@ ASTNode** Parser::startParsingOfCurrentToken() {
 
 }
 
-DeclarationNode* Parser::parseCurrentDecl(){
+
+/*
+    dont know if below func is being used somehwere, it was made in the early design, and then later refactoring of algo was done, need to properly see if this func is being used or if it is safe to remove from here.
+*/
+DeclarationNode* Parser::parseCurrentDecl(){ 
     // use if else to find the best parser for current node
     // if(isThisTokenDataTypeOrPropToken(this->tokens[this->currentPos])){ // found some data type or prop
         // call the parser fucntion with data type as first token
@@ -292,7 +292,8 @@ DeclarationNode* Parser::parseCurrentDecl(){
     return nullptr;
 }
 
-bool Parser::isThisTokenDataTypeOrPropToken(Token currToken){
+// checking if token is either any data type or any of it's property
+bool Parser::isThisTokenDataTypeOrPropToken(Token currToken){ 
     switch(currToken.type){
         // data type
         case KEYWORD_INT:
@@ -327,6 +328,7 @@ bool Parser::isThisTokenDataTypeOrPropToken(Token currToken){
     
 }
 
+// checking if token is any of the base data type 
 bool Parser::isThisTokenDataBaseTypeToken(Token currToken){
     switch(currToken.type){
         // data type
@@ -342,6 +344,7 @@ bool Parser::isThisTokenDataBaseTypeToken(Token currToken){
     }
 }
 
+// checking if token is any of the sign modifier
 bool Parser::isThisTokenSignModifierToken(Token currToken){
     switch(currToken.type){
         // sign modifier
@@ -353,6 +356,7 @@ bool Parser::isThisTokenSignModifierToken(Token currToken){
     }
 }
 
+// checking if token is any of the size modifier
 bool Parser::isThisTokenSizeModifierToken(Token currToken){
     switch(currToken.type){
         // sie modifier
@@ -364,6 +368,7 @@ bool Parser::isThisTokenSizeModifierToken(Token currToken){
     }
 }
 
+// checking if token is any of the type qualifier
 bool Parser::isThisTokenTypeQualifierToken(Token currToken){
     switch(currToken.type){
         // type qualifiers
@@ -375,6 +380,7 @@ bool Parser::isThisTokenTypeQualifierToken(Token currToken){
     }
 }
 
+// checking if token is any of the storage class prop
 bool Parser::isThisTokenStorageClassToken(Token currToken){
     switch(currToken.type){
         // storage class
@@ -388,6 +394,7 @@ bool Parser::isThisTokenStorageClassToken(Token currToken){
     }
 }
 
+// checking if token is any of the struct/enum/union token
 bool Parser::isThisTokenStructUnionEnumToken(Token currToken){
     switch(currToken.type){
         case KEYWORD_STRUCT:
@@ -399,6 +406,7 @@ bool Parser::isThisTokenStructUnionEnumToken(Token currToken){
     }
 }
 
+// checking if token is present as key in the type registry hashmap
 bool  Parser::isThisStringPresentAsKeyInTrHm(string key){
     // check if the given string is present as a key in type registry hashmap
     auto search = this->typeRegisry.find(key);
@@ -408,6 +416,7 @@ bool  Parser::isThisStringPresentAsKeyInTrHm(string key){
     return false; // not found
 }
 
+// checking if token is present as alias in the typedef hashmap
 bool Parser::isThisStringPresentAsKeyInTdMap(string key){
     // check if the given string is present as a key in typedef hashmap
     auto search = tdMap.find(key);
@@ -417,6 +426,7 @@ bool Parser::isThisStringPresentAsKeyInTdMap(string key){
     return false; // not found
 }
 
+// checking if token is actually a tdAlias or just an id
 bool Parser::isCurrentIdValidTdAlias(){
     // check if the current Id is valid TD alias in that specific position or just a ID that is variable/function name
     // if next token is ; [ = , :  then return false
@@ -436,6 +446,7 @@ bool Parser::isCurrentIdValidTdAlias(){
 
 }
 
+// returning curent token
 Token Parser::getCurrentToken(){
     if(this->currentPos < this->tokens.size()){
         return this->tokens[this->currentPos];
@@ -445,11 +456,11 @@ Token Parser::getCurrentToken(){
     }
 }
 
+// func to parse when the current token found is either a data type or any of it's property, basically variable/func/others decl 
 ASTNode** Parser::parseDataTypeFoundDeclaration(){
-
+    
     DeclarationNode* temp;
-
-    // vector<DeclarationNode*> list; // to store all decl nodes (can be multiple in case of multi-decl)
+    
     vector<ASTNode*> list; // to store all decl nodes (can be multiple in case of multi-decl)
 
     // generate an object to store the current data type
@@ -462,17 +473,20 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
     //     return nullptr;
     // }
 
-    if(retValueDecl == 2){ // struct/union definition found, need to call the struct definition func with proper token 
-        // return nullptr; 
+    if(retValueDecl == 2){ // struct/union definition found, need to call the struct definition func with proper token         
 
+        /*
+            so, now since the return value if 2, it means it is some struct/union/enum definition
+            so, before returning 2 from that func, it is alr parsed, and stored in the global var, "tempASTStorage"
+            so, now, need to copy the ast from "tempASTStorage" to "list"
+        */
 
-
-        // convert tempASTStorage to arrya and push all to list
+        // convert tempASTStorage to array and push all to "list"
         for(uint64_t i=0 ; i<tempASTStorage.size(); i++){
             list.push_back(tempASTStorage[i]);
         }
 
-        tempASTStorage.clear();
+        tempASTStorage.clear(); // clearing global storage now since everything is copied alr
 
 
         ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
@@ -481,38 +495,30 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
         }
         arr[list.size()] = nullptr; // null terminate the array
 
-        return arr; // nodes stored in this->allAST
-
-        /*
-        
-            this is not done yet, needs to fix this properly, need to find some way to call parse struct or something from here while at the same time keeping track of data type and prop used 
-
-            UPDATE: parseStruct is happened but not added properly to it's parent block 
-
-        */
+        return arr; // nodes stored in this->allAST        
 
     }
 
-    // validate this data type (0 if valid for both, 1 if valid ONLY for var , 2 if valid ONLY for func , -1 if invalid)
-
-    // short retCode = 0;
-
+    // validate this data type (0 if valid for both, 1 if valid ONLY for var , 2 if valid ONLY for func , -1 if invalid)    
     short retCode = currType.isCurrentTypeValid();
 
-
-
-    if(retCode == -1){
+    if(retCode == -1){ // data type is completely invalid
         cout << "Type is invalid\n";
         exit(1);
     }
+    
     // now, the type decl is valid
 
+    // create name holder object
     varNameHolder currName = varNameHolder(*this);
 
     if(retCode == 2){ // valid ONLY for func (void)
+
+        // parse the func name
         temp = currName.getVarName(currType , false, true);
 
-        if(tempVarNameHolder != nullptr){
+        
+        if(tempVarNameHolder != nullptr){ // what is happening here? 
 
 
             // uint64_t orig = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.size();
@@ -547,23 +553,23 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
             
         }
 
-        list.push_back(temp);
-
-        // this->allAST.push_back(temp);
+        // push temp to the "list"
+        list.push_back(temp);        
         
         if(this->tokens[this->currentPos].type == COMMA){ // multiple decl
             this->currentPos++;
             goto multiDecl;
-        } else if(this->tokens[this->currentPos].type == SEMICOLON){ // line closed
+
+        } else if(this->tokens[this->currentPos].type == SEMICOLON){ // line ended
             this->currentPos++;
         }
     } else if(retCode == 1){ // valid ONLY for var
         multiDecl:
-        temp = currName.getVarName(currType , false, true);
-        
-        // this->allAST.push_back(temp);
 
-        if(tempVarNameHolder != nullptr){
+        // parse var name
+        temp = currName.getVarName(currType , false, true);        
+
+        if(tempVarNameHolder != nullptr){ // what is happening here again?
 
 
             // uint64_t orig = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.size();
@@ -601,23 +607,30 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
             
         }
 
+        // push temp to "list"
         list.push_back(temp);
-
 
         if(this->tokens[this->currentPos].type == COMMA){ // multiple decl
             this->currentPos++;
             goto multiDecl;
+
         } else if(this->tokens[this->currentPos].type == SEMICOLON){ // line closed
             this->currentPos++;
         }
     } else{ // can be valid for both var or func
-        // lookup algo to check if it is var or func decl
-        
-        // if(var) proceed var decl        
-        temp = currName.getVarName(currType , false, true);
-        // this->allAST.push_back(temp);
 
-        if(tempVarNameHolder != nullptr){
+        // might need lookup algo to check if it is var or func decl ???
+
+        /*
+            IIRC, getVarName itself checks if it is var or func decl/definition, so no need to use seperate lookup algo here to check, it is alr done and it return the ast accordignly
+
+            but but but, if this is the case, then why make 3 different cases? func only? var only? func/var? ???
+        */     
+        
+        // parse name
+        temp = currName.getVarName(currType , false, true);        
+
+        if(tempVarNameHolder != nullptr){ // again, what is going on here ???
 
 
             // store the original size of varName array before modification
@@ -653,31 +666,19 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
             
         }
 
+        // push temp to "list"
         list.push_back(temp);
         
         if(this->tokens[this->currentPos].type == COMMA){ // multiple decl
             this->currentPos++;
             goto multiDecl;
+
         } else if(this->tokens[this->currentPos].type == SEMICOLON){ // line closed
             this->currentPos++;
         }
         
-        // if(func) proceed func decl
     }
-
-
-    // decide if this is a fucntion decl or varibale decl
-    
-    // if function, check if defined and proceed accordingly
-    // function part finished here
-
-    // if variable
-    
-    // check if initialized
-
-    // check if multi-declratations
-
-    // if multi-call , use same data type combination we got for other variable declaraitons also    
+       
     
 
     // generate all the AST and return accordignly
@@ -691,7 +692,7 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
     return arr; // nodes stored in this->allAST
 }
 
-StatementNode* Parser::parseExpressionStatement() {
+StatementNode* Parser::parseExpressionStatement() { 
     // Parse the expression
     ExpressionNode* expr = parseExpression(0, false, -1);
     
@@ -700,27 +701,32 @@ StatementNode* Parser::parseExpressionStatement() {
         cout << "Expected ; after expression statement\n";
         exit(1);
     }
+
     this->currentPos++; // skip ;
     
     // Create and return ExpressionStatementNode
-    // Caller is responsible for adding to appropriate collection
+    // Caller is responsible for adding to appropriate collection/parent
     return new ExpressionStatementNode(expr);
 }
 
 // Control flow statements
+// parsing if
 StatementNode* Parser::parseIf() {
     
     currentPos++; // skip keyword if
 
-    if(tokens[currentPos].type != LPAREN){
+    // ( expected after if keyword
+    if(tokens[currentPos].type != LPAREN){ 
         cout << "Expected opening ( of if condition\n";
         exit(1);
     }
 
     currentPos++; // skip (
 
-    ExpressionNode* cond = parseExpression(0 , false , 1);
+    // parse the expression inside if condition
+    ExpressionNode* cond = parseExpression(0 , false , 1); // sending 1 as we need to stop when ) is countered
 
+    // ) expected after cond of if
     if(tokens[currentPos].type != RPAREN){
         cout << "Expected closing ) of if condition\n";
         exit(1);
@@ -732,40 +738,43 @@ StatementNode* Parser::parseIf() {
 
     BlockExpressionNode* ifBlock = nullptr; // block if condition is true 
 
-    if(tokens[currentPos].type == LBRACE){ // block
-        ifBlock = parseBlock(*this);
-    } else{ // single line
-        ifStatements.push_back(startParsingOfCurrentToken()[0]);
-        ifBlock = new BlockExpressionNode(ifStatements);
+    if(tokens[currentPos].type == LBRACE){ // there is block of statements inside if
+        ifBlock = parseBlock(*this); // parse block
+    } else{ // single line statement inside if
+        ifStatements.push_back(startParsingOfCurrentToken()[0]); // parse the single statement
+        ifBlock = new BlockExpressionNode(ifStatements); // make block ast containing only 1 ast 
     }
 
-    if(tokens[currentPos].type == KEYWORD_ELSE){
-        
+    // check if "else" present after "if"
+    if(tokens[currentPos].type == KEYWORD_ELSE){        
 
         currentPos++; // skip keyword else
 
+        // else block decl
         BlockExpressionNode* elseBlock;
 
-        if(tokens[currentPos].type == LBRACE){
-            elseBlock = parseBlock(*this);
-        } else{
-            vector<ASTNode*> elseStatements;
-            elseStatements.push_back(startParsingOfCurrentToken()[0]);
-            elseBlock = new BlockExpressionNode(elseStatements);
+        if(tokens[currentPos].type == LBRACE){ // there is block of statements inside else
+            elseBlock = parseBlock(*this); // parse block
+        } else{ // single line statement inside else
+            vector<ASTNode*> elseStatements; 
+            elseStatements.push_back(startParsingOfCurrentToken()[0]); // parse the single statement
+            elseBlock = new BlockExpressionNode(elseStatements); // make block ast containing only 1 ast 
         }
 
-        return new IfStatementNode(cond , ifBlock , true , elseBlock);
+        return new IfStatementNode(cond , ifBlock , true , elseBlock); // returning if-else ast
 
     } else{
-        return new IfStatementNode(cond , ifBlock , false , nullptr);
+        return new IfStatementNode(cond , ifBlock , false , nullptr); // returning if ast
     }
 
 }
 
+// parsing for
 StatementNode* Parser::parseFor() {    
 
     currentPos++; // skip keyword for
 
+    // ( expected after if keyword
     if(tokens[currentPos].type != LPAREN){
         cout << "Expected ( after for\n";
         exit(1);
@@ -773,25 +782,29 @@ StatementNode* Parser::parseFor() {
 
     currentPos++; // skip (
 
+    // decl to store init part of for 
     ASTNode* init = nullptr;
 
     if(tokens[currentPos].type != SEMICOLON){ // if there is some initialization statement
         if(isThisTokenDataTypeOrPropToken(tokens[currentPos]) || 
-           (tokens[currentPos].type == ID && isThisStringPresentAsKeyInTdMap(tokens[currentPos].data))){
-            init = parseCurrentDecl(); // consumes ;
-        } else {
-            init = parseExpressionStatement(); // consumes ;
+           (tokens[currentPos].type == ID && isThisStringPresentAsKeyInTdMap(tokens[currentPos].data))){ // checking if it is some kind of decl
+            // below , need to see if i can replcae "parseCurrentDecl()" with other func, since it is not used anywhere else
+            init = parseCurrentDecl(); // parse current decl (consumes ;)
+        } else { // it is just expression and not decl
+            init = parseExpressionStatement(); // parse expression (consumes ;)
         }
     } else{
         currentPos++; // skip ; (empty init)
     }        
 
+    // decl to store cond part of for 
     ExpressionNode* cond = nullptr;
 
     if(tokens[currentPos].type != SEMICOLON){ // if there is some condition
-        cond = parseExpression(0 , false , -1);
+        cond = parseExpression(0 , false , -1); // parse the cond, can ONLY be expr, not decl
     }
 
+    // ; expected after cond part
     if(tokens[currentPos].type != SEMICOLON){
         cout << "Expected ; after for condition\n";
         exit(1);
@@ -799,12 +812,15 @@ StatementNode* Parser::parseFor() {
 
     currentPos++; // skip ;
 
+    // decl to store incr part of for 
     ExpressionNode* incr = nullptr;
 
     if(tokens[currentPos + 1].type != SEMICOLON){ // if there is some increment
-        incr = parseExpression(0 , false , 1);
+        // parse the cond, can ONLY be expr, not decl
+        incr = parseExpression(0 , false , 1); // sending 1 as we need to stop when ) is countered
     } 
 
+    // ) expected after incr
     if(tokens[currentPos].type != RPAREN){
         cout << "Expected ) after for increment\n";
         exit(1);
@@ -812,23 +828,23 @@ StatementNode* Parser::parseFor() {
 
     currentPos++; // skip )
 
-    if(tokens[currentPos].type == LBRACE){
-        BlockExpressionNode* forBlock = parseBlock(*this);
-        return new ForStatementNode(init , cond , incr , forBlock);
-    } else{
+    if(tokens[currentPos].type == LBRACE){ // there is a block of statements under for 
+        BlockExpressionNode* forBlock = parseBlock(*this); // parse block
+        return new ForStatementNode(init , cond , incr , forBlock); // return for ast
+    } else{ // just one statement under for
         vector<ASTNode*> forStatements;
-        forStatements.push_back(startParsingOfCurrentToken()[0]);
-        BlockExpressionNode* forBlock = new BlockExpressionNode(forStatements);
-        return new ForStatementNode(init , cond , incr , forBlock);
-    }
-
-    
+        forStatements.push_back(startParsingOfCurrentToken()[0]); // parse 1 statement
+        BlockExpressionNode* forBlock = new BlockExpressionNode(forStatements); // generate block containing only 1 statement
+        return new ForStatementNode(init , cond , incr , forBlock); // return for ast
+    }    
 
 }
 
+// parsing while
 StatementNode* Parser::parseWhile() {
     currentPos++; // skip keyword while
 
+    // ( expected after while keyword
     if(tokens[currentPos].type != LPAREN){
         cout << "Expected opening ( of while condition\n";
         exit(1);
@@ -836,8 +852,10 @@ StatementNode* Parser::parseWhile() {
 
     currentPos++; // skip (
 
-    ExpressionNode* cond = parseExpression(0 , false , 1);
+    // parse the expression inside while condition
+    ExpressionNode* cond = parseExpression(0 , false , 1); // sending 1 as we need to stop when ) is countered
 
+    // ) expected after cond of while
     if(tokens[currentPos].type != RPAREN){
         cout << "Expected closing ) of while condition\n";
         exit(1);
@@ -847,41 +865,46 @@ StatementNode* Parser::parseWhile() {
 
     vector<ASTNode*> whileStatements; // to store 1 statment if not block
 
-    BlockExpressionNode* whileBlock = nullptr; // block if condition is true 
+    BlockExpressionNode* whileBlock = nullptr; // block if condition is true
 
-    if(tokens[currentPos].type == LBRACE){ // block
-        whileBlock = parseBlock(*this);
-    } else{ // single line
-        whileStatements.push_back(startParsingOfCurrentToken()[0]);
-        whileBlock = new BlockExpressionNode(whileStatements);
+    // parse while body - either block or single statement
+    if(tokens[currentPos].type == LBRACE){ // there is block of statements inside while
+        whileBlock = parseBlock(*this); // parse block
+    } else{ // single line statement inside while
+        whileStatements.push_back(startParsingOfCurrentToken()[0]); // parse the single statement
+        whileBlock = new BlockExpressionNode(whileStatements); // make block ast containing only 1 ast
     }
 
-    return new WhileStatementNode(cond , whileBlock);
+    return new WhileStatementNode(cond , whileBlock); // returning while ast
 
-    
+
 }
 
+// parsing do-while
 StatementNode* Parser::parseDoWhile() {
-    
+
     currentPos++; // skip keyword do
 
-    BlockExpressionNode* doWhileBlock = nullptr; 
+    BlockExpressionNode* doWhileBlock = nullptr;
 
-    if(tokens[currentPos].type == LBRACE){
-        doWhileBlock = parseBlock(*this);
-    } else{
-        vector<ASTNode*> doWhileStatements; 
-        doWhileStatements.push_back(startParsingOfCurrentToken()[0]);
-        doWhileBlock = new BlockExpressionNode(doWhileStatements);
+    // parse do-while body - either block or single statement
+    if(tokens[currentPos].type == LBRACE){ // there is block of statements inside do-while
+        doWhileBlock = parseBlock(*this); // parse block
+    } else{ // single line statement inside do-while
+        vector<ASTNode*> doWhileStatements;
+        doWhileStatements.push_back(startParsingOfCurrentToken()[0]); // parse the single statement
+        doWhileBlock = new BlockExpressionNode(doWhileStatements); // make block ast containing only 1 ast
     }
 
+    // while keyword is mandatory after do block in do-while construct
     if(tokens[currentPos].type != KEYWORD_WHILE){
         cout << "Expected while after do-while block\n";
-        exit(1);        
+        exit(1);
     }
 
     currentPos++; // skip keyword while
 
+    // ( expected after while in do-while
     if(tokens[currentPos].type != LPAREN){
         cout << "Expected ( after while in do-while\n";
         exit(1);
@@ -889,8 +912,10 @@ StatementNode* Parser::parseDoWhile() {
 
     currentPos++; // skip (
 
-    ExpressionNode* cond = parseExpression(0 , false , 1);
+    // parse the condition expression inside while of do-while
+    ExpressionNode* cond = parseExpression(0 , false , 1); // sending 1 as we need to stop when ) is countered
 
+    // ) expected after cond of do-while
     if(tokens[currentPos].type != RPAREN){
         cout << "Expected closing ) of do-while condition\n";
         exit(1);
@@ -898,6 +923,7 @@ StatementNode* Parser::parseDoWhile() {
 
     currentPos++; // skip )
 
+    // ; expected after do-while condition, this is required to complete the syntax
     if(tokens[currentPos].type != SEMICOLON){
         cout << "Expected ; after do-while condition\n";
         exit(1);
@@ -905,14 +931,16 @@ StatementNode* Parser::parseDoWhile() {
 
     currentPos++; // skip ;
 
-    return new DoWhileStatementNode(cond , doWhileBlock);
+    return new DoWhileStatementNode(cond , doWhileBlock); // returning do-while ast
 
 }
 
+// parsing switch
 StatementNode* Parser::parseSwitch() {
-    
+
     currentPos++; // skip keyword switch
 
+    // ( expected after switch keyword
     if(tokens[currentPos].type != LPAREN){
         cout << "Expected opening ( of switch condition\n";
         exit(1);
@@ -920,8 +948,10 @@ StatementNode* Parser::parseSwitch() {
 
     currentPos++; // skip (
 
-    ExpressionNode* cond = parseExpression(0 , false , 1);
+    // parse the expression inside switch condition
+    ExpressionNode* cond = parseExpression(0 , false , 1); // sending 1 as we need to stop when ) is countered
 
+    // ) expected after cond of switch
     if(tokens[currentPos].type != RPAREN){
         cout << "Expected closing ) of switch condition\n";
         exit(1);
@@ -931,27 +961,32 @@ StatementNode* Parser::parseSwitch() {
 
     BlockExpressionNode* switchBlock = nullptr;
 
-    if(tokens[currentPos].type == LBRACE){ // block
-        switchBlock = parseBlock(*this);
+    // switch body MUST be a block (unlike if/while), parse it directly
+    if(tokens[currentPos].type == LBRACE){ // block containing case/default labels
+        switchBlock = parseBlock(*this); // parse the switch block
     } else{
         cout << "Expected { after switch condition\n";
         exit(1);
     }
 
-    return new SwitchStatementNode(cond , switchBlock);
+    return new SwitchStatementNode(cond , switchBlock); // returning switch ast
 
 }
 
+// parsing case label
 StatementNode* Parser::parseCaseLabel() {
     currentPos++; // skip keyword case
 
+    // bounds check to ensure there is expression after case keyword
     if(currentPos >= tokens.size()){
         cout << "Expected expression after 'case'\n";
         exit(1);
     }
 
-    ExpressionNode* caseExpr = parseExpression(0, false, 4);
+    // parse the case constant expression
+    ExpressionNode* caseExpr = parseExpression(0, false, 4); // sending 4 to stop at : (colon is delimiter for case label)
 
+    // : (colon) is mandatory after case expression to complete case label syntax
     if(currentPos >= tokens.size() || tokens[currentPos].type != OP_COLON){
         cout << "Expected ':' after case expression\n";
         exit(1);
@@ -959,12 +994,14 @@ StatementNode* Parser::parseCaseLabel() {
 
     currentPos++; // skip :
 
-    return new CaseLabelNode(caseExpr);
+    return new CaseLabelNode(caseExpr); // returning case label ast
 }
 
+// parsin default label
 StatementNode* Parser::parseDefaultLabel() {
     currentPos++; // skip keyword default
 
+    // : (colon) is mandatory after default keyword to complete default label syntax
     if(currentPos >= tokens.size() || tokens[currentPos].type != OP_COLON){
         cout << "Expected ':' after 'default'\n";
         exit(1);
@@ -972,14 +1009,15 @@ StatementNode* Parser::parseDefaultLabel() {
 
     currentPos++; // skip :
 
-    return new DefaultLabelNode();
+    return new DefaultLabelNode(); // returning default label ast
 }
 
-// Structured types
+// parsing struct
 ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
     
     currentPos++; // skip keyword struct
 
+    // helper to keep track if tagName is found or not
     bool tagNameExist = false;
     Token tagName;
 
@@ -993,29 +1031,35 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
         currentPos++; // skip tagName
     } else{
         // if tagName doesnt exist, create a anonymous tagname for this [will be used for the validaiton later, but will not be exposed]
-
         anonTagName = anonTagNameGen();
         
     }
-
+    
     if(tokens[currentPos].type == SEMICOLON){ // can be forward decl if tagName exists        
+
+        // tagname doesnt exist and ; found after "struct" keyword, hence error
         if(!tagNameExist){
             cout << "Expected tagName for forward decl\n";
             exit(1);
         }
 
-        if(typedDefTracker){ // if typedef is there, then either ID is exepceted or definition is expeceted
+        /*
+            typeDefTraker is true when the current ast parsing that is being done involves typedef keyword (typedef definition)
+        */
+
+        if(typedDefTracker){ // if typedef is there, then either ID is expected or definition is expeceted
             cout << "typedef struct forward decl NOT allowed\n";
             exit(1);
         }
 
         currentPos++; // skip ;
-
+        
         this->typeRegisry[tagName.data] = "struct"; // adding in type registry to add forw decl
 
-
+        // generate forward declaration node and push to "list"
         ForwardDeclarationNode* fwdDecl = new ForwardDeclarationNode(KEYWORD_STRUCT , tagName.data);
         
+        // push to "list"
         list.push_back(fwdDecl);
 
         ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
@@ -1024,13 +1068,9 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
         }
         arr[list.size()] = nullptr; // null terminate the array
 
-
-        return arr;
-
-        // this->allAST.push_back(fwdDecl);
-        // return fwdDecl; // return for startParsing to collect
+        return arr; 
         
-    } else if(tokens[currentPos].type == ID){        
+    } else if(tokens[currentPos].type == ID){ // ID found after struct or tagname (if after tagname, has to be var decl)      
 
         if(typedDefTracker){ 
             // it is typedef , not var decl
@@ -1045,41 +1085,39 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
     if(tokens[currentPos].type != LBRACE){
         /*
             this may be sruct var decl or error, but definitely not struct definition.
-
-            switch the control flow to the var decl side
+            hence, switch the control flow to the var decl side
         */
 
-        currentPos -= 2;
+        currentPos -= 2; // reset currentPost
 
-        return nullptr; // indicating the need to shift the control flow properly
-        
-        cout << "struct decl found, not implemented yet\n";
-        exit(1);
+        return nullptr; // indicating the need to shift the control flow properly        
     }
 
     // if the control flow reaches here, it is struct definition.
 
+    // block to store struct definitions
     BlockExpressionNode* structBlock = nullptr;
 
     // this->typeRegisry[tagName.data] = "struct"; // might need tor revert it if the further code fails, take care !!!!!!!!!!!
 
-    if(tagNameExist){
+    if(tagNameExist){ // if tagname exist, attach tagname to "struct" in type registry
         this->typeRegisry[tagName.data] = "struct";
-    } else{
+    } else{ // if tagname doest exist, attach anonTagName to "struct" in type registry
         this->typeRegisry[*anonTagName] = "struct";
     }
-
-    // cout << "Block parsing starting at " << this->tokens[this->currentPos-1].data << "\n";
+    
     structBlock = parseBlock(*this); // parse the block
 
-
-
+    // semicolon found after struct block, means no var decl is there, and if it is typedef decl, then its error since alias name is expected after struct block in typedef case
     if(tokens[currentPos].type == SEMICOLON){
+
+        // need to have atleast one out of tagName or varName for definition
         if(!tagNameExist){
             cout << "Expected atleast one out of tagName or varName for struct definition\n";
             exit(1);
         }
 
+        // alias expected in case of typedef definition
         if(typedDefTracker){
             cout << "typedef struct definition without typedef name NOT allowed\n";
             exit(1);
@@ -1087,35 +1125,28 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
 
         /*
 
-            now, since no var is declared wiht it, it cna NOT have any specifier like extern/volatile/restrict/const/static
-
+            now, since no var is declared wiht it, it can NOT have any specifier like extern/volatile/restrict/const/static
             check the data type prop for this and reject if any of them exists
 
         */
-
-        
-
+    
+        // variable isnt declared, hence no prop specifier is allowed
         if(helperDeclName != nullptr){
             cout << "var is NOT decl , hence extern/volatile/restrict/const/static NOT allowed\n";
             exit(1);
         }
 
         currentPos++; // skip ;
-
+        
         StructDefinitionNode* structDef;
 
-        if(tagNameExist){
+        if(tagNameExist){ // actual tagName struct definition ast
             structDef = new StructDefinitionNode(tagNameExist , tagName.data , structBlock);
-        } else{
+        } else{ // anonTagName sruct definition ast
             structDef = new StructDefinitionNode(tagNameExist , *anonTagName , structBlock);
-        }
+        }        
 
-        
-
-        /*
-            need to add the current new struct definition in the TR
-        */
-
+        // push struct definition ast to "list"
         list.push_back(structDef);
 
         ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
@@ -1124,27 +1155,26 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
         }
         arr[list.size()] = nullptr; // null terminate the arraya
 
-        return arr;
-
-        // this->allAST.push_back(structDef);
-        // return structDef; // return for startParsing to collect
+        return arr;       
 
     }
 
-    // now there is some varName also afetr the }
+    /*
+        now there is some varName also after block of struct definition
+    */ 
 
+    
     StructDefinitionNode* structDef;
 
-    if(tagNameExist){
+    // generate struct definition ast first
+    if(tagNameExist){ // actual tagName struct definition ast
         structDef = new StructDefinitionNode(tagNameExist , tagName.data , structBlock);
-    } else{
+    } else{ // anonTagName sruct definition ast
         structDef = new StructDefinitionNode(tagNameExist , *anonTagName , structBlock);
     }       
 
-    list.push_back(structDef);
-
-    
-    // this->allAST.push_back(structDef);
+    // push struct definition node to "list"
+    list.push_back(structDef);    
 
     /*
         if it came from dataTypeDecl, it has some specifiers like extern/volatile/restrict/const/static , we here need to validate it and the manually add struct tagName to it in the dataType object
@@ -1153,8 +1183,7 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
     // validity of data type prop array is STILL not checked so far
 
     // helperDeclName validaiton algo    
-    if(helperDeclName){
-
+    if(helperDeclName){ // validate if exist
         {
             if(helperDeclName->signModifiersArray.size() != 0){ // signed/unsigned NOT allowed
                 cout << "Error in sign\n";
@@ -1197,8 +1226,7 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
                 
                 might add this in semantic phase
             */
-
-            
+                       
         }
 
 
@@ -1206,58 +1234,41 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
         // add this as base type is NOT present
         helperDeclName->trKeywordArray.push_back(KEYWORD_STRUCT);
         helperDeclName->trBaseArray.push_back(tagNameExist ? tagName.data : *anonTagName);
-    }
-
-    
-    
-    
-    
+    }        
 
     getVarAgain:
 
-
     /*
-    
-        so, now the var decl also exist with the struct definition
-        now, it is needed to check the data type prop object to check it's validaity for this
-    
-    */
+        so, now var decl also exist with struct definition
+        if data type prop object was alr present, it is alr validated in code just before this comment, so now if it exists,we r good to go, if it doesnt exists, we need to create it here manually for the var decl
+    */    
 
 
+    // struct var decl
     varNameHolder* structVarName = new varNameHolder(*this);
 
+    // if data type prop doesnt exists, create it
     if(!helperDeclName){
+
+        // new data type prop object
         helperDeclName = new dataTypeHolder(*this);
-
-        // helperDeclName->baseTypeArray.push_back(HELPER_TOKEN);
-        helperDeclName->trKeywordArray.push_back(KEYWORD_STRUCT);
-
-        // Generate automatic name for anonymous structs if needed
-        // if(tagName.data.empty()){
-        //     static int anonStructCounter = 0;
-        //     tagName.data = "__anon_struct_" + to_string(anonStructCounter++);
-        // }
-        // helperDeclName->trBaseArray.push_back(tagName.data);
+        
+        // manually add keyword "struct" and it's corresponding base name to the newly created dataType prop object
+        helperDeclName->trKeywordArray.push_back(KEYWORD_STRUCT);        
         helperDeclName->trBaseArray.push_back(tagNameExist ? tagName.data : *anonTagName);
-    }
+    }    
 
-    // dataTypeHolder* helper = nullptr;
+    // push var decl ast to "list"
+    list.push_back(structVarName->getVarName(*helperDeclName, false));            
 
-    list.push_back(structVarName->getVarName(*helperDeclName, false));
-
-    // this->allDeclNodes.push_back(structVarName->getVarName(*helperDeclName, false));
-
-
-    // this->allAST.push_back(new DeclarationNode(helperDeclName , structVarName));
-
-    // generate struct decl node
-
+    // if , is present, it means, there is multi var decl
     if(tokens[currentPos].type == COMMA){        
 
         currentPos++; // skipp ,
-        goto getVarAgain;
+        goto getVarAgain; // make another ast for multi var decl
     }
 
+    // ; expected 
     if(tokens[currentPos].type != SEMICOLON){
         cout << "Expected ; here to close it\n";
         exit(1);
@@ -1265,19 +1276,17 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
 
     currentPos++; // skip ;
 
-    // return struct definition node for startParsing to collect
-    
+    // return struct definition node for startParsing to collect    
     ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
     for(uint64_t i = 0; i < list.size(); i++){
         arr[i] = list[i];
     }
     arr[list.size()] = nullptr; // null terminate the arraya
 
-    return arr;
-    // return structDef;
-    
+    return arr;    
 }
 
+// parsing enum
 ASTNode** Parser::parseEnum(dataTypeHolder* helperDeclName) {
 
     currentPos++; // skip keyword enum
@@ -1451,7 +1460,7 @@ ASTNode** Parser::parseEnum(dataTypeHolder* helperDeclName) {
     return arr;
 }
 
-
+// parsing union
 ASTNode** Parser::parseUnion(dataTypeHolder* helperDeclName) {
 
     currentPos++; // skip keyword union
@@ -1751,7 +1760,7 @@ ASTNode** Parser::parseUnion(dataTypeHolder* helperDeclName) {
 
 }
 
-
+// parsing typedef
 ASTNode** Parser::parseTypedef() {
     
 
@@ -2032,6 +2041,7 @@ ASTNode** Parser::parseTypedef() {
 }
 
 // Jump statements
+//parsing return
 StatementNode* Parser::parseReturn() {
     currentPos++; // skip keyword return
 
@@ -2051,6 +2061,7 @@ StatementNode* Parser::parseReturn() {
     return new ReturnStatementNode(retExpr);
 }
 
+// parsing continue 
 StatementNode* Parser::parseContinue() {
     currentPos++; // skip keyword continue
 
@@ -2064,6 +2075,7 @@ StatementNode* Parser::parseContinue() {
     return new ContinueStatementNode();
 }
 
+// parsing break
 StatementNode* Parser::parseBreak() {
     currentPos++; // skip keyword break
 
@@ -2077,6 +2089,7 @@ StatementNode* Parser::parseBreak() {
     return new BreakStatementNode();
 }
 
+// parsing goto
 StatementNode* Parser::parseGoto() {
     // Skip 'goto' keyword
     currentPos++;
@@ -2102,6 +2115,7 @@ StatementNode* Parser::parseGoto() {
     return new GotoStatementNode(labelName);
 }
     
+// parsing label
 StatementNode* Parser::parseLabel() {
     // Current token should be identifier
     if(currentPos >= tokens.size() || tokens[currentPos].type != ID) {
