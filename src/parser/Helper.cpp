@@ -658,26 +658,35 @@ bool dataTypeHolder::isPrevTokenValidForCurrentStar(TokenType prevTokenType){
 DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isFuncParam, bool forceResetStatics){
 
 
+    // booleon helper (static)
     bool static finalHelper = false;
 
-    bool static idFound = false; // flag to check if first id is found
+    // flag to check if first id is found
+    bool static idFound = false; 
     if(isFuncParam){
         idFound = false;
     }
-    short static unsigned bracketStackCount = 0; // breacket stack counter
 
-    short static initBrackCount = -1; // used for evaluating pointors
+    // breacket stack counter
+    short static unsigned bracketStackCount = 0; 
 
+    // used for evaluating pointors
+    short static initBrackCount = -1; 
+
+    // helper for evalating pointers and brackets properly
     short unsigned tempInitBrack = initBrackCount;
 
-    short addStarCount = 0; // pointor numbers
+     // helper to track pointer coutns
+    short addStarCount = 0;
 
+    // booelon helper
     bool static isInit = false;
     static ExpressionNode* initExpr = NULL;
 
+    // helper to evaluate stars properly
     static int addAtTheEnd = -1;
 
-
+    // booleon helper
     bool static isFirstVar = true; // flag if the var is first in multiple decl
 
     // When called from parseTypedef() for multiple declarators, force reset all statics
@@ -693,20 +702,23 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
     bool gotoHelper = false; // helper flag
     bool gotoHelper2 = false; // helper flag2
-    bool gotoHelper3 = false;
+    bool gotoHelper3 = false; // helper flag3
 
-    Token current = this->parser.getCurrentToken(); // set the current properly
+    // set the current properly
+    Token current = this->parser.getCurrentToken(); 
         
-    short indexIfExist; // helper flag '
+    // helper flag '
+    short indexIfExist; 
     indexIfExist = -1;
 
+    // booelon helper
     bool isVariad = false;
     vector<ParameterNode> paramList;
 
-    TokenType baseType;
+    // helper tokenType
+    TokenType baseType;    
 
-    
-
+    // parse till ; or = or , or }
     while(current.type != SEMICOLON && current.type != OP_ASSIGN && current.type != COMMA && current.type != RBRACE){ // var name ends when next token is ; or = or ,
         if(current.type == ID){ // actaul var name
 
@@ -718,7 +730,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             temp.varName = current.data;
             this->namePropArray.push_back(temp);
 
-            if(gotoHelper){ // if came here usng goto jump, use it again to go back to pointor section
+            if(gotoHelper){ // if came here using goto jump, use it again to go back to pointor section
                 idFound = true; // flag to know the id is found
                 goto cameBackFromIdSide;
             }
@@ -730,15 +742,15 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 cout << "* not allowed after var name is alr defined\n";
                 exit(1);
             }
-            // update the var decl node
 
+            // update the var decl node
             // get the base type of var
             
-            if(typeHolder.baseTypeArray.size() == 1){
+            if(typeHolder.baseTypeArray.size() == 1){ // if base type is present normally
                 baseType = typeHolder.baseTypeArray.front();
-            } else if(typeHolder.trBaseArray.size() == 1){
+            } else if(typeHolder.trBaseArray.size() == 1){ // if tr is used to get base type
                 baseType = HELPER_TOKEN;
-            } else{
+            } else{ // base type error
                 cout << "Unknown error of base type\n";
                 exit(1);
             }
@@ -750,10 +762,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                     indexIfExist = i;
                     break;
                 }
-            }
-
-            
-            
+            }                        
             
             // count the number of continous stars present
             addStarCount = 0;
@@ -762,26 +771,24 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 current = this->parser.tokens[++this->parser.currentPos];
             }
             
-            // commenting this section out,might need to remove comment, if some test case fails !!!!!!!!!!!!!!!!!!!!!!!
-            {
-                if(!finalHelper){
+            
+            { // what is this block doing exactly???
+                /*
+                    what is final helper helping with exactly? 
+                    find out proeprly
+                */
+                if(!finalHelper){ 
                     if(indexIfExist == -1){ // base type doesnt alr exist in starData array
                         starData tempStarData({addStarCount , baseType}); // generate a starData object
                         typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array
                     } else{ // base type alr exist in starData array
                         addAtTheEnd = typeHolder.starDataArray[indexIfExist].numOfStars;                        
 
+                        // generate starData properly and push to typeHolder (came from fnc call itself)
                         {
                             starData tempStarData({addStarCount , baseType}); // generate a starData object
                             typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array
-                        }
-
-                        // typeHolder.starDataArray[indexIfExist].numOfStars += addStarCount; // update the number of stars in the starData
-                        // addStarCount = typeHolder.starDataArray[indexIfExist].numOfStars; // might be issue, need to check properly
-
-                        // typeHolder.starDataArray[indexIfExist].numOfStars = 0;
-
-                        // DON'T update addStarCount - keep it as the current iteration's star count, not the accumulated total
+                        }                        
                     }
                 }
 
@@ -795,12 +802,12 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
             checkAgain: // label used for pointor evaluatin jumps            
 
-            if(current.type == LPAREN){ // ( present after *
-                //cout << "DEBUG: Setting initBrackCount=" << bracketStackCount << endl;
-                initBrackCount = bracketStackCount; // store the number of nested brackets 
+            if(current.type == LPAREN){ // ( present after *                
+                initBrackCount = bracketStackCount; // store the number of nested brackets , stars will be added when it's corresponding ) is detected
             } else if(current.type == ID){ // var name after *
 
-                if(gotoHelper){ // 2 ID found continously after *
+                // if gotoHelper is true, it means ID is alr found, and hence this is 2nd ID, which is error
+                if(gotoHelper){ 
                     cout << "New error\n";
                     exit(1);
                 }
@@ -829,32 +836,39 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                     // check next token
 
 
-                    if(this->parser.tokens[this->parser.currentPos+1].type == LBRACKET){ // token next to ] is [
+                    if(this->parser.tokens[this->parser.currentPos+1].type == LBRACKET){ // token next to ] is [, dont evaluate pointers here
                         current = this->parser.tokens[++this->parser.currentPos]; // skip ] and proceed
                         goto cameAgainFromPointor; // go to evaluate [ token first
                     } else if(this->parser.tokens[this->parser.currentPos+1].type == RPAREN){ // token next to ] is )
                         // next token is closing braket, we can safely evaluate pointor at this point
+
+                        // evalaute pointers and push to array properly
                         varNameProp temp;
                         temp.type = POINTOR;
                         temp.numPointor = addStarCount;
                         this->namePropArray.push_back(temp);
 
-
-                        addStarCount = -1; // reset the addStarCounter 
+                        // reset the addStarCounter 
+                        addStarCount = -1; 
 
                         current = this->parser.tokens[++this->parser.currentPos]; // skip ] and go to ) now
                         
-                    } else if(this->parser.tokens[this->parser.currentPos+1].type == SEMICOLON || this->parser.tokens[this->parser.currentPos+1].type == OP_ASSIGN || this->parser.tokens[this->parser.currentPos+1].type == COMMA || this->parser.tokens[this->parser.currentPos+1].type != RBRACE){ // token next to ] is ; = ,
+                    } else if(this->parser.tokens[this->parser.currentPos+1].type == SEMICOLON || this->parser.tokens[this->parser.currentPos+1].type == OP_ASSIGN || this->parser.tokens[this->parser.currentPos+1].type == COMMA || this->parser.tokens[this->parser.currentPos+1].type != RBRACE){ // token next to ] is ; = , }
                         // we can safely evaluate pointor at this point, but dont advance the current 2 times (required to end the parent while loop)
+
+                        // evalaute pointers and push to array properly
                         varNameProp temp;
                         temp.type = POINTOR;
                         temp.numPointor = addStarCount;
                         this->namePropArray.push_back(temp);
-                        addStarCount = -1; // reset the addStarCounter
+
+                        // reset the addStarCounter
+                        addStarCount = -1; 
                         
                         current = this->parser.tokens[++this->parser.currentPos]; // skipped ] and kept current as ; = ,
+
                     } else if(this->parser.tokens[this->parser.currentPos+1].type == LPAREN){ // token after ] is (
-                        // new bracket started after ] , will be evaluated first, and then pointor will be added after that is closed
+                        // new bracket started after ] , ( will be evaluated first, and then pointor will be added after that is closed
                         initBrackCount = bracketStackCount; // store the number of nested brackets at this point (used when closng PAREN is found, to evaluate stars)
                     } 
                     else{
@@ -869,13 +883,18 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             else if(current.type == SEMICOLON || current.type == OP_ASSIGN || current.type == COMMA ||  current.type == RBRACE){ // next token is either ; = , }
                             
                 if(gotoHelper2 && !gotoHelper){ // error coz we found [ , but NOT varName so far
-                    // error
+                    cout << "New Error added, nothing was here before, care\n";
+                    exit(2);
                 } else if(gotoHelper){ // we reached end of this var name, can safely evaluate stars now (ex: int num1 , **num2; || reached here on num2)
+
+                    // evalaute pointers and push to array properly
                     varNameProp temp;
                     temp.type = POINTOR;
                     temp.numPointor = addStarCount;
                     this->namePropArray.push_back(temp);
-                    addStarCount = -1; // reset addStarCount
+
+                    // reset addStarCount
+                    addStarCount = -1; 
                 } 
                 else{
                     continue; // NOT advancing so that the parent while loop can end with current token
@@ -883,24 +902,17 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             } else if(current.type == RPAREN) { // next token is )
 
 
-                if(gotoHelper && addStarCount>0){
-                    // function parameter ) - add deferred star!
+                if(gotoHelper && addStarCount>0){            
+                    // evalaute pointers and push to array properly
                     varNameProp temp;
                     temp.type = POINTOR;
                     temp.numPointor = addStarCount;
                     this->namePropArray.push_back(temp);
+
+                    // reset addStarCount
                     addStarCount = -1;
                 }
-
-                // Stars already added when ID was processed (in gotoHelper flow)
-                // Don't add them again here - would cause double addition
-                
-                
-                //if(gotoHelper && addStarCount != -1 && addStarCount != 0) {
-                    // This case is for function parameters, not regular declarations
-                    // For regular declarations with (**name), stars were already added
-                    // Only add if this is a deferred star scenario
-                //}
+                                
             }
             else{
                 cout << this->parser.tokens[this->parser.currentPos].data;
@@ -914,36 +926,42 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
         } else if(current.type == LBRACKET){ // index [
 
-            cameAgainFromPointor: // label used to jump from pointor section to here
+            // label used to jump from pointor section to here
+            cameAgainFromPointor: 
 
+            // label helping to jump in case [ comes just after ) , but inside () only
+            /*  example:
+            
+                int (*(*array)[0]); used here
+                int *(*array)[0]; not used here
+            */ 
             myNewHelperAgain:
 
             // generating data to add in the array
             varNameProp temp;
             temp.type = ARRAY;
             
-            current = this->parser.tokens[++this->parser.currentPos]; // advance 1 token , skip [         
-            // current = this->parser.tokens[this->parser.currentPos]; // update current   
+            current = this->parser.tokens[++this->parser.currentPos]; // advance 1 token , skip [                     
 
-            temp.arrayExpr = this->parser.parseExpression(0, false , 3); // evaluate the index in the brackets
+            temp.arrayExpr = this->parser.parseExpression(0, false , 3); // evaluate the index in the brackets, sending 3 , as need to stop when ] is seen
             this->namePropArray.push_back(temp);
 
             // if came from pointor section using goto, go back there
-            if(gotoHelper2){
-                // for O(1) check in future 
+            if(gotoHelper2){                
                 this->isArray = true;
                 this->arrayDimensions++;     
                 
                 goto cameBackFromLbrakSide;
             }            
 
-            
-            if(this->parser.tokens[this->parser.currentPos].type != RBRACKET){ // closing token must be present as ]
+            // closing token must be present as ]
+            if(this->parser.tokens[this->parser.currentPos].type != RBRACKET){ 
                 cout << "expected ] here\n";
                 exit(1);
             }
             current = this->parser.tokens[++this->parser.currentPos]; // advance 1 token , skip ]       
             
+            // evalute stars if conditons required
             if(gotoHelper3 && initBrackCount != -1 && initBrackCount == bracketStackCount && addStarCount > 0 && current.type != LBRACKET){
                 varNameProp temp;
                 temp.type = POINTOR;
@@ -954,24 +972,24 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 initBrackCount = tempInitBrack;
             }
 
-            // for O(1) check in future 
             this->isArray = true;
             this->arrayDimensions++;
             continue;            
             
         } else if(current.type == LPAREN){ // found ( ,  need to call same function recursively
 
+            // label to jump here
             myNewHelper:
 
             if(idFound){ // if ID alr found, then it has to be params opening PAREN
                 
+                // evaluate pointors since this brakcet is param bracket, but if conditons meet
                 if(this->parser.tokens[this->parser.currentPos-1].type == RPAREN && initBrackCount == bracketStackCount && addStarCount>0 && !gotoHelper3){
                     varNameProp temp;
                     temp.type = POINTOR;
                     temp.numPointor = addStarCount;
                     this->namePropArray.push_back(temp);
                     addStarCount = -1;
-                    // initBrackCount = -1;
                     initBrackCount = tempInitBrack;
                 }
                 
@@ -979,9 +997,14 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
                 varNameProp temp;
                 temp.type = FUNC;
-                temp.funcParams = ParameterNode::evaluateParams(this->parser); // parsing the params
+
+                // evaluate params
+                temp.funcParams = ParameterNode::evaluateParams(this->parser); 
+
                 paramList = temp.funcParams;
-                if(this->parser.tokens[this->parser.currentPos-1].type == OP_DOT){ // check if varaidic func
+
+                // check if varaidic func
+                if(this->parser.tokens[this->parser.currentPos-1].type == OP_DOT){ 
                     isVariad = true;
                     temp.isVariadic = true;
                 } else{
@@ -989,47 +1012,42 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 }
                 this->namePropArray.push_back(temp);
                 
+                // evaluate pointors if conditions meet
                 if(initBrackCount == bracketStackCount && addStarCount>0){
                     varNameProp temp;
                     temp.type = POINTOR;
                     temp.numPointor = addStarCount;
                     this->namePropArray.push_back(temp);
                     addStarCount = -1;
-                    // initBrackCount = -1;
                     initBrackCount = tempInitBrack;
-                }
-
-                
-                
-                // current = this->parser.getCurrentToken(); // set current to )
+                }                            
                 
                 // after parameter evaluation, it will come at ), skip )
                 current = this->parser.tokens[++this->parser.currentPos]; 
                 continue; 
             } else{ // ID alr not found, ( found before ID, then call the function recursively to handle precedence rules
                 this->parser.currentPos++; // advance 1 token , skip (
-                bracketStackCount++; // increase current bracket stack count by 1
-                this->getVarName(typeHolder , isFuncParam); // recursive call
-                bracketStackCount--;
-                // used to evaluate stars when recursion ends
-                // Only apply if stars were deferred (init Brack was set AND stars exist)
-                //cout << "DEBUG after recursion: initBrackCount=" << initBrackCount 
-                //     << " bracketStackCount=" << bracketStackCount 
-                //     << " addStarCount=" << addStarCount 
-                //     << " gotoHelper2=" << gotoHelper2 << endl;                
-                if(initBrackCount != -1 && bracketStackCount == initBrackCount && addStarCount > 0 && !gotoHelper2){
-                    // goto checkAgain;
-                //    cout << "DEBUG: Adding deferred pointer with " << addStarCount << " stars" << endl;
-                    // cout << "Here\n";
 
+                bracketStackCount++; // increase current bracket stack count by 1
+
+                // this is the recursive call
+                this->getVarName(typeHolder , isFuncParam);
+                bracketStackCount--;
+                            
+                if(initBrackCount != -1 && bracketStackCount == initBrackCount && addStarCount > 0 && !gotoHelper2){
+                    
+                    // jump if next token is (
                     if(this->parser.tokens[this->parser.currentPos+1].type == LPAREN){
                         this->parser.currentPos++; // skip )
                         gotoHelper3 = true;
                         goto myNewHelper;
                     }
+
+                    // jump if next token is [
                     if(this->parser.tokens[this->parser.currentPos+1].type == LBRACKET){
                         this->parser.currentPos++; // skip )
                         gotoHelper3 = true;
+                        cout << "here\n";
                         goto myNewHelperAgain;
                     }
 
@@ -1038,7 +1056,6 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                     temp.numPointor = addStarCount;
                     this->namePropArray.push_back(temp);
                     addStarCount = -1;
-                    // initBrackCount = -1;
                     initBrackCount = tempInitBrack;
                 }                
 
@@ -1048,21 +1065,18 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             
         } else if(current.type == RPAREN){ // found )            
 
-            if(isFuncParam){ // for function parameters - check THIS FIRST!                 
-
+            // for function parameters, checking this first
+            if(isFuncParam){              
                 return nullptr;
-            } else if(bracketStackCount > 0){ // for recursion case
-                // bracketStackCount--; // reduce bracket stack count by 1
-                // Don't add stars here - they're handled after recursion returns (line 677-682)
+            } else if(bracketStackCount > 0){ // for recursion case                
+                // Don't add stars here - they're handled after recursion returns
                 return nullptr;
             } else if(gotoHelper && addStarCount > 0) { // goto * case , for params
-                // function parameter ) - add deferred star!
                 varNameProp temp;
                 temp.type = POINTOR;
                 temp.numPointor = addStarCount;
                 this->namePropArray.push_back(temp);
-                addStarCount = -1;
-                // don't return, continue processing
+                addStarCount = -1;                
             } else {
                 cout << "Unknown ) found\n";
                 exit(1);
@@ -1091,13 +1105,11 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
     if(isFirstVar && bracketStackCount == 0 && !finalHelper){ // if the var is first in multiple decl
 
-        
         // get base token type
         TokenType baseType;
-        if(typeHolder.baseTypeArray.size() == 1){
+        if(typeHolder.baseTypeArray.size() == 1){ // normal base type present
 
-
-            baseType = typeHolder.baseTypeArray.front();
+            baseType = typeHolder.baseTypeArray.front(); 
             
             // If baseType is INT (possibly auto-added when short/long/signed/unsigned present without explicit int)
             // Check if INT has 0 stars but short/long/signed/unsigned have stars - transfer them
@@ -1126,7 +1138,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 }
             }
 
-        } else if(typeHolder.trBaseArray.size() == 1){
+        } else if(typeHolder.trBaseArray.size() == 1){ // bse type is in TR
             baseType = HELPER_TOKEN;
         } else{
             cout << "Unknown error of base type again\n";
@@ -1140,9 +1152,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 indexIfExist = i;
                 break;
             }
-        }
-
-        
+        }        
 
         if(indexIfExist == -1){ // base type doesnt alr exist in starData array
             // do nothing
@@ -1153,16 +1163,13 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             temp.type = POINTOR;
             temp.numPointor = typeHolder.starDataArray[indexIfExist].numOfStars;
 
-
             this->namePropArray.push_back(temp);
-
 
         }
 
     }
 
     if(isFirstVar && bracketStackCount == 0 && addAtTheEnd != -1 && finalHelper){
-
 
         starData tempStarData({addAtTheEnd , baseType}); // generate a starData object
         typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array
@@ -1195,22 +1202,21 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
     }
 
     comeAfterInit:
-    
-    
-
+        
     // now, have to put the algo to decide if this is var decl or func decl or func def
 
-
     if(current.type == COMMA){ // if multiple decl
-
         
         // it is variable multi decl
         
         // validate if varName is syntactical valid for variable
         // if invalid, stop for now
+
+        
         short check = this->checkValidity();
+
         if(check == -1){
-            exit(1);
+            exit(2);
         } else if(check == 2){ // func 
             // validate data type to make sure it supports func
             if(typeHolder.isCurrentTypeValid() == 1){
@@ -1221,12 +1227,15 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             // proceed with func decl
             FunctionDeclarationNode* temp = new FunctionDeclarationNode(&typeHolder , this , paramList , isVariad);
 
+            // reset dataType for further declarations
             resetDataTypeAndNameObjectForNext(typeHolder);
 
+            // resetting some static variables for firther declaraions
             isFirstVar = false;
             isInit = false;
             initExpr = NULL;
 
+            // return
             return temp;
 
             
@@ -1241,17 +1250,17 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             // Create node for this variable
             VariableDeclarationNode* temp = new VariableDeclarationNode(&typeHolder , this , isInit , initExpr , this->isArray , this->arrayDimensions);
 
+            // reset dataType for further declarations
             resetDataTypeAndNameObjectForNext(typeHolder);
 
+            // resetting some static variables for firther declaraions
             isFirstVar = false;
             isInit = false;
             initExpr = NULL;
 
+            // return
             return temp;
-        }
-                        
-
-        // proceed to next one
+        }                                
         
     } else if(current.type == OP_ASSIGN){ // initialized
 
@@ -1260,18 +1269,19 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
         // validate if varName is syntactical valid for variable
         if(this->checkValidity() == -1){
-            exit(1);
+            exit(2);
         } else if(this->checkValidity() == 2){ // valid for func
             cout << "Name NOT valid for var\n";
-            exit(1);
+            exit(2);
         }        
+
         // if invalid, stop for now
         // if valid, proceed to evalute rhs
         
         // check validity of data type for var
         if(typeHolder.isCurrentTypeValid() == 2){ // valid only for func
             cout << "Data Type NOT valid for vaiable\n";
-            exit(1);
+            exit(2);
         }
 
         // set isInit flag to true
@@ -1279,18 +1289,10 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
         
         current = this->parser.tokens[++this->parser.currentPos]; // advance 1 position, skip =
 
-        // cout << "Data before parsing expessions is " << current.data << "\n";
-
         // initExpr = evaluate
         initExpr = this->parser.parseExpression(2 , true , -1);
         
-
-        current = this->parser.tokens[this->parser.currentPos]; // update current
-
-        // cout << "Data after parsing expessions is " << current.data << "\n";
-
-        // Create node for this variable
-        // VariableDeclarationNode* temp = new VariableDeclarationNode(&typeHolder , this , isInit , initExpr , this->isArray , this->arrayDimensions);
+        current = this->parser.tokens[this->parser.currentPos]; // update current        
 
         goto comeAfterInit; // check the next token again (can be , or ; or ERROR)
         
@@ -1298,19 +1300,16 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
     } else if(current.type == SEMICOLON){ // end
 
-        // cout << "semi found here\n";
-
         short check = this->checkValidity();
 
-
         if(check == -1){
-            exit(1);
+            exit(2);
         } else if(check == 1){ // var
 
             // validity check to make sure data type is valid for var
             if(typeHolder.isCurrentTypeValid() == 2){
                 cout << "Data Type NOT valid for vaiable\n";
-                exit(1);
+                exit(2);
             }
 
 
@@ -1318,14 +1317,17 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             // Create node for this variable
             VariableDeclarationNode* temp = new VariableDeclarationNode(&typeHolder , this , isInit , initExpr , this->isArray , this->arrayDimensions);
 
+            // reset dataType for further declarations
             resetDataTypeAndNameObjectForNext(typeHolder); 
 
+            // resetting some static variables for firther declaraions
             isFirstVar = true;
             isInit = false;
             initExpr = NULL;
 
             finalHelper = false;
 
+            // return
             return temp;
         } else if(check == 2){ // func
             // validate data type to make sure it supports func
@@ -1337,12 +1339,15 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             // proceed with func decl
             FunctionDeclarationNode* temp = new FunctionDeclarationNode(&typeHolder , this , paramList , isVariad);
 
+            // reset dataType for further declarations
             resetDataTypeAndNameObjectForNext(typeHolder);
 
+            // resetting some static variables for firther declaraions
             isFirstVar = true;
             isInit = false;
             initExpr = NULL;
 
+            // return
             return temp;
         }
 
@@ -1366,25 +1371,20 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
         // evaluate block inside func for func definitiuon
         // evaluate block here
-
         BlockExpressionNode* body = parseBlock(this->parser);
 
         FunctionDefinitionNode* funcDef = new FunctionDefinitionNode(&typeHolder , this , paramList  , isVariad , body);
 
-        return funcDef;
-
-        // generate func defi node 
-
         // return definition node
-    } else{
+        return funcDef;        
+
         
+    } else{        
         cout << this->parser.tokens[this->parser.currentPos].data << " || Causing the error\n";
         exit(1);
     }
 
-    return nullptr;
-
-    
+    return nullptr;    
 }
 
 int varNameHolder::checkValidity(){
