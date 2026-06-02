@@ -1229,8 +1229,6 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
                        
         }
 
-
-
         // add this as base type is NOT present
         helperDeclName->trKeywordArray.push_back(KEYWORD_STRUCT);
         helperDeclName->trBaseArray.push_back(tagNameExist ? tagName.data : *anonTagName);
@@ -1291,6 +1289,7 @@ ASTNode** Parser::parseEnum(dataTypeHolder* helperDeclName) {
 
     currentPos++; // skip keyword enum
 
+    // helper to keep track if tagName is found or not
     bool tagNameExist = false;
     Token tagName;
 
@@ -1311,38 +1310,43 @@ ASTNode** Parser::parseEnum(dataTypeHolder* helperDeclName) {
     if(tokens[currentPos].type != LBRACE){
         /*
             this may be enum var decl or error, but definitely not enum definition.
-            switch the control flow to the var decl side
+            hence, switch the control flow to the var decl side
         */
 
-        currentPos -= 2;
+        currentPos -= 2; // reset currentPost
 
         return nullptr; // indicating the need to shift the control flow properly
     }
 
     // if the control flow reaches here, it is enum definition.
 
+    // block to store enum definitions
     EnumBlockExpressionNode* enumBlock = nullptr;
 
-    if(tagNameExist){
+    if(tagNameExist){ // if tagname exist, attach tagname to "enum" in type registry
         this->typeRegisry[tagName.data] = "enum";
-    } else{
+    } else{ // if tagname doest exist, attach anonTagName to "enum" in type registry
         this->typeRegisry[*anonTagName] = "enum";
     }
 
     enumBlock = parseEnumBlock(*this); // parse the enum block
 
-
+    // semicolon found after enum block, means no var decl is there, and if it is typedef decl, then its error since alias name is expected after enum block in typedef case
     if(tokens[currentPos].type == SEMICOLON){
+
+        // need to have atleast one out of tagName or varName for definition
         if(!tagNameExist){
             cout << "Expected atleast one out of tagName or varName for enum definition\n";
             exit(1);
         }
 
+        // alias expected in case of typedef definition
         if(typedDefTracker){
             cout << "typedef enum definition without typedef name NOT allowed\n";
             exit(1);
         }
 
+        // variable isnt declared, hence no prop specifier is allowed
         if(helperDeclName != nullptr){
             cout << "var is NOT decl , hence extern/volatile/restrict/const/static NOT allowed\n";
             exit(1);
@@ -1352,63 +1356,73 @@ ASTNode** Parser::parseEnum(dataTypeHolder* helperDeclName) {
 
         EnumDefinitionNode* enumDef;
 
-        if(tagNameExist){
+        if(tagNameExist){ // actual tagName enum definition ast
             enumDef = new EnumDefinitionNode(tagNameExist , tagName.data , enumBlock);
-        } else{
+        } else{ // anonTagName enum definition ast
             enumDef = new EnumDefinitionNode(tagNameExist , *anonTagName , enumBlock);
         }
 
+        // push enum definition ast to "list"
         list.push_back(enumDef);
 
         ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
         for(uint64_t i = 0; i < list.size(); i++){
             arr[i] = list[i];
         }
-        arr[list.size()] = nullptr; // null terminate the array
+        arr[list.size()] = nullptr; // null terminate the arraya
 
         return arr;
     }
 
-    // now there is some varName also after the }
+    /*
+        now there is some varName also after block of enum definition
+    */
 
     EnumDefinitionNode* enumDef;
 
-    if(tagNameExist){
+    // generate enum definition ast first
+    if(tagNameExist){ // actual tagName enum definition ast
         enumDef = new EnumDefinitionNode(tagNameExist , tagName.data , enumBlock);
-    } else{
+    } else{ // anonTagName enum definition ast
         enumDef = new EnumDefinitionNode(tagNameExist , *anonTagName , enumBlock);
     }
 
+    // push enum definition node to "list"
     list.push_back(enumDef);
 
-    // helperDeclName validation algo (same as struct)
-    if(helperDeclName){
+    /*
+        if it came from dataTypeDecl, it has some specifiers like extern/volatile/restrict/const/static , we here need to validate it and the manually add enum tagName to it in the dataType object
+    */
 
+    // validity of data type prop array is STILL not checked so far
+
+    // helperDeclName validaiton algo
+    if(helperDeclName){ // validate if exist
         {
-            if(helperDeclName->signModifiersArray.size() != 0){
+            if(helperDeclName->signModifiersArray.size() != 0){ // signed/unsigned NOT allowed
                 cout << "Error in sign\n";
                 exit(1);
             }
 
-            if(helperDeclName->sizeModifiersArray.size() != 0){
+            if(helperDeclName->sizeModifiersArray.size() != 0){ // size modifiers NOT allowed
                 cout << "Error in size\n";
                 exit(1);
             }
 
-            if(helperDeclName->storageClassArray.size() > 1){
+            if(helperDeclName->storageClassArray.size() > 1){ // multiple storage class NOT allowed
                 cout << "Error is storage class size\n";
                 exit(1);
-            } else if(helperDeclName->storageClassArray.size() == 1){
+            } else if(helperDeclName->storageClassArray.size() == 1){ // if there is a storage class, it should not be auto or register
                 if(helperDeclName->storageClassArray.back() == KEYWORD_AUTO || helperDeclName->storageClassArray.back() == KEYWORD_REGISTER){
                     cout << "auto/register NOT allowed\n";
                     exit(1);
                 }
             }
 
-            if(helperDeclName->typeQualifiersArray.size() > 3){
+            if(helperDeclName->typeQualifiersArray.size() > 3){ // max 3 type qualifiers allowed
                 cout << "Error in type qualifier\n";
                 exit(1);
-            } else if(helperDeclName->typeQualifiersArray.size() > 1){
+            } else if(helperDeclName->typeQualifiersArray.size() > 1){ // if there are more than 1 type qualifiers, they should not be same
                 for(long unsigned i=0 ; i<helperDeclName->typeQualifiersArray.size() ; i++){
                     for(long unsigned j=0 ; j<helperDeclName->typeQualifiersArray.size() ; j++){
                         if(i == j) continue;
@@ -1420,6 +1434,12 @@ ASTNode** Parser::parseEnum(dataTypeHolder* helperDeclName) {
                     }
                 }
             }
+
+            /*
+                this validation is pending rn, that restrict always require * with the var
+
+                might add this in semantic phase
+            */
         }
 
         // add this as base type is NOT present
@@ -1429,21 +1449,36 @@ ASTNode** Parser::parseEnum(dataTypeHolder* helperDeclName) {
 
     getEnumVarAgain:
 
+    /*
+        so, now var decl also exist with enum definition
+        if data type prop object was alr present, it is alr validated in code just before this comment, so now if it exists,we r good to go, if it doesnt exists, we need to create it here manually for the var decl
+    */
+
+    // enum var decl
     varNameHolder* enumVarName = new varNameHolder(*this);
 
+    // if data type prop doesnt exists, create it
     if(!helperDeclName){
+
+        // new data type prop object
         helperDeclName = new dataTypeHolder(*this);
+
+        // manually add keyword "enum" and it's corresponding base name to the newly created dataType prop object
         helperDeclName->trKeywordArray.push_back(KEYWORD_ENUM);
         helperDeclName->trBaseArray.push_back(tagNameExist ? tagName.data : *anonTagName);
     }
 
+    // push var decl ast to "list"
     list.push_back(enumVarName->getVarName(*helperDeclName, false));
 
+    // if , is present, it means, there is multi var decl
     if(tokens[currentPos].type == COMMA){
+
         currentPos++; // skip ,
-        goto getEnumVarAgain;
+        goto getEnumVarAgain; // make another ast for multi var decl
     }
 
+    // ; expected
     if(tokens[currentPos].type != SEMICOLON){
         cout << "Expected ; here to close it\n";
         exit(1);
@@ -1451,11 +1486,12 @@ ASTNode** Parser::parseEnum(dataTypeHolder* helperDeclName) {
 
     currentPos++; // skip ;
 
+    // return enum definition node for startParsing to collect
     ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
     for(uint64_t i = 0; i < list.size(); i++){
         arr[i] = list[i];
     }
-    arr[list.size()] = nullptr; // null terminate the array
+    arr[list.size()] = nullptr; // null terminate the arraya
 
     return arr;
 }
@@ -1465,6 +1501,7 @@ ASTNode** Parser::parseUnion(dataTypeHolder* helperDeclName) {
 
     currentPos++; // skip keyword union
 
+    // helper to keep track if tagName is found or not
     bool tagNameExist = false;
     Token tagName;
 
@@ -1478,18 +1515,23 @@ ASTNode** Parser::parseUnion(dataTypeHolder* helperDeclName) {
         currentPos++; // skip tagName
     } else{
         // if tagName doesnt exist, create a anonymous tagname for this [will be used for the validaiton later, but will not be exposed]
-
         anonTagName = anonTagNameGen();
 
     }
 
     if(tokens[currentPos].type == SEMICOLON){ // can be forward decl if tagName exists
+
+        // tagname doesnt exist and ; found after "union" keyword, hence error
         if(!tagNameExist){
             cout << "Expected tagName for forward decl\n";
             exit(1);
         }
 
-        if(typedDefTracker){ // if typedef is there, then either ID is exepceted or definition is expeceted
+        /*
+            typeDefTraker is true when the current ast parsing that is being done involves typedef keyword (typedef definition)
+        */
+
+        if(typedDefTracker){ // if typedef is there, then either ID is expected or definition is expeceted
             cout << "typedef union forward decl NOT allowed\n";
             exit(1);
         }
@@ -1498,9 +1540,10 @@ ASTNode** Parser::parseUnion(dataTypeHolder* helperDeclName) {
 
         this->typeRegisry[tagName.data] = "union"; // adding in type registry to add forw decl
 
-
+        // generate forward declaration node and push to "list"
         ForwardDeclarationNode* fwdDecl = new ForwardDeclarationNode(KEYWORD_UNION , tagName.data);
 
+        // push to "list"
         list.push_back(fwdDecl);
 
         ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
@@ -1509,13 +1552,9 @@ ASTNode** Parser::parseUnion(dataTypeHolder* helperDeclName) {
         }
         arr[list.size()] = nullptr; // null terminate the array
 
-
         return arr;
 
-        // this->allAST.push_back(fwdDecl);
-        // return fwdDecl; // return for startParsing to collect
-
-    } else if(tokens[currentPos].type == ID){
+    } else if(tokens[currentPos].type == ID){ // ID found after union or tagname (if after tagname, has to be var decl)
 
         if(typedDefTracker){
             // it is typedef , not var decl
@@ -1530,38 +1569,39 @@ ASTNode** Parser::parseUnion(dataTypeHolder* helperDeclName) {
     if(tokens[currentPos].type != LBRACE){
         /*
             this may be union var decl or error, but definitely not union definition.
-
-            switch the control flow to the var decl side
+            hence, switch the control flow to the var decl side
         */
 
-        currentPos -= 2;
+        currentPos -= 2; // reset currentPost
 
         return nullptr; // indicating the need to shift the control flow properly
     }
 
     // if the control flow reaches here, it is union definition.
 
+    // block to store union definitions
     BlockExpressionNode* unionBlock = nullptr;
 
     // this->typeRegisry[tagName.data] = "union"; // might need tor revert it if the further code fails, take care !!!!!!!!!!!
 
-    if(tagNameExist){
+    if(tagNameExist){ // if tagname exist, attach tagname to "union" in type registry
         this->typeRegisry[tagName.data] = "union";
-    } else{
+    } else{ // if tagname doest exist, attach anonTagName to "union" in type registry
         this->typeRegisry[*anonTagName] = "union";
     }
 
-    // cout << "Block parsing starting at " << this->tokens[this->currentPos-1].data << "\n";
     unionBlock = parseBlock(*this); // parse the block
 
-
-
+    // semicolon found after union block, means no var decl is there, and if it is typedef decl, then its error since alias name is expected after union block in typedef case
     if(tokens[currentPos].type == SEMICOLON){
+
+        // need to have atleast one out of tagName or varName for definition
         if(!tagNameExist){
             cout << "Expected atleast one out of tagName or varName for union definition\n";
             exit(1);
         }
 
+        // alias expected in case of typedef definition
         if(typedDefTracker){
             cout << "typedef union definition without typedef name NOT allowed\n";
             exit(1);
@@ -1569,14 +1609,12 @@ ASTNode** Parser::parseUnion(dataTypeHolder* helperDeclName) {
 
         /*
 
-            now, since no var is declared wiht it, it cna NOT have any specifier like extern/volatile/restrict/const/static
-
+            now, since no var is declared wiht it, it can NOT have any specifier like extern/volatile/restrict/const/static
             check the data type prop for this and reject if any of them exists
 
         */
 
-
-
+        // variable isnt declared, hence no prop specifier is allowed
         if(helperDeclName != nullptr){
             cout << "var is NOT decl , hence extern/volatile/restrict/const/static NOT allowed\n";
             exit(1);
@@ -1586,18 +1624,13 @@ ASTNode** Parser::parseUnion(dataTypeHolder* helperDeclName) {
 
         UnionDefinitionNode* unionDef;
 
-        if(tagNameExist){
+        if(tagNameExist){ // actual tagName union definition ast
             unionDef = new UnionDefinitionNode(tagNameExist , tagName.data , unionBlock);
-        } else{
+        } else{ // anonTagName union definition ast
             unionDef = new UnionDefinitionNode(tagNameExist , *anonTagName , unionBlock);
         }
 
-
-
-        /*
-            need to add the current new union definition in the TR
-        */
-
+        // push union definition ast to "list"
         list.push_back(unionDef);
 
         ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
@@ -1608,25 +1641,24 @@ ASTNode** Parser::parseUnion(dataTypeHolder* helperDeclName) {
 
         return arr;
 
-        // this->allAST.push_back(unionDef);
-        // return unionDef; // return for startParsing to collect
-
     }
 
-    // now there is some varName also afetr the }
+    /*
+        now there is some varName also after block of union definition
+    */
+
 
     UnionDefinitionNode* unionDef;
 
-    if(tagNameExist){
+    // generate union definition ast first
+    if(tagNameExist){ // actual tagName union definition ast
         unionDef = new UnionDefinitionNode(tagNameExist , tagName.data , unionBlock);
-    } else{
+    } else{ // anonTagName union definition ast
         unionDef = new UnionDefinitionNode(tagNameExist , *anonTagName , unionBlock);
     }
 
+    // push union definition node to "list"
     list.push_back(unionDef);
-
-
-    // this->allAST.push_back(unionDef);
 
     /*
         if it came from dataTypeDecl, it has some specifiers like extern/volatile/restrict/const/static , we here need to validate it and the manually add union tagName to it in the dataType object
@@ -1635,8 +1667,7 @@ ASTNode** Parser::parseUnion(dataTypeHolder* helperDeclName) {
     // validity of data type prop array is STILL not checked so far
 
     // helperDeclName validaiton algo
-    if(helperDeclName){
-
+    if(helperDeclName){ // validate if exist
         {
             if(helperDeclName->signModifiersArray.size() != 0){ // signed/unsigned NOT allowed
                 cout << "Error in sign\n";
@@ -1680,66 +1711,46 @@ ASTNode** Parser::parseUnion(dataTypeHolder* helperDeclName) {
                 might add this in semantic phase
             */
 
-
         }
-
-
 
         // add this as base type is NOT present
         helperDeclName->trKeywordArray.push_back(KEYWORD_UNION);
         helperDeclName->trBaseArray.push_back(tagNameExist ? tagName.data : *anonTagName);
     }
 
-
-
-
-
-
     getVarAgain:
 
-
     /*
-
-        so, now the var decl also exist with the union definition
-        now, it is needed to check the data type prop object to check it's validaity for this
-
+        so, now var decl also exist with union definition
+        if data type prop object was alr present, it is alr validated in code just before this comment, so now if it exists,we r good to go, if it doesnt exists, we need to create it here manually for the var decl
     */
 
 
+    // union var decl
     varNameHolder* unionVarName = new varNameHolder(*this);
 
+    // if data type prop doesnt exists, create it
     if(!helperDeclName){
+
+        // new data type prop object
         helperDeclName = new dataTypeHolder(*this);
 
-        // helperDeclName->baseTypeArray.push_back(HELPER_TOKEN);
+        // manually add keyword "union" and it's corresponding base name to the newly created dataType prop object
         helperDeclName->trKeywordArray.push_back(KEYWORD_UNION);
-
-        // Generate automatic name for anonymous unions if needed
-        // if(tagName.data.empty()){
-        //     static int anonUnionCounter = 0;
-        //     tagName.data = "__anon_union_" + to_string(anonUnionCounter++);
-        // }
-        // helperDeclName->trBaseArray.push_back(tagName.data);
         helperDeclName->trBaseArray.push_back(tagNameExist ? tagName.data : *anonTagName);
     }
 
-    // dataTypeHolder* helper = nullptr;
-
+    // push var decl ast to "list"
     list.push_back(unionVarName->getVarName(*helperDeclName, false));
 
-    // this->allDeclNodes.push_back(unionVarName->getVarName(*helperDeclName, false));
-
-
-    // this->allAST.push_back(new DeclarationNode(helperDeclName , unionVarName));
-
-    // generate union decl node
-
+    // if , is present, it means, there is multi var decl
     if(tokens[currentPos].type == COMMA){
 
         currentPos++; // skipp ,
-        goto getVarAgain;
+        goto getVarAgain; // make another ast for multi var decl
     }
 
+    // ; expected
     if(tokens[currentPos].type != SEMICOLON){
         cout << "Expected ; here to close it\n";
         exit(1);
@@ -1756,118 +1767,124 @@ ASTNode** Parser::parseUnion(dataTypeHolder* helperDeclName) {
     arr[list.size()] = nullptr; // null terminate the arraya
 
     return arr;
-    // return unionDef;
-
 }
 
 // parsing typedef
 ASTNode** Parser::parseTypedef() {
     
 
+    // set tracker to true when entering typedef parsing
     typedDefTracker = true;
 
     currentPos++; // skip typedef keyword
 
     vector<ASTNode*> list; // list to store struct decl node and maybe var decl nodes also if exist
 
+    // index to store index of token just after "typedef"
     int tempIndexHolder = currentPos;
 
+    // generate data type prop object 
     dataTypeHolder* original = new dataTypeHolder(*this);
 
+    // parse data type properly
     int retValueDecl = original->getDataType();
 
+    // validate this parsed data type prop object
     original->isCurrentTypeValid();
 
 
-    if(retValueDecl == 2){ // struct/union definition 
+    // it is struct/union/enum definition
+    if(retValueDecl == 2){ 
         
         // convert tempASTStorage to arrya and push all to list
-        for(uint64_t i=0 ; i<tempASTStorage.size(); i++){
-            // list.push_back(tempASTStorage[i]);
+        for(uint64_t i=0 ; i<tempASTStorage.size(); i++){            
 
             /*
-                here,
-                    it will contain 1 struct definition ast
-                    it can also contain variabel decl nodes, so need to convert them accoridngly to the typedef decl
+                so, now, it is typedef with struct/union/enum ast
+                the corresponding struct/union/enum ast is stored in tempASTStorage array
+                the first ast in that array is the base struct/union/enum definition ast, and the further ones, if present, might be the varDecl ast, but since it is part of typedef, we will convert those varDecl ast to typedef alias properly 
             */
+           
 
-            if(i == 0){
+            
+            if(i == 0){ // first one is struct/union/enum definition itself
                 list.push_back(tempASTStorage[i]); // add the struct to the list as it is the foundation for typedef                
-            } else{
+            } else{ // now, convert properly
 
-                
+                // convert ast stored in tempASTStorage to variable declnode
                 VariableDeclarationNode* parentObj = dynamic_cast<VariableDeclarationNode*>(tempASTStorage[i]);
 
                 varNameHolder* alias = &parentObj->varName; // store the varName object of the (so called) var decl, coz need to acces this to generate typedef ast 
 
+                // typedef hashmap object
                 tdMapPair* rhs = new tdMapPair;
                 rhs->nameProp = alias; // store the varName string in the tdMapPair
 
-                short helperStorageInt = tempIndexHolder; 
+                // helper to store index properly
+                int helperStorageInt = tempIndexHolder; 
 
-                // below code is copy pasted to specially deal with struct
-                {
-                    addAgain2:
+                // below code is copy pasted to specially deal with struct/union/enum
+                { // collecting the data type and it's prop in this block
 
-                    // first add the data type prop as string in sequence
+                    addAgain2: // need to continue evaluating data type props when tdMap key is found as data type prop
+
+                    // adding data type or any of it's property to the declProp array
                     while(isThisTokenDataTypeOrPropToken(tokens[tempIndexHolder])){
                         rhs->declProp.push_back(tokens[tempIndexHolder].data);
-                    
-                        tempIndexHolder++;
-                    }
-                
-                    // check if next one is some typedef of original parsing is done
-                    if(tokens[tempIndexHolder].type == KEYWORD_STRUCT || tokens[tempIndexHolder].type == KEYWORD_UNION || tokens[tempIndexHolder].type == KEYWORD_ENUM){
-                        // this is pending for now
 
+                        tempIndexHolder++; // advancing 1 token
+                    }
+
+                    // check if token is struct/union/enum
+                    if(tokens[tempIndexHolder].type == KEYWORD_STRUCT || tokens[tempIndexHolder].type == KEYWORD_UNION || tokens[tempIndexHolder].type == KEYWORD_ENUM){
+
+                        // push struct/union/enum to the declProp array
                         rhs->declProp.push_back(tokens[tempIndexHolder].data);
 
                         tempIndexHolder++; // skip struct/union/enum keyword
 
                         if(tokens[tempIndexHolder].type == ID){ // struct/union/enum tagName also exist
-                            rhs->declProp.push_back(tokens[tempIndexHolder].data);
+                            rhs->declProp.push_back(tokens[tempIndexHolder].data); // push the tagName to the declProp array prop
 
-                            tempIndexHolder++; // skip struct/union/enum tagName
+                            tempIndexHolder++; // skip tagName
                         } else{
                             // it is anon struct/union/enum def with typedef, need to give it a name myself
+                            // get the anon struct/union/enum name from the latest definition using dynamic cast
 
-                            if(StructDefinitionNode* structDef = dynamic_cast<StructDefinitionNode*>(list.back())) {
+                            if(StructDefinitionNode* structDef = dynamic_cast<StructDefinitionNode*>(list.back())) { // for struct definition ast
                                 rhs->declProp.push_back(structDef->tagName);
-                            } else if(UnionDefinitionNode* unionDef = dynamic_cast<UnionDefinitionNode*>(list.back())) {
+                            } else if(UnionDefinitionNode* unionDef = dynamic_cast<UnionDefinitionNode*>(list.back())) { // for union definition ast
                                 rhs->declProp.push_back(unionDef->tagName);
-                            } else if(EnumDefinitionNode* enumDef = dynamic_cast<EnumDefinitionNode*>(list.back())) {
+                            } else if(EnumDefinitionNode* enumDef = dynamic_cast<EnumDefinitionNode*>(list.back())) { // for enum definition ast
                                 rhs->declProp.push_back(enumDef->tagName);
                             }
                         }
 
+                    }
 
-                    }
-                
-                    if(tokens[tempIndexHolder].type == ID){
-                        if(tokens[tempIndexHolder+1].type == SEMICOLON){
+                    if(tokens[tempIndexHolder].type == ID){ // ID found after data type or it's prop, has to be either alias or a key in tdMap
+                        if(tokens[tempIndexHolder+1].type == SEMICOLON){ // if ; present after ID, it has to be alias
                             // it is the situation of normal typedef usecase (no complex expr in alias)
-                        
+
                             // generate typedef ast
-                        }
-                    
-                        if(isThisStringPresentAsKeyInTdMap(tokens[tempIndexHolder].data)){
-                            rhs->declProp.push_back(tokens[tempIndexHolder].data);
-                        
+                        } else if(isThisStringPresentAsKeyInTdMap(tokens[tempIndexHolder].data)){ // ID found as key in tdMap
+                            rhs->declProp.push_back(tokens[tempIndexHolder].data); // push ID to declProp array
+
                             tempIndexHolder++; // skip ID
-                        
-                            goto addAgain2;
+
+                            goto addAgain2; // keep evaluating data type props again
                         }
                     }
-                                        
-                    
+
+
                 } 
                 
                 
                 
-
+                // Add the current declarator's typedef to the list and map
                 list.push_back(new TypedefDeclarationNode(rhs->declProp , rhs->nameProp));
 
-                if(i != tempASTStorage.size() - 1){
+                if(i != tempASTStorage.size() - 1){ // update tempIndexHolder if more present
                     tempIndexHolder = helperStorageInt; 
                     continue;
                 }
@@ -1876,121 +1893,115 @@ ASTNode** Parser::parseTypedef() {
                 for(uint64_t i = 0; i < list.size(); i++){
                     arr[i] = list[i];
                 }
-                arr[list.size()] = nullptr; // null terminate the arraya
+                arr[list.size()] = nullptr; // null terminate the arraya            
             
-                // tdMap[rhs->nameProp->namePropArray[0].varName].push_back(rhs); 
-            
+                // add it properly to the tdHashMap
                 string typedefAliasName = rhs->nameProp->namePropArray[0].varName;
                 tdMap[typedefAliasName].push_back(*rhs); 
             
+                // clear the global ast array
                 tempASTStorage.clear();            
-
-
-                // cout << "Current token is : " << tokens[currentPos].data << "\n";
 
                 if(tokens[currentPos].type == SEMICOLON) currentPos++; // skip ;
                 
+                // typedef completed, update typedef tracker
                 typedDefTracker = false; 
 
+                // return
                 return arr;
 
             }
 
             
 
-        }
-        
+        }                
 
-        // String 
-
-        // tempASTStorage.clear();
-
-
-        // ASTNode** arr = new ASTNode*[list.size() + 1]; // +1 for nullptr termination
-        // for(uint64_t i = 0; i < list.size(); i++){
-        //     arr[i] = list[i];
-        // }
-        // arr[list.size()] = nullptr; // null terminate the array
-
-        // return arr; // nodes stored in this->allAST
-
-    }
-
-     // validation ????
+    }     
 
     bool isFirstDeclator = true; // Track if this is the first declarator in multi-declarator typedef
+
     short indexSaver = tempIndexHolder; // Save index before looping through data type tokens
 
     multiTypeDefDeclLabel: // Label for handling multiple declarators
 
+    // create a new fresh varNameHolder object
     varNameHolder* alias = new varNameHolder(*this);
 
-    // For subsequent declarators, force reset of static variables in getVarName()
-    DeclarationNode* parentObj = alias->getVarName(*original, false, !isFirstDeclator);
+    // parse the name of the alias (NOTE: if it is first typedef alias, no need to reset static variables, need for the 2nd and beyond in case of multiple ones)
+    DeclarationNode* parentObj = alias->getVarName(*original, false, !isFirstDeclator); 
+    // while paring name, we will know if it is either variable or func
 
+    // creating a new object to be on the pair side of the key-pair hashmap of typedef
     tdMapPair* rhs = new tdMapPair;
 
-    if(VariableDeclarationNode* varObj = dynamic_cast<VariableDeclarationNode*>(parentObj)){ // using dynamic case to access the child instance varaibles properly
+    // using dynamic cast to access the nameProp object inside varNameObject properly
+    if(VariableDeclarationNode* varObj = dynamic_cast<VariableDeclarationNode*>(parentObj)){ // if it is var decl, then use variable dynamic cast
         rhs->nameProp = &varObj->varName;
-    } else if(FunctionDeclarationNode* funcObj = dynamic_cast<FunctionDeclarationNode*>(parentObj)){
+    } else if(FunctionDeclarationNode* funcObj = dynamic_cast<FunctionDeclarationNode*>(parentObj)){ // if it is func decl, then use function dynamic cast
         rhs->nameProp = &funcObj->funcName;
     }
 
 
+    /*
+        at this point, we have alr filled the name part of the "rhs", now the vector<string> part is reamining of the same
+        to do this, we will use our data type parsing algo here to parse it properly, since it has to be in sequential form, it will work
 
-    {
-        addAgain:
+        NOTE: declProp is the array in which data type or it's prop need to be pushed, hence that is used in code block under this 
+    */
 
-        // first add the data type prop as string in sequence
+    { // collecting the data type and it's prop in this block
+
+        addAgain: // need to continue evaluatinng data type props when tdMap key is found as data type prop
+        
+        // adding data type or any of it's property to thge declProp array
         while(isThisTokenDataTypeOrPropToken(tokens[tempIndexHolder])){
             rhs->declProp.push_back(tokens[tempIndexHolder].data);
 
-            tempIndexHolder++;
-        }
+            tempIndexHolder++; // advancing 1 token
+        }        
 
-        // check if next one is some typedef of original parsing is done
+        // check if token is sturct/union/enum
         if(tokens[tempIndexHolder].type == KEYWORD_STRUCT || tokens[tempIndexHolder].type == KEYWORD_UNION || tokens[tempIndexHolder].type == KEYWORD_ENUM){
 
             // this is pending for now
 
+            // push struct/union/enum to the declProp array
             rhs->declProp.push_back(tokens[tempIndexHolder].data);
 
             tempIndexHolder++; // skip struct/union/enum keyword
 
             if(tokens[tempIndexHolder].type == ID){ // struct/union/enum tagName also exist
-                rhs->declProp.push_back(tokens[tempIndexHolder].data);
+                rhs->declProp.push_back(tokens[tempIndexHolder].data); // push the tagName to the declProp array prop
 
-                tempIndexHolder++; // skip struct/union/enum tagName
+                tempIndexHolder++; // skip tagName
             } else{
                 // it is anon struct/union/enum def with typedef, need to give it a name myself
+                // get the anon struct/union/enum name from the latest definition using dynamic cast
 
-                // get the anon struct/union/enum name from the latest definition
-
-                if(StructDefinitionNode* structDef = dynamic_cast<StructDefinitionNode*>(list.back())) {
+                if(StructDefinitionNode* structDef = dynamic_cast<StructDefinitionNode*>(list.back())) { // for struct definition ast
                     rhs->declProp.push_back(structDef->tagName);
-                } else if(UnionDefinitionNode* unionDef = dynamic_cast<UnionDefinitionNode*>(list.back())) {
+                } else if(UnionDefinitionNode* unionDef = dynamic_cast<UnionDefinitionNode*>(list.back())) { // for union definition ast
                     rhs->declProp.push_back(unionDef->tagName);
-                } else if(EnumDefinitionNode* enumDef = dynamic_cast<EnumDefinitionNode*>(list.back())) {
+                } else if(EnumDefinitionNode* enumDef = dynamic_cast<EnumDefinitionNode*>(list.back())) { // for enum definition ast
                     rhs->declProp.push_back(enumDef->tagName);
                 }
             }
 
-
         }
 
-        if(tokens[tempIndexHolder].type == ID){
-            if(tokens[tempIndexHolder+1].type == SEMICOLON){
+        if(tokens[tempIndexHolder].type == ID){ // ID found after data type or it's prop, has to be either alias or a key in tdMap
+            if(tokens[tempIndexHolder+1].type == SEMICOLON){ // if ; present after ID, it has to be alias
                 // it is the situation of normal typedef usecase (no complex expr in alias)
 
                 // generate typedef ast
-            }
-
-            if(isThisStringPresentAsKeyInTdMap(tokens[tempIndexHolder].data)){
-                rhs->declProp.push_back(tokens[tempIndexHolder].data);
+            } 
+            // repalcing if with else if
+            else if(isThisStringPresentAsKeyInTdMap(tokens[tempIndexHolder].data)){ // ID found as key in tdMap                
+                rhs->declProp.push_back(tokens[tempIndexHolder].data); // push ID to declProp array
 
                 tempIndexHolder++; // skip ID
 
-                goto addAgain;
+                goto addAgain; // keep evaluating data type props again
             }
         }
     }
@@ -2026,17 +2037,20 @@ ASTNode** Parser::parseTypedef() {
         }
         arr[list.size()] = nullptr; // null terminate the array
 
+        // typedef completed, update typedef tracker
         typedDefTracker = false; 
 
+        // return
         return arr;
     } else{
         cout << "Expected ; or , after typedef declarator\n";
         exit(1);
-    }
-    // return new TypedefDeclarationNode(rhs->declProp , alias);
+    }    
 
+    // typedef completed, update typedef tracker
     typedDefTracker = false; 
 
+    // return, never gonna reach here anyways
     return nullptr;
 }
 
@@ -2045,12 +2059,15 @@ ASTNode** Parser::parseTypedef() {
 StatementNode* Parser::parseReturn() {
     currentPos++; // skip keyword return
 
+    // decl exprNode
     ExpressionNode* retExpr = nullptr;
 
+    // it has something after "return", parse it properly
     if(tokens[currentPos].type != SEMICOLON){
         retExpr = parseExpression(0, false, -1);
     }
 
+    // ; expected after expression
     if(tokens[currentPos].type != SEMICOLON){
         cout << "Expected ; after return statement\n";
         exit(1);
@@ -2058,6 +2075,7 @@ StatementNode* Parser::parseReturn() {
 
     currentPos++; // skip ;
 
+    // return
     return new ReturnStatementNode(retExpr);
 }
 
@@ -2065,6 +2083,7 @@ StatementNode* Parser::parseReturn() {
 StatementNode* Parser::parseContinue() {
     currentPos++; // skip keyword continue
 
+    // ; expected after "continue"
     if(tokens[currentPos].type != SEMICOLON){
         cout << "Expected ; after continue\n";
         exit(1);
@@ -2072,6 +2091,7 @@ StatementNode* Parser::parseContinue() {
 
     currentPos++; // skip ;
 
+    // return
     return new ContinueStatementNode();
 }
 
@@ -2079,6 +2099,7 @@ StatementNode* Parser::parseContinue() {
 StatementNode* Parser::parseBreak() {
     currentPos++; // skip keyword break
 
+    // ; expected after "break"
     if(tokens[currentPos].type != SEMICOLON){
         cout << "Expected ; after break\n";
         exit(1);
@@ -2086,6 +2107,7 @@ StatementNode* Parser::parseBreak() {
 
     currentPos++; // skip ;
 
+    // return
     return new BreakStatementNode();
 }
 
@@ -2104,7 +2126,7 @@ StatementNode* Parser::parseGoto() {
     ExpressionNode* labelName = new IdentifierNode(tokens[currentPos].data);
     currentPos++;
     
-    // Expect semicolon
+    // Expect ;
     if(currentPos >= tokens.size() || tokens[currentPos].type != SEMICOLON) {
         cout << "Expected ';' after goto statement\n";
         exit(1);
