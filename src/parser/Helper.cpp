@@ -57,86 +57,144 @@ varNameHolder& varNameHolder::operator=(const varNameHolder& other) {
     return *this;
 }
 
+// func to parse the data type and it's prop 
 int dataTypeHolder::getDataType(){
+
+    // helper booleon
     bool firstStarFound = false;
+
+    // helper booleon
     bool isBaseTypeFound = false;
 
+    // helper booleon
     bool isShortLongSignUnsignFound = false;
 
+    // helper booleon
     bool wasPrevTokenOfStructEnumUnion = false;
+
+    // helper booleon
     bool wasPrevTokenTypedefName = false;
     
+    // helper TokenType
     TokenType latestType;
 
+    // label to come to when needed to keep parsing
     evaluate_again : 
 
-    // get data type properties now
+    // main loop
     while(this->parser.isThisTokenDataTypeOrPropToken(this->parser.tokens[this->parser.currentPos]) || this->parser.tokens[this->parser.currentPos].type == OP_STAR){ // parsing till data type prop or star
-        if(this->parser.isThisTokenDataBaseTypeToken(this->parser.tokens[this->parser.currentPos])){ // base type
+
+        // base data type is found
+        if(this->parser.isThisTokenDataBaseTypeToken(this->parser.tokens[this->parser.currentPos])){ 
+
+            // set helper booleons accordingly
             wasPrevTokenOfStructEnumUnion = false;
             wasPrevTokenTypedefName = false;
             isBaseTypeFound = true;
+
+            // push to baseTypeArray
             this->baseTypeArray.push_back(this->parser.tokens[this->parser.currentPos].type);
+
+            // update latest type
             latestType = this->parser.tokens[this->parser.currentPos].type;
-        } else if(this->parser.isThisTokenSignModifierToken(this->parser.tokens[this->parser.currentPos])){ // sign
-            isShortLongSignUnsignFound = true;
-            if(firstStarFound){ // sign modifier token not allowed after first * is found
+        } else if(this->parser.isThisTokenSignModifierToken(this->parser.tokens[this->parser.currentPos])){ // sign modifier is found (signed/unsigned)
+            
+            // sign modifier token not allowed after first * is found
+            if(firstStarFound){ 
                 cout << "Error: Sign modifier not allowed after pointer (*) declaration" << endl;
                 exit(1);
             }
+
+            // set helper booleon accordingly
+            isShortLongSignUnsignFound = true;
             wasPrevTokenOfStructEnumUnion = false;
             wasPrevTokenTypedefName = false;
+
+            // push to signModifiersArray
             this->signModifiersArray.push_back(this->parser.tokens[this->parser.currentPos].type);
+            
+            // update latest type
             latestType = this->parser.tokens[this->parser.currentPos].type;
-        } else if(this->parser.isThisTokenSizeModifierToken(this->parser.tokens[this->parser.currentPos])){ // size
-            isShortLongSignUnsignFound = true;
-            if(firstStarFound){ // size modifier token not allowed after first * is found
+        } else if(this->parser.isThisTokenSizeModifierToken(this->parser.tokens[this->parser.currentPos])){ // size modifer is found (short/long)
+            
+            // size modifier token not allowed after first * is found
+            if(firstStarFound){ 
                 cout << "Error: Size modifier not allowed after pointer (*) declaration" << endl;
                 exit(1);
             }
+
+            // set helper booleon accordingly
+            isShortLongSignUnsignFound = true;
             wasPrevTokenOfStructEnumUnion = false;
             wasPrevTokenTypedefName = false;
+            
+            // push to sizeModifierArray
             this->sizeModifiersArray.push_back(this->parser.tokens[this->parser.currentPos].type);
+
+            // update the latest type
             latestType = this->parser.tokens[this->parser.currentPos].type;
-        } else if(this->parser.isThisTokenTypeQualifierToken(this->parser.tokens[this->parser.currentPos])){ // type
+        } else if(this->parser.isThisTokenTypeQualifierToken(this->parser.tokens[this->parser.currentPos])){ // type qualifier found (const/volatile/restrict)
+
+            // push to type qualifier array
             this->typeQualifiersArray.push_back(this->parser.tokens[this->parser.currentPos].type);
+
+            // update the latest type
             latestType = this->parser.tokens[this->parser.currentPos].type;
-        } else if(this->parser.isThisTokenStorageClassToken(this->parser.tokens[this->parser.currentPos])){ // storage
-            if(firstStarFound){ // storage class token not allowed after first * is found
+        } else if(this->parser.isThisTokenStorageClassToken(this->parser.tokens[this->parser.currentPos])){ // storage class is found (static/extern/auto/register)
+
+            // storage class token not allowed after first * is found
+            if(firstStarFound){ 
                 cout << "Error: Storage class not allowed after pointer (*) declaration" << endl;
                 exit(1);
             }
+
+            // set helper booleon accordingly
             wasPrevTokenOfStructEnumUnion = false;
             wasPrevTokenTypedefName = false;
+
+            // push to storage classArray
             this->storageClassArray.push_back(this->parser.tokens[this->parser.currentPos].type);
+
+            // update the latest type
             latestType = this->parser.tokens[this->parser.currentPos].type;
-        } else if(this->parser.tokens[this->parser.currentPos].type == OP_STAR){ // *
-            if(!isBaseTypeFound && !isShortLongSignUnsignFound){ // * found before base type was specified
+        } else if(this->parser.tokens[this->parser.currentPos].type == OP_STAR){ // * is found
+
+            // * found before base type is NOT allowed
+            if(!isBaseTypeFound && !isShortLongSignUnsignFound){ 
                 cout << "Error: Pointer (*) found before base type declaration" << endl;
                 exit(1);
             }
+            
+            // mark that first star is found now
             firstStarFound = true;
-            if(!isPrevTokenValidForCurrentStar(latestType) && !wasPrevTokenOfStructEnumUnion && !wasPrevTokenTypedefName){ // * not allowed after prev tokenType
+            
+            // * not allowed after some specific tokenTypes
+            if(!isPrevTokenValidForCurrentStar(latestType) && !wasPrevTokenOfStructEnumUnion && !wasPrevTokenTypedefName){ 
                 cout << "Error: Invalid token before pointer (*) declaration" << endl;
                 exit(1);
             }
+
+            // create starData object
             starData tempData;
             if(latestType == ID){ // base type found was TR/TD
-                tempData = {0,HELPER_TOKEN};            
+                tempData = {0,HELPER_TOKEN}; // helper token acting as helper
             } else{
-                tempData = {0,latestType};            
+                tempData = {0,latestType}; // base type is there
             }            
+
+            // count the number of stars
             while(this->parser.tokens[this->parser.currentPos].type == OP_STAR){
                 tempData.numOfStars++;
                 this->parser.currentPos++;
             }
+            // push to starDataArray
             this->starDataArray.push_back(tempData);
             continue;
             
             
         }
 
-        this->parser.currentPos++;
+        this->parser.currentPos++; // advance 1 token
     }
 
     // now we found some other token except standard data decl prop or *
@@ -144,10 +202,13 @@ int dataTypeHolder::getDataType(){
     // check if current token is struct/enum/union keyword token
     if(this->parser.isThisTokenStructUnionEnumToken(this->parser.tokens[this->parser.currentPos])){ // struct/enum/union
 
-        if(this->parser.tokens[this->parser.currentPos+1].type != ID){ // ID always expected after struct/enum/union keyword
+        // check if tagName is present
+        if(this->parser.tokens[this->parser.currentPos+1].type != ID){ 
+
+            // since no tagname, check if next token is {, if yes, it can be anonymous struct definition, jump there
             if(this->parser.tokens[this->parser.currentPos+1].type == LBRACE){
                 // might be anonymous struct definition
-                goto jumpToStructDef;
+                goto jumpToStructDef; // jump to struct definition section
             }
 
             cout << "Error: Expected ID after struct/enum/union new one\n" << endl;
@@ -156,54 +217,58 @@ int dataTypeHolder::getDataType(){
 
         // here it is struct/enum/union definition
         if(this->parser.tokens[this->parser.currentPos+2].type == LBRACE){
-            jumpToStructDef:
-            TokenType helpType = this->parser.tokens[this->parser.currentPos].type;
+            jumpToStructDef: // came from possibility of anonymous struct/union/enum difinition
 
-            // this->parser.currentPos -= 2;
+            // set helper type
+            TokenType helpType = this->parser.tokens[this->parser.currentPos].type;             
 
+            // struct found
             if(helpType == KEYWORD_STRUCT){
 
+                // parse struct
                 ASTNode** tempStorage = this->parser.parseStruct(this);
 
                 short pushIndex = 0;
-                while(tempStorage != nullptr && tempStorage[pushIndex] != nullptr){
+                // push all ast from parseStruct to tempASTStorage (global variable), it can contain struct dec/def or struct var decl also
+                while(tempStorage != nullptr && tempStorage[pushIndex] != nullptr){ 
                     tempASTStorage.push_back(tempStorage[pushIndex]);
                     pushIndex++;
                 }
-
-
-
+                
+                // return with proper return code
                 return 2;
-            } else if(helpType == KEYWORD_UNION){
+            } else if(helpType == KEYWORD_UNION){ // union found
 
+                // parse union
                 ASTNode** tempStorage = this->parser.parseUnion(this);
 
                 short pushIndex = 0;
+                // push all ast from parseUnion to tempASTStorage (global variable), it can contain union dec/def or union var decl also
                 while(tempStorage != nullptr && tempStorage[pushIndex] != nullptr){
                     tempASTStorage.push_back(tempStorage[pushIndex]);
                     pushIndex++;
                 }
 
-
-
+                // return with proper return code
                 return 2;
-            } else if(helpType == KEYWORD_ENUM){
+            } else if(helpType == KEYWORD_ENUM){ // enum found
 
+                // parse enum
                 ASTNode** tempStorage = this->parser.parseEnum(this);
 
                 short pushIndex = 0;
+                // push all ast from parseEnum to tempASTStorage (global variable), it can contain enum dec/def or enum var decl also
                 while(tempStorage != nullptr && tempStorage[pushIndex] != nullptr){
                     tempASTStorage.push_back(tempStorage[pushIndex]);
                     pushIndex++;
                 }
 
-
-
+                // return with proper return code
                 return 2;
             }
         }
         
-        // ID is found now
+        // ID is found after struct/union.enum token, it has to be struct var declaration, not definition, since that is covered alr in prev if condition
         this->trKeywordArray.push_back(this->parser.tokens[this->parser.currentPos].type); // add struct/enum/union keyword to the tr keyword array
         this->parser.currentPos++; // advance 1 token                
 
@@ -211,6 +276,7 @@ int dataTypeHolder::getDataType(){
         if(this->parser.isThisStringPresentAsKeyInTrHm(this->parser.tokens[this->parser.currentPos].data)){ // found in TR hashmap
 
             // check if it has the correct keyword in the TR hashmap accordign to the given keyword among struct/enum/union
+            // give error if mis-match
             if((this->trKeywordArray.back() == KEYWORD_STRUCT && this->parser.typeRegisry[this->parser.tokens[this->parser.currentPos].data] != "struct") ||
                (this->trKeywordArray.back() == KEYWORD_UNION && this->parser.typeRegisry[this->parser.tokens[this->parser.currentPos].data] != "union") ||
                (this->trKeywordArray.back() == KEYWORD_ENUM && this->parser.typeRegisry[this->parser.tokens[this->parser.currentPos].data] != "enum")){
@@ -218,15 +284,19 @@ int dataTypeHolder::getDataType(){
                 exit(1);
             }
             
-            // validation completed, add to TR array
+            // validation completed, ID is present properly, add to TR array
             this->trBaseArray.push_back(this->parser.tokens[this->parser.currentPos].data);
-            this->parser.currentPos++;
-            latestType = ID;
+            this->parser.currentPos++; // skip ID
 
+            // update latest type
+            latestType = ID; 
+
+            // update helper booleon accordingly
             isBaseTypeFound = true;
             wasPrevTokenOfStructEnumUnion = true;
             wasPrevTokenTypedefName = false;
 
+            // keep parsing the data type prop
             goto evaluate_again;
         } else{ // ID must be in TR to be valid
             cout << "Error: Expected correct ID after struct/enum/union\n" << endl;
@@ -236,41 +306,44 @@ int dataTypeHolder::getDataType(){
 
 
     // if the current token is NOT struct/enum/union (alr done in prev if-cond) AND check if current token is ID or not
-    if(this->parser.tokens[this->parser.currentPos].type != ID) return 1; // return if not ID , match completed    
+    if(this->parser.tokens[this->parser.currentPos].type != ID) return 1; // return if not ID , match completed 
     
     // current token is ID now
 
     // check if this ID is present in the key side in TD hashmap
     if(this->parser.isThisStringPresentAsKeyInTdMap(this->parser.tokens[this->parser.currentPos].data)){ // found in TD hashmap
 
-        // check if it is actually specifying the data type or it is actualy an ID        
+        // check if it is actually specifying the data type or it is actualy an ID, done using lookup algo       
         if(!this->parser.isCurrentIdValidTdAlias()) return 1; // return if ID is just a var/func name (found using lookup algo) , match completed
 
         // ID is valid TD entry, push it
         this->tdNew.push_back(this->parser.tokens[this->parser.currentPos].data);
         this->tdExpanded.push_back(0); // initially mark this TD entry as not expanded
-        this->parser.currentPos++;
+        this->parser.currentPos++; // skip ID
+
+        // update latest type
         latestType = ID;        
 
-
+        // update helper booleon accordingly
         wasPrevTokenTypedefName = true;
         isBaseTypeFound = true;
-
-
         
+        // keep parsing the data type prop
         goto evaluate_again;
     }        
 
-    return 1; // validation completed
+    return 1; // data type/prop parsing completed succesfully
 }
 
 int dataTypeHolder::isCurrentTypeValid(){
 
-
-    // -1 means NOT valid
-    // 0 means valid for both var and func
-    // 1 means valid ONLY for var
-    // 2 means valid ONLY for func
+    /*
+        -1 means NOT valid
+        0 means valid for both var and func
+        1 means valid ONLY for var
+        2 means valid ONLY for func
+    */
+    
 
     // open up TD entry if exists and update the order arrays (do NOT reset them, keep them for future use and validation, keep the TD entry also)
     if(this->tdNew.size() > 0){
@@ -491,9 +564,7 @@ int dataTypeHolder::isCurrentTypeValid(){
     if(this->baseTypeArray.size() + this->trBaseArray.size() != 1){
         if((this->baseTypeArray.size() + this->trBaseArray.size() == 0) && sizeOrSignPresent) {
             this->baseTypeArray.push_back(KEYWORD_INT); // add base type as int
-        } else{
-            
-
+        } else{            
             cout << "Error: Exactly one base type required" << endl;
             return -1;        
         }
@@ -570,10 +641,7 @@ int dataTypeHolder::isCurrentTypeValid(){
             return 1; // valid only for var
         }
 
-
-        return 0; // valid for both
-
-        
+        return 0; // valid for both        
     }
 
     
@@ -583,9 +651,7 @@ bool dataTypeHolder::isPrevTokenValidForCurrentStar(TokenType prevTokenType){
     if(prevTokenType == KEYWORD_CONST || prevTokenType == KEYWORD_VOLATILE || prevTokenType == KEYWORD_RESTRICT || prevTokenType == KEYWORD_INT || prevTokenType == KEYWORD_CHAR || prevTokenType == KEYWORD_BOOL || prevTokenType == KEYWORD_FLOAT || prevTokenType == KEYWORD_DOUBLE || prevTokenType == KEYWORD_VOID || prevTokenType == KEYWORD_SHORT || prevTokenType == KEYWORD_LONG || prevTokenType == KEYWORD_SIGNED || prevTokenType == KEYWORD_UNSIGNED){
         return true;
     }
-
     
-
     return false;
 }
 
