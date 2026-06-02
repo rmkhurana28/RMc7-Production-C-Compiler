@@ -1350,9 +1350,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             // return
             return temp;
         }
-
-        
-        
+                
     } else if(current.type == LBRACE){ // func definition
         
         // validate if varName is syntactical valid for variable
@@ -1387,38 +1385,42 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
     return nullptr;    
 }
 
-int varNameHolder::checkValidity(){
-    // -1 if invalid
-    // 1 if valid for var
-    // 2 if valid for func
+int varNameHolder::checkValidity(){        
+    /*
+        this func checks if the varName parsed is valid or not
+        -1 if invalid
+        1 if valid for var
+        2 if valid for func
+    */
+    
 
-    if(this->namePropArray.front().type != VAR_NAME){ // VAR_NAME has highest precedence, so it is always the first
+    // VAR_NAME has highest precedence, so it is always the first
+    if(this->namePropArray.front().type != VAR_NAME){ 
         return -1;
     }
 
     for(size_t i=0 ; i<this->namePropArray.size()-1 ; i++){
         if(this->namePropArray[i].type == FUNC){
-            if(this->namePropArray[i+1].type == FUNC){                
+            if(this->namePropArray[i+1].type == FUNC){ // func + func consecutive is invalid 
                 cout << "F + F\n";
                 return -1;
-            } else if(this->namePropArray[i+1].type == ARRAY){
+            } else if(this->namePropArray[i+1].type == ARRAY){ // func + array consecutive is invalid
                 cout << "F + A\n";
                 return -1;
             }
         } else if(this->namePropArray[i].type == ARRAY){
-            if(this->namePropArray[i+1].type == FUNC){
+            if(this->namePropArray[i+1].type == FUNC){ // array + func consecutive is invalid
                 cout << "A + F\n";
                 return -1;
             }
         }
     }
 
-    if(this->namePropArray.size() > 1 && this->namePropArray[1].type == FUNC){
+    if(this->namePropArray.size() > 1 && this->namePropArray[1].type == FUNC){ // if func is just after varName, it is valid for func, else valid for variable
         return 2; // valid only for func
     } else {
         return 1; // valid only for var
     }
-
 }
 
 void varNameHolder::resetDataTypeAndNameObjectForNext(dataTypeHolder& typeHolder){
@@ -1453,7 +1455,6 @@ void varNameHolder::resetDataTypeAndNameObjectForNext(dataTypeHolder& typeHolder
         typeHolder.starDataArray[indexIfExist].numOfStars = 0;
     }
 }
-
 
 // Static function to get operator precedence (15 = highest, 1 = lowest)
 int getOperatorPrecedence(TokenType op) {
@@ -1541,26 +1542,20 @@ int getOperatorPrecedence(TokenType op) {
     }
 }
 
-
-// ============================================================================
-// Expression Parsing Implementation
-// ============================================================================
-
 ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int needManualPushOfRBrackets) {    
 
+    // helper stack to stop at some specific encounters whenever required
     static vector<TokenType> expectedStack;
 
-    if(needManualPushOfRBrackets == 1){
+    if(needManualPushOfRBrackets == 1){ // indicating to stop when ) is encountered
         expectedStack.push_back(RPAREN);
-    } else if(needManualPushOfRBrackets == 2){
+    } else if(needManualPushOfRBrackets == 2){ // indicating to stop when } is encountered
         expectedStack.push_back(RBRACE);
-    } else if(needManualPushOfRBrackets == 3){
+    } else if(needManualPushOfRBrackets == 3){ // indicating to stop when ] is encountered
         expectedStack.push_back(RBRACKET);
-    } else if(needManualPushOfRBrackets == 4){
+    } else if(needManualPushOfRBrackets == 4){ // indicating to stop when : is encountered
         expectedStack.push_back(OP_COLON);
     }
-
-    // static ExpressionNode* temp = nullptr;
 
     ExpressionNode* left = nullptr;
     ExpressionNode* right = nullptr;
@@ -1633,14 +1628,15 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
     }
     else if(currToken.type == LPAREN){ // found (
 
-        // check if it is type case or recursive call using lookup method
-        
-        // put check algo here
+        // check if it is type case or recursive call using lookup method           
 
-        if(this->isThisParenForTypeCast()){
+        if(this->isThisParenForTypeCast()){ // this ( is for type cast
             currToken = tokens[++currentPos]; // skip ( 
+
             dataTypeHolder* type = new dataTypeHolder(*this); // data type to store the type cast data
+
             type->evaluateTypeCast();
+
             if(!type->validateTypeCast()){
                 cout << "Invaid type casting case\n";
                 exit(1);
@@ -1652,65 +1648,86 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
             }
             currToken = tokens[++currentPos]; // skip ) 
 
+            // parsing the expr
             left = parseExpression(14 , false , -1);
 
+            // generate new cast node
             left = new CastNode(type, left);
 
             goto skipAdvance;
             
-        } else {
+        } else { // this is recursive call case
             currToken = tokens[++currentPos]; // skip ( 
-            expectedStack.push_back(RPAREN);
+
+            expectedStack.push_back(RPAREN); // indicating to stop when ) is encountered
+
+            // parse expr after (
             left = parseExpression(0 , false , -1);
+
             currToken = tokens[currentPos]; // update token 
+
+            // expected )
             if(currToken = tokens[currentPos] , currToken.type != RPAREN){
                 cout << "Expected closing ) in this position\n";
                 exit(1);
             }
-            expectedStack.pop_back();
-            // currentPos++;
-        }
-        
 
+            expectedStack.pop_back();             
+        }        
         
     } else if(currToken.type == LBRACE){ // found {
+
         currToken = tokens[++currentPos]; // skip {
-        expectedStack.push_back(RBRACE);
-        vector<ASTNode*> myData;
-            if(currToken.type != RBRACE){                
-
-                multiData:
-                left = parseExpression(0 , true , -1);
-                myData.push_back(left);
-
-                if(tokens[currentPos].type == COMMA){
-                    currentPos++; // skip comma
-                    goto multiData;
-                }
-            }
         
+        expectedStack.push_back(RBRACE); // indicating to stop when } is encountered
+
+        vector<ASTNode*> myData;
+
+        if(currToken.type != RBRACE){ // somehting except } is present after {
+            multiData:
+            
+            // parse expr after { or after , if multi-data
+            left = parseExpression(0 , true , -1);
+
+            // push ast
+            myData.push_back(left);
+            if(tokens[currentPos].type == COMMA){ // multi-data inside {
+                currentPos++; // skip comma
+                goto multiData;
+            }
+        }
+    
         currToken = tokens[currentPos]; // update token 
 
+        // expected }
         if(currToken = tokens[currentPos] , currToken.type != RBRACE){
             cout << "Expected closing }\n";
             exit(1);
         }
 
         expectedStack.pop_back();
-        left = new BlockExpressionNode(myData);
 
-        // currentPos++;
+        // generate block expr node
+        left = new BlockExpressionNode(myData);
+        
     } else if(currToken.type == LBRACKET){ // found [
+
         currToken = tokens[++currentPos]; // skip [
-        expectedStack.push_back(RBRACKET);
+
+        expectedStack.push_back(RBRACKET); // indicating to stop when ] is encountered
+
+        // parse expr after [
         left = parseExpression(0 , false , -1);
+
         expectedStack.pop_back();
+
+        // expected ]
         if(currToken = tokens[currentPos] , currToken.type != RBRACKET){
             cout << "Expected closing ]\n";
             exit(1);
         }
-        currToken = tokens[currentPos]; // update token 
-        // currentPos++;
+
+        currToken = tokens[currentPos]; // update token         
     }
     else if(currToken.type == RPAREN || currToken.type == RBRACE || currToken.type == RBRACKET){ // ) or } or ]  
         return left; 
@@ -1729,19 +1746,21 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
 
     while(1){
         
-        currToken = tokens[currentPos];
+        currToken = tokens[currentPos]; // update current token
 
+        // if ; just return the func
         if(currToken.type == SEMICOLON){
             return left;
         }
         
-
+        // if , found and expected to stop at comma, return
         if(currToken.type == COMMA){
             if(stopAtComma){
                 return left;
             }
         }
 
+        // if : and expected to stop at colon, return
         if(currToken.type == OP_COLON){
             if(!expectedStack.empty() && expectedStack.back() == OP_COLON){
                 if(needManualPushOfRBrackets == 4){
@@ -1754,50 +1773,64 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
             exit(1);
         }
 
-        if(currToken.type == OP_ARROW){ // -> 
+        // -> found
+        if(currToken.type == OP_ARROW){ 
 
+            // ID is expected after ->
             if(tokens[currentPos+1].type != ID){
                 cout << "Expected ID after ->\n";
                 exit(1);
             }
 
+            // generate pointer member access node
             left = new PointerMemberAccessNode(left , tokens[currentPos+1].data);
 
             currentPos += 2; // skip -> and ID
             continue;
         } 
 
-        if(currToken.type == OP_DOT){ // .
+        // . found
+        if(currToken.type == OP_DOT){ 
 
+            // ID is expected after .
             if(tokens[currentPos+1].type != ID){
                 cout << "Expected ID after .\n";
                 exit(1);
             }
 
+            // generate member access node
             left = new MemberAccessNode(left , tokens[currentPos+1].data);
 
             currentPos += 2; // skip . and ID
             continue;
         }
 
-        if(currToken.type == LPAREN){ // func call
+        // this is func call case
+        if(currToken.type == LPAREN){ 
+
             ExpressionNode* temp = left;
+
             currToken = tokens[++currentPos]; // skip ( 
-            expectedStack.push_back(RPAREN);
+
+            expectedStack.push_back(RPAREN); // indicating to stop when ) is encountered
+            
             vector<ExpressionNode*> params;
-            if(currToken.type != RPAREN){
+            if(currToken.type != RPAREN){ // if something except ) is there after ( ,it means it has some parameters
 
                 multiParams:
                 left = parseExpression(0 , true , -1); // function call (stop at ,)
                 params.push_back(left);
 
-                if(tokens[currentPos].type == COMMA){ // multi params
+                // if , present it is multi-params
+                if(tokens[currentPos].type == COMMA){
                     currToken = tokens[++currentPos]; // skip ,
                     goto multiParams;
                 }
             }
+
             currToken = tokens[currentPos]; // update token 
             
+            // expected )
             if(currToken = tokens[currentPos] , currToken.type != RPAREN){
                 cout << "Expected closing ) func call\n";
                 exit(1);
@@ -1806,12 +1839,12 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
 
             currToken = tokens[++currentPos]; // skip )
 
-            left = new FunctionCallNode(temp , params);
-            continue;
-
             // generate func call node
+            left = new FunctionCallNode(temp , params);
+            continue;            
         }
 
+        // if ) and expected to stop at ) ,return        
         if(currToken.type == RPAREN){
             if(!expectedStack.empty() &&  expectedStack.back() == RPAREN){
                 if(needManualPushOfRBrackets == 1){
@@ -1825,6 +1858,7 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
             exit(1);
         }
 
+        // if } and expected to stop at } ,return
         if(currToken.type == RBRACE){
             if(!expectedStack.empty() &&  expectedStack.back() == RBRACE){
                 if(needManualPushOfRBrackets == 2){
@@ -1836,23 +1870,33 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
             exit(1);
         }
 
-        if(currToken.type == LBRACKET){ // array indexing
+        // it is array indexing case
+        if(currToken.type == LBRACKET){ 
+
             ExpressionNode* temp = left;
+
             currToken = tokens[++currentPos]; // skip [
-            expectedStack.push_back(RBRACKET);
-            left = parseExpression(0 , false , -1);
+
+            expectedStack.push_back(RBRACKET); // indicating to stop when ] is encountered
+
+            left = parseExpression(0 , false , -1); 
             expectedStack.pop_back();
+
+            // expected ]
             if(currToken = tokens[currentPos] , currToken.type != RBRACKET){
                 cout << "Expected closing ] array index\n";
                 exit(1);
             }
+
             currToken = tokens[++currentPos]; // update token 
 
+            // generate array access node
             left = new ArrayAccessNode(temp , left);
             continue;
 
         }
 
+        // if ] and expected to stop at ] ,return
         if(currToken.type == RBRACKET){            
             if(!expectedStack.empty() &&  expectedStack.back() == RBRACKET){
                 if(needManualPushOfRBrackets == 3){
@@ -1865,93 +1909,76 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
         }
 
 
-        if(currToken.type == OP_PLUS_PLUS || currToken.type == OP_MINUS_MINUS){ // postfix ++ or --
+        // it is postfix ++ or --
+        if(currToken.type == OP_PLUS_PLUS || currToken.type == OP_MINUS_MINUS){ 
             TokenType op = currToken.type;
 
+            // generate unary node
             left = new UnaryOpNode(op , left , false);
 
             currToken = tokens[++currentPos]; // skip ++ or --
             continue;
-        }
-        
-        
+        }                
 
+        // helper to store precedence of node
         short nextPred = getOperatorPrecedence(currToken.type);
         
         if(nextPred == 3){ // terneray operator ?
             if(3 <= initPrec){  // Ternary precedence too low for current context
                 return left;     // Stop parsing, let outer level handle it
             }
+
             currentPos++; // skip ?
-            expectedStack.push_back(OP_COLON);
+            
+            expectedStack.push_back(OP_COLON); // indicating to stop when : is encountered
+            
+            // parse expr
             ExpressionNode* ifTrue = parseExpression(0 , false , -1);
             
+            // expected :
             if(tokens[currentPos].type != OP_COLON){
                 cout << "Expected : here\n";
                 exit(1);
             }
+
             currentPos++; // skip :
+
             expectedStack.pop_back();
+
             ExpressionNode* ifFalse = parseExpression(0 , false , -1);
             
+            // generate proper ternary node
             left = new TernaryOpNode(left , ifTrue , ifFalse);
-            // 
+             
         } else if((nextPred > initPrec) || (nextPred == initPrec && (nextPred == 2 || nextPred == 3))){ // precedence of next operator is greater than the initPred for this call
         // 2nd if condition is for right associativity operators like + += -= etc            
 
             TokenType op = currToken.type;
 
-
             currentPos++; // skip operator as it is alr stored in op
 
-
+            // parse expr
             right = parseExpression(nextPred , stopAtComma , -1);
 
+            // generate binary node
             left = new BinaryOpNode(op , left , right);
-
             
         } else { // precedence of next operator is less than or equal to the initPred for this call
-                 // if same, we follow L->R order
+            // if same, we follow L->R order
             return left;
         }
-    }
-
-        
-        
-        
-    
-
-    
+    }                                
 
     // if precedence of next token is lower, then jsut return left, recursive decent will automatically handle this
     if(getOperatorPrecedence(currToken.type) < initPrec){
         return left;
-    } 
-
-    // if same
-    
-
-    
-
-    
-
-    // generate current node and advance 1 token
-
-    // save precedence of this operator(op1) in currPrec
-
-    // check next operator(op2), 
-        // if next(op2) operator has lower or same precedence as op1, evaluate the op1 and update left to be it's result , advance 1 token , and do it again
-
-        // if next(op2) operator has higher precedence than op1, then we evaluate op2 before op1 using recursive decent approach
-    
+    }     
 
     // evalauting completed, advance 1 token
     this->currentPos++;
     
     return nullptr; // placeholder
 }
-
-
 
 bool isThisTokenUnaryOp(TokenType op){
     switch(op){
