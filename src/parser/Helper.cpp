@@ -1980,6 +1980,7 @@ ExpressionNode* Parser::parseExpression(short initPrec , bool stopAtComma , int 
     return nullptr; // placeholder
 }
 
+// check if current token is a unary operand token or not
 bool isThisTokenUnaryOp(TokenType op){
     switch(op){
         case OP_PLUS_PLUS:
@@ -1998,73 +1999,118 @@ bool isThisTokenUnaryOp(TokenType op){
     }
 }
 
+// parsing typecast case
 void dataTypeHolder::evaluateTypeCast(){
+
+    // helper booleon
     bool firstStarFound = false;
     bool isBaseTypeFound = false;
 
+    // helper booleon
     bool isShortLongSignUnsignFound = false;
     
+    // helper TokenType
     TokenType latestType;
     
+    // label to come to when needed to keep parsing
     evaluate_again:
 
-    while(this->parser.isThisTokenDataTypeOrPropToken(this->parser.tokens[this->parser.currentPos]) || this->parser.tokens[this->parser.currentPos].type == OP_STAR){
+    // main loop
+    while(this->parser.isThisTokenDataTypeOrPropToken(this->parser.tokens[this->parser.currentPos]) || this->parser.tokens[this->parser.currentPos].type == OP_STAR){ // parsing till data type prop or star
+
+        // storage class tokens are not allowed 
         if(this->parser.isThisTokenStorageClassToken(this->parser.tokens[this->parser.currentPos])){
             cout << "Storage class not allowed inside Type cast\n";
             exit(1);
         } 
-        if(this->parser.isThisTokenDataBaseTypeToken(this->parser.tokens[this->parser.currentPos])){ // base type
+
+        // base data type is found
+        if(this->parser.isThisTokenDataBaseTypeToken(this->parser.tokens[this->parser.currentPos])){ 
+
+            // mark base type as found
             isBaseTypeFound = true;
+
+            // push to bsaeType array
             this->baseTypeArray.push_back(this->parser.tokens[this->parser.currentPos].type);
+
+            // update latest type
             latestType = this->parser.tokens[this->parser.currentPos].type;
-        } else if(this->parser.isThisTokenSignModifierToken(this->parser.tokens[this->parser.currentPos])){ // sign
+        } else if(this->parser.isThisTokenSignModifierToken(this->parser.tokens[this->parser.currentPos])){ // sign modifier is found
+            
+            // update helper booleons accordingly
             isShortLongSignUnsignFound = true;
-            if(firstStarFound){ // sign modifier token not allowed after first * is found
+
+            // sign modifier token not allowed after first * is found
+            if(firstStarFound){ 
                 cout << "Error: Sign modifier not allowed after pointer (*) declaration" << endl;
                 exit(1);
             }
+
+            // push to signModifier array 
             this->signModifiersArray.push_back(this->parser.tokens[this->parser.currentPos].type);
+
+            // update latest type
             latestType = this->parser.tokens[this->parser.currentPos].type;
-        } else if(this->parser.isThisTokenSizeModifierToken(this->parser.tokens[this->parser.currentPos])){ // size
+        } else if(this->parser.isThisTokenSizeModifierToken(this->parser.tokens[this->parser.currentPos])){ // size modifier is found
+
+            // update helper booleons accordingly
             isShortLongSignUnsignFound = true;
-            if(firstStarFound){ // size modifier token not allowed after first * is found
+
+            // size modifier token not allowed after first * is found
+            if(firstStarFound){ 
                 cout << "Error: Size modifier not allowed after pointer (*) declaration" << endl;
                 exit(1);
             }
+
+            // push to sizeModifierArray
             this->sizeModifiersArray.push_back(this->parser.tokens[this->parser.currentPos].type);
+
+            // update latest type
             latestType = this->parser.tokens[this->parser.currentPos].type;
-        } else if(this->parser.isThisTokenTypeQualifierToken(this->parser.tokens[this->parser.currentPos])){ // type
+        } else if(this->parser.isThisTokenTypeQualifierToken(this->parser.tokens[this->parser.currentPos])){ // type qualifier is found
+            
+            // push to type qualifier array
             this->typeQualifiersArray.push_back(this->parser.tokens[this->parser.currentPos].type);
+
+            // update latest type
             latestType = this->parser.tokens[this->parser.currentPos].type;
         } else if(this->parser.tokens[this->parser.currentPos].type == OP_STAR){ // *
-            if(!isBaseTypeFound && !isShortLongSignUnsignFound){ // * found before base type was specified
+
+            // * found before base type was specified
+            if(!isBaseTypeFound && !isShortLongSignUnsignFound){ 
                 cout << "Error: Pointer (*) found before base type declaration" << endl;
                 exit(1);
             }
+
+            // mark first star as found
             firstStarFound = true;
-            if(!isPrevTokenValidForCurrentStar(latestType)){ // * not allowed after prev tokenType
+
+            // * not allowed after specific tokens, check that
+            if(!isPrevTokenValidForCurrentStar(latestType)){ 
                 cout << "Error: Invalid token before pointer (*) declaration" << endl;
                 exit(1);
             }
+
             starData tempData;
             if(latestType == ID){ // base type found was TR/TD
                 tempData = {0,HELPER_TOKEN};            
-            } else{
+            } else{ //  base type is normal data type
                 tempData = {0,latestType};            
             }            
+
+            // count the number of stars
             while(this->parser.tokens[this->parser.currentPos].type == OP_STAR){
                 tempData.numOfStars++;
                 this->parser.currentPos++;
             }
             this->starDataArray.push_back(tempData);
-            continue;
-            
-            
+            continue;                        
         }
 
-        this->parser.currentPos++;
+        this->parser.currentPos++; // advance 1 token
     }
 
+    // return if ) is found
     if(this->parser.tokens[this->parser.currentPos].type == RPAREN) return;
 
     // now we found some other token except standard data decl prop or *
@@ -2072,7 +2118,8 @@ void dataTypeHolder::evaluateTypeCast(){
     // check if current token is struct/enum/union keyword token
     if(this->parser.isThisTokenStructUnionEnumToken(this->parser.tokens[this->parser.currentPos])){ // struct/enum/union
 
-        if(this->parser.tokens[this->parser.currentPos+1].type != ID){ // ID always expected after struct/enum/union keyword
+        // ID always expected after struct/enum/union keyword
+        if(this->parser.tokens[this->parser.currentPos+1].type != ID){ 
             cout << "Error: Expected ID after struct/enum/union\n" << endl;
             exit(1);
         }
@@ -2132,6 +2179,7 @@ void dataTypeHolder::evaluateTypeCast(){
     return; // validation completed
 }
 
+// validating type cast here
 bool dataTypeHolder::validateTypeCast(){
     // open up TD entry if exists and update the order arrays (do NOT reset them, keep them for future use and validation, keep the TD entry also)
     if(this->tdNew.size() > 0){
@@ -2383,34 +2431,39 @@ bool dataTypeHolder::validateTypeCast(){
     }
 }
 
+// function to check if ( that is found is for type cast or not
 bool Parser::isThisParenForTypeCast(){    
 
+    // store next token
     Token evaToken = tokens[currentPos+1];
     
-    if(evaToken.type == RPAREN) return false; // false if empty paren , ()
+    // false if empty paren , ()
+    if(evaToken.type == RPAREN) return false; 
 
     short unsigned count = 2;
 
     reEvaluate:
 
-    if(isThisTokenDataTypeOrPropToken(evaToken) || evaToken.type == OP_STAR) return true; // return if next is either data type prop or * , it has to be type cast
+    if(isThisTokenDataTypeOrPropToken(evaToken) || evaToken.type == OP_STAR) return true; // return true if next is either data type prop or * , it has to be type cast
 
     if(evaToken.type == KEYWORD_STRUCT || evaToken.type == KEYWORD_ENUM || evaToken.type == KEYWORD_UNION) return true; // return if struct/enum/union keyword , it has to be type cast, further validation will be done while evaluating in next step
 
     if(evaToken.type != ID) return false; // next has to be ID , if not return false
 
-    if(!isThisStringPresentAsKeyInTdMap(evaToken.data)) return false; // if next is ID, it has to be present in TD, if not, return false
+    if(!isThisStringPresentAsKeyInTdMap(evaToken.data)) return false; // if next is ID, it has to be present in TD, if not, return false    
 
-    
-
-    // not next is ID and also present in TD, 
+    // now next is ID and also present in TD, 
     evaToken = tokens[currentPos + count++];
-    if(evaToken.type == RPAREN) return true;
-    goto reEvaluate;
 
+    // return if ) if found
+    if(evaToken.type == RPAREN) return true;
+
+    // evaluate further 
+    goto reEvaluate;
     
 }
 
+// function that rejects only "void" as data type
 void dataTypeHolder::rejectOnlyVoid(){
     if(this->baseTypeArray.size() != 0 && this->baseTypeArray.back() == KEYWORD_VOID){
         // void exist
@@ -2426,9 +2479,13 @@ void dataTypeHolder::rejectOnlyVoid(){
     return;
 }
 
+// function to parse block 
 BlockExpressionNode* parseBlock(Parser& parser){
+    
+    // storage to store all ASTs inside the block
     vector<ASTNode*> blockASTs;
 
+    // { expected for the start of block
     if(parser.tokens[parser.currentPos].type != LBRACE){
         cout << "Expected { to start block\n";
         exit(1);
@@ -2436,8 +2493,10 @@ BlockExpressionNode* parseBlock(Parser& parser){
 
     parser.currentPos++; // skip {
 
+    // parse untill } is found
     while(parser.currentPos < parser.tokens.size() && parser.tokens[parser.currentPos].type != RBRACE){
 
+        // parse the statement from current token and store in myHelper
         ASTNode** myHelper = parser.startParsingOfCurrentToken();
 
         short i = 0;
@@ -2448,15 +2507,13 @@ BlockExpressionNode* parseBlock(Parser& parser){
                 using while instead of hardcoding it to 0 , coz some functions can return more than 1 ast at a time, ex struct with var decl
             */
 
-
+            // push to blockASTs properly
             blockASTs.push_back(myHelper[i]);
             i++;
-        }
-
-        // blockASTs.push_back(parser.startParsingOfCurrentToken()[0]);
-        
+        }                
     }
 
+    // expected } to close the block
     if(parser.currentPos >= parser.tokens.size() || parser.tokens[parser.currentPos].type != RBRACE){
         cout << "Expected } to close block\n";
         exit(1);
@@ -2464,13 +2521,17 @@ BlockExpressionNode* parseBlock(Parser& parser){
 
     parser.currentPos++; // skip }
 
+    // generate and return block ast
     return new BlockExpressionNode(blockASTs);
-
 }
 
+// function to parse block of Enum
 EnumBlockExpressionNode* parseEnumBlock(Parser& parser){
+
+    // vector to store all enum value objects
     vector<enumComponentHolder> enumerators;
 
+    // { is expected in the starting of enum block 
     if(parser.tokens[parser.currentPos].type != LBRACE){
         cout << "Expected { to start enum block\n";
         exit(1);
@@ -2478,24 +2539,29 @@ EnumBlockExpressionNode* parseEnumBlock(Parser& parser){
 
     parser.currentPos++; // skip {
 
+    // parse till } is found
     while(parser.currentPos < parser.tokens.size() && parser.tokens[parser.currentPos].type != RBRACE){
-        // Check for identifier
+
+        // ID is always expected in left side of the enum line (ex, A or A = 10 or A = expr1 + expr2)
         if(parser.tokens[parser.currentPos].type != ID){
             cout << "Expected identifier in enum block\n";
             exit(1);
         }
 
+        // set ID as enum name
         string enumName = parser.tokens[parser.currentPos].data;
         parser.currentPos++; // skip identifier
 
+        // node to store enum value, might be const or expr
         ExpressionNode* enumValue = nullptr;
 
         // Check if next token is = or ,
         if(parser.currentPos < parser.tokens.size() && parser.tokens[parser.currentPos].type == OP_ASSIGN){
             parser.currentPos++; // skip =
 
-            // Parse expression, stop at comma - only if valid expression follows
+            // Parse expression, stop at comma ,only if valid expression follows
             if(parser.currentPos < parser.tokens.size() && parser.tokens[parser.currentPos].type != RBRACE && parser.tokens[parser.currentPos].type != COMMA){
+
                 // peek ahead to check if this is the last enumerator
                 int peekPos = parser.currentPos;
                 int nestLevel = 0;
@@ -2509,7 +2575,7 @@ EnumBlockExpressionNode* parseEnumBlock(Parser& parser){
                     peekPos++;
                 }
 
-                enumValue = parser.parseExpression(0, true, isLast ? 2 : -1);
+                enumValue = parser.parseExpression(0, true, isLast ? 2 : -1); // stop at } if last, hence sneding 2, if not, sending -1 as default
             }
         }
 
@@ -2518,17 +2584,18 @@ EnumBlockExpressionNode* parseEnumBlock(Parser& parser){
         enumerators.push_back(std::move(component));
 
         // Check for comma or close brace
-        if(parser.currentPos < parser.tokens.size() && parser.tokens[parser.currentPos].type == COMMA){
+        if(parser.currentPos < parser.tokens.size() && parser.tokens[parser.currentPos].type == COMMA){ // , might be present after last line, skip it if present
             parser.currentPos++; // skip ,
-        } else if(parser.currentPos < parser.tokens.size() && parser.tokens[parser.currentPos].type != RBRACE){
+        } else if(parser.currentPos < parser.tokens.size() && parser.tokens[parser.currentPos].type != RBRACE){ // expected } for the closing of enum block
             cout << "Expected , or } in enum block at pos " << parser.currentPos << "\n";
             exit(1);
-        } else if(parser.currentPos >= parser.tokens.size()){
+        } else if(parser.currentPos >= parser.tokens.size()){ // overflow
             cout << "Unexpected end of tokens in enum block\n";
             exit(1);
         }
     }
 
+    // expeced }
     if(parser.currentPos >= parser.tokens.size() || parser.tokens[parser.currentPos].type != RBRACE){
         cout << "Expected } to close enum block\n";
         exit(1);
@@ -2536,8 +2603,8 @@ EnumBlockExpressionNode* parseEnumBlock(Parser& parser){
 
     parser.currentPos++; // skip }
 
+    // generate and return enum block ast
     return new EnumBlockExpressionNode(std::move(enumerators));
-
 }
 
 
