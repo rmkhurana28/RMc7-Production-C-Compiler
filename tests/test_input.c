@@ -1,1 +1,1 @@
-int func(int param);
+int *var1 , **(***func1)(int ****(*****param)) , *var2;

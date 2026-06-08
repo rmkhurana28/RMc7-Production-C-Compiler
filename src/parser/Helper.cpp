@@ -690,6 +690,14 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
     static int addAtTheEndSaver = -1;
     static int brackCountAtaddAtTheEndSaver = -1;
 
+    // count to keep track of levels of nested parameters
+    static int paramStack = 0;
+
+    // making stack for addAtTheEnd
+    static vector<int> addEndStack;
+
+    // set initial one to 0
+    addEndStack.push_back(0);
 
     // booleon helper
     bool static isFirstVar = true; // flag if the var is first in multiple decl
@@ -810,11 +818,17 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                             // typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array 
                         // }
                     } else{ // base type alr exist in starData array
-
+                    
                         if(addAtTheEnd != -1){ // store prev values to saver varaibles
                             addAtTheEndSaver = addAtTheEnd;
                             brackCountAtaddAtTheEndSaver = brackCountAtaddAtTheEnd;
                         }
+
+                        // keep the number of stars to be added when 
+                        addEndStack[paramStack] = typeHolder.starDataArray[indexIfExist].numOfStars;
+                        
+                        cout << "DEBUG | OP star case | paramStack = " << paramStack << endl;
+                        cout << "DEBUG | stars count = " << addEndStack[paramStack] << endl << endl;
 
                         addAtTheEnd = typeHolder.starDataArray[indexIfExist].numOfStars;      
                         brackCountAtaddAtTheEnd = bracketStackCount;      
@@ -1020,8 +1034,6 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             myNewHelper:
 
             if(idFound){ // if ID alr found, then it has to be params opening PAREN
-
-                cout << "idFound case\n";
                 
                 
                 // evaluate pointors since this brakcet is param bracket, but if conditons meet
@@ -1039,8 +1051,14 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 varNameProp temp;
                 temp.type = FUNC;
 
+                // increase the paramStackCounter
+                paramStack++;
+                addEndStack.push_back(0);
+
                 // evaluate params
                 temp.funcParams = ParameterNode::evaluateParams(this->parser); 
+
+                paramStack--;
 
                 paramList = temp.funcParams;
 
@@ -1089,8 +1107,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
                 bracketStackCount++; // increase current bracket stack count by 1
 
-                // this is the recursive call
-                cout << "isFuncParam= " << isFuncParam << endl;
+                // this is the recursive call                
 
                 /*
                     making isFuncParam false here even if it is true, it shoud be false entering into recursive call. coz if we encounter ), it will be first of closing of recursive call, and not closing of func param, so we can make it true if again if it was true before calling
@@ -1149,11 +1166,9 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                     also, isFuncParam is true, but do we need to modify it's value when entering into or out of the recursion phase?????
                 */
 
-                cout << "brackCountAtaddAtTheEnd = " << brackCountAtaddAtTheEnd << endl;
-                cout << "bracketStackCount = " << bracketStackCount << endl;
                 
 
-                if(bracketStackCount == 0 && addAtTheEnd != -1 && finalHelper && brackCountAtaddAtTheEnd != -1){
+                if(addEndStack[paramStack] > 0){
 
                     // {   
                         // starData tempStarData({addAtTheEnd , baseType}); // generate a starData object
@@ -1162,18 +1177,23 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
                     varNameProp temp;
                     temp.type = POINTOR;
-                    temp.numPointor = addAtTheEnd;
+                    // temp.numPointor = addAtTheEnd;
+                    temp.numPointor = addEndStack[paramStack];
 
-                    this->namePropArray.push_back(temp);
+                    cout << "DEBUG | paramStack = " << paramStack << endl;
+                    cout << "DEBUG | stars added = " << addEndStack[paramStack] << endl << endl;
+                    
+                    addEndStack[paramStack] = 0;                    
 
-                    cout << "addAtTheEndSaver = " << addAtTheEndSaver << endl;  
+                    this->namePropArray.push_back(temp);                    
 
+                } else{
+                    cout << "Else condition\n\n";
                 }
 
                 {
                     if(finalHelperSaver == true){
 
-                        cout << "special\n";
 
                         addAtTheEnd = addAtTheEndSaver;
                         brackCountAtaddAtTheEnd = brackCountAtaddAtTheEndSaver;
@@ -1184,7 +1204,6 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                         finalHelperSaver = false;
                         
                     } else{
-                        cout << "Simple\n";
                         addAtTheEnd = -1; // reset addAtTheEnd
                         brackCountAtaddAtTheEnd = -1;
                     }
@@ -1192,7 +1211,19 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                     finalHelper = false;
                 }
 
-                // adding algo down                                                            
+                // adding algo down         
+                
+                if(addEndStack[paramStack] != 0){
+                    cout << "DEBUG | paramStack = " << paramStack << endl;
+                    cout << "DEBUG | addEndStack[paramStack] = " << addEndStack[paramStack] << endl;
+                    cout << "DEBUG | maybe some issue here\n";
+                    exit(2);
+                } else{
+                    cout << "Passed\n\n";
+                }
+
+                addEndStack.pop_back();
+                // paramStack--;
                 
 
                 return nullptr;
@@ -1230,7 +1261,8 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
     }
     
 
-    if(isFirstVar && bracketStackCount == 0 && !finalHelper){ // if the var is first in multiple decl        
+    if(isFirstVar && bracketStackCount == 0 && !finalHelper){ // if the var is first in multiple decl
+        cout << "Getting evaluated here\n";        
 
         // get base token type
         TokenType baseType;
@@ -1308,7 +1340,12 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
         varNameProp temp;
         temp.type = POINTOR;
-        temp.numPointor = addAtTheEnd;
+        // temp.numPointor = addAtTheEnd;
+        temp.numPointor = addEndStack[paramStack];
+
+        addEndStack[paramStack] = 0;
+        // paramStack--;
+        addEndStack.pop_back();
 
         this->namePropArray.push_back(temp);
 
