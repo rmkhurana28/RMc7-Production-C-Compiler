@@ -1792,7 +1792,6 @@ ASTNode** Parser::parseTypedef() {
     // validate this parsed data type prop object
     original->isCurrentTypeValid();
 
-
     // it is struct/union/enum definition
     if(retValueDecl == 2){ 
         

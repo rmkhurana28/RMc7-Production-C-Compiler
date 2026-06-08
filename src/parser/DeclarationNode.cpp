@@ -90,7 +90,6 @@ vector<ParameterNode> ParameterNode::evaluateParams(Parser& parser){
         exit(1);
     }
     if(check == 2){
-
         
         // special check if the param is just void, required since void(just "void") generally not allowed for variable data type
         if(paramType.baseTypeArray.size() == 1 && paramType.baseTypeArray[0] == KEYWORD_VOID){
