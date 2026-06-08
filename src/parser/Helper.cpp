@@ -1081,7 +1081,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
                     cout << "current = " << this->parser.tokens[this->parser.currentPos].data << endl;
 
-                    if(this->parser.currentPos+1 < this->parser.tokens.size() && this->parser.tokens[this->parser.currentPos].type == RPAREN && (this->parser.tokens[this->parser.currentPos+1].type != RPAREN && this->parser.tokens[this->parser.currentPos+1].type != SEMICOLON)){
+                    if(this->parser.currentPos+1 < this->parser.tokens.size() && this->parser.tokens[this->parser.currentPos].type == RPAREN && (this->parser.tokens[this->parser.currentPos+1].type != RPAREN && this->parser.tokens[this->parser.currentPos+1].type != SEMICOLON && this->parser.tokens[this->parser.currentPos+1].type != COMMA)){
                         // do NOT add stars here
                         cout << "Skipping\n\n";
                         goto skipStars;
