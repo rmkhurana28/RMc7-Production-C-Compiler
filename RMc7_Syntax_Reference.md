@@ -74,8 +74,6 @@ typedef int (*FP)(int);
 FP f;              // function pointer
 ```
 
-> **Known Issue:** Multiple aliases in a single typedef statement (e.g., `typedef int newInt, myInt;`) are partially supported. The first alias is registered correctly, but subsequent aliases may not be registered in all cases. **Workaround:** Use separate typedef statements for each alias: `typedef int newInt; typedef int myInt;`
-
 > **Known Limitation :** When a typedef alias contains a pointer (e.g., `typedef int *P;`) and that alias is used in a variable declaration with a qualifier (e.g., `const P a;`), the output may be incorrect. **Workaround:** Avoid this pattern. Use non-pointer typedefs with explicit pointer declarators instead: `typedef int I; const I *a;`
 
 ### 1.4 Type Qualifiers
