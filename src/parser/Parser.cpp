@@ -1772,8 +1772,8 @@ ASTNode** Parser::parseUnion(dataTypeHolder* helperDeclName) {
 // parsing typedef
 ASTNode** Parser::parseTypedef() {
 
-    string helper;
-    
+    // helper to store value of first alias name in case of multi typedef alias
+    string helper;    
 
     // set tracker to true when entering typedef parsing
     typedDefTracker = true;
@@ -1808,8 +1808,7 @@ ASTNode** Parser::parseTypedef() {
            
             string tagNameStore;
             
-            if(i == 0){ // first one is struct/union/enum definition itself
-                // tagNameStore = dynamic_cast<StructDefinitionNode*>(tempASTStorage[i])->tagName;
+            if(i == 0){ // first one is struct/union/enum definition itself                
                 list.push_back(tempASTStorage[i]); // add the struct to the list as it is the foundation for typedef                
             } else{ // now, convert properly
 
@@ -1851,7 +1850,7 @@ ASTNode** Parser::parseTypedef() {
                             tempIndexHolder++; // skip tagName
                         } else{
                             // it is anon struct/union/enum def with typedef, need to give it a name myself
-                            // get the anon struct/union/enum name from the latest definition using dynamic cast
+                            // get the anon struct/union/enum name from the it's corresponding defintion (the first element at 0th index) using dynamic cast
 
                             if(StructDefinitionNode* structDef = dynamic_cast<StructDefinitionNode*>(list[0])) { // for struct definition ast
                                 rhs->declProp.push_back(structDef->tagName);
@@ -1879,9 +1878,7 @@ ASTNode** Parser::parseTypedef() {
                     }
 
 
-                } 
-                
-                
+                }                                 
                 
                 // Add the current declarator's typedef to the list and map
                 list.push_back(new TypedefDeclarationNode(rhs->declProp , rhs->nameProp));
@@ -1963,9 +1960,7 @@ ASTNode** Parser::parseTypedef() {
         }        
 
         // check if token is sturct/union/enum
-        if(tokens[tempIndexHolder].type == KEYWORD_STRUCT || tokens[tempIndexHolder].type == KEYWORD_UNION || tokens[tempIndexHolder].type == KEYWORD_ENUM){
-
-            // this is pending for now
+        if(tokens[tempIndexHolder].type == KEYWORD_STRUCT || tokens[tempIndexHolder].type == KEYWORD_UNION || tokens[tempIndexHolder].type == KEYWORD_ENUM){            
 
             // push struct/union/enum to the declProp array
             rhs->declProp.push_back(tokens[tempIndexHolder].data);
@@ -1978,13 +1973,13 @@ ASTNode** Parser::parseTypedef() {
                 tempIndexHolder++; // skip tagName
             } else{
                 // it is anon struct/union/enum def with typedef, need to give it a name myself
-                // get the anon struct/union/enum name from the latest definition using dynamic cast
+                // get the anon struct/union/enum name from the it's corresponding defintion (the first element at 0th index) using dynamic cast
 
-                if(StructDefinitionNode* structDef = dynamic_cast<StructDefinitionNode*>(list.back())) { // for struct definition ast
+                if(StructDefinitionNode* structDef = dynamic_cast<StructDefinitionNode*>(list[0])) { // for struct definition ast
                     rhs->declProp.push_back(structDef->tagName);
-                } else if(UnionDefinitionNode* unionDef = dynamic_cast<UnionDefinitionNode*>(list.back())) { // for union definition ast
+                } else if(UnionDefinitionNode* unionDef = dynamic_cast<UnionDefinitionNode*>(list[0])) { // for union definition ast
                     rhs->declProp.push_back(unionDef->tagName);
-                } else if(EnumDefinitionNode* enumDef = dynamic_cast<EnumDefinitionNode*>(list.back())) { // for enum definition ast
+                } else if(EnumDefinitionNode* enumDef = dynamic_cast<EnumDefinitionNode*>(list[0])) { // for enum definition ast
                     rhs->declProp.push_back(enumDef->tagName);
                 }
             }
@@ -1999,10 +1994,8 @@ ASTNode** Parser::parseTypedef() {
             } 
             
             else if(!isFirstDeclator && tokens[tempIndexHolder].data == helper){
-                // now it reached name of the prev alias , skip and do NOT push to decl prop array
-            }
-
-            // repalcing if with else if
+                // now it reached name of the first alias in case of multi-alias , skip and do NOT push to decl prop array
+            }            
             else if(isThisStringPresentAsKeyInTdMap(tokens[tempIndexHolder].data)){ // ID found as key in tdMap                
                 rhs->declProp.push_back(tokens[tempIndexHolder].data); // push ID to declProp array
 
@@ -2032,13 +2025,12 @@ ASTNode** Parser::parseTypedef() {
         tempIndexHolder = indexSaver; // Reset tempIndexHolder to reprocess data type tokens for next declarator
         currentPos++; // skip comma
 
+        // if it is first alias, store the name of alias for further reference
         if(isFirstDeclator){
             helper = typedefAliasName;
         }
 
-        isFirstDeclator = false; // Mark that we're on a subsequent declarator
-
-        
+        isFirstDeclator = false; // Mark that we're on a subsequent declarator        
 
         goto multiTypeDefDeclLabel; // Go parse the next declarator
     } else if(tokens[currentPos].type == SEMICOLON){
