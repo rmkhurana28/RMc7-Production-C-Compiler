@@ -657,7 +657,6 @@ bool dataTypeHolder::isPrevTokenValidForCurrentStar(TokenType prevTokenType){
 
 DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isFuncParam, bool forceResetStatics){
 
-
     // booleon helper (static)
     bool static finalHelper = false;
 
@@ -702,10 +701,10 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
     // booleon helper
     bool static isFirstVar = true; // flag if the var is first in multiple decl
 
+    // helper condition to fix a pattern of bugs
     if(isFuncParam){
         idFound = false;
-
-        // 
+        
         if(finalHelper){
             finalHelperSaver = true;
 
@@ -825,10 +824,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                         }
 
                         // keep the number of stars to be added when 
-                        addEndStack[paramStack] = typeHolder.starDataArray[indexIfExist].numOfStars;
-                        
-                        cout << "DEBUG | OP star case | paramStack = " << paramStack << endl;
-                        cout << "DEBUG | stars count = " << addEndStack[paramStack] << endl << endl;
+                        addEndStack[paramStack] = typeHolder.starDataArray[indexIfExist].numOfStars;                    
 
                         addAtTheEnd = typeHolder.starDataArray[indexIfExist].numOfStars;      
                         brackCountAtaddAtTheEnd = bracketStackCount;      
@@ -853,8 +849,6 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             checkAgain: // label used for pointor evaluatin jumps            
 
             if(current.type == LPAREN){ // ( present after *  
-                cout << this->parser.tokens[this->parser.currentPos-1].data << " " << this->parser.tokens[this->parser.currentPos].data << " " << this->parser.tokens[this->parser.currentPos+1].data << endl;
-                cout << "bracket count stored as " << bracketStackCount << endl;
                 initBrackCount = bracketStackCount; // store the number of nested brackets , stars will be added when it's corresponding ) is detected            
             } else if(current.type == ID){ // var name after *
 
@@ -1079,14 +1073,10 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                         int (**newDataType(char c)[1]);
                     */
 
-                    cout << "current = " << this->parser.tokens[this->parser.currentPos].data << endl;
-
                     if(this->parser.currentPos+1 < this->parser.tokens.size() && this->parser.tokens[this->parser.currentPos].type == RPAREN && (this->parser.tokens[this->parser.currentPos+1].type != RPAREN && this->parser.tokens[this->parser.currentPos+1].type != SEMICOLON && this->parser.tokens[this->parser.currentPos+1].type != COMMA)){
-                        // do NOT add stars here
-                        cout << "Skipping\n\n";
+                        // do NOT add stars here                        
                         goto skipStars;
-                    }
-                    cout << "Adding\n\n";
+                    }                    
 
                     varNameProp temp;
                     temp.type = POINTOR;
@@ -1135,7 +1125,6 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                     if(this->parser.tokens[this->parser.currentPos+1].type == LBRACKET){
                         this->parser.currentPos++; // skip )
                         gotoHelper3 = true;
-                        cout << "here\n";
                         goto myNewHelperAgain;
                     }
 
@@ -1179,17 +1168,12 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                     temp.type = POINTOR;
                     // temp.numPointor = addAtTheEnd;
                     temp.numPointor = addEndStack[paramStack];
-
-                    cout << "DEBUG | paramStack = " << paramStack << endl;
-                    cout << "DEBUG | stars added = " << addEndStack[paramStack] << endl << endl;
                     
                     addEndStack[paramStack] = 0;                    
 
                     this->namePropArray.push_back(temp);                    
 
-                } else{
-                    cout << "Else condition\n\n";
-                }
+                } 
 
                 {
                     if(finalHelperSaver == true){
@@ -1214,13 +1198,8 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                 // adding algo down         
                 
                 if(addEndStack[paramStack] != 0){
-                    cout << "DEBUG | paramStack = " << paramStack << endl;
-                    cout << "DEBUG | addEndStack[paramStack] = " << addEndStack[paramStack] << endl;
-                    cout << "DEBUG | maybe some issue here\n";
                     exit(2);
-                } else{
-                    cout << "Passed\n\n";
-                }
+                } 
 
                 addEndStack.pop_back();
                 // paramStack--;
@@ -1261,8 +1240,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
     }
     
 
-    if(isFirstVar && bracketStackCount == 0 && !finalHelper){ // if the var is first in multiple decl
-        cout << "Getting evaluated here\n";        
+    if(isFirstVar && bracketStackCount == 0 && !finalHelper){ // if the var is first in multiple decl    
 
         // get base token type
         TokenType baseType;
@@ -1331,7 +1309,6 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
     // && brackCountAtaddAtTheEnd == bracketStackCount ???
 
     if(isFirstVar && bracketStackCount == 0 && addAtTheEnd != -1 && finalHelper && brackCountAtaddAtTheEnd != -1){
-        cout << "Now reaching here somehow\n";
 
         // {   
             // starData tempStarData({addAtTheEnd , baseType}); // generate a starData object
