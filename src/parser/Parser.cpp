@@ -280,15 +280,13 @@ ASTNode** Parser::startParsingOfCurrentToken() { // entire if-else sequence cont
     dont know if below func is being used somehwere, it was made in the early design, and then later refactoring of algo was done, need to properly see if this func is being used or if it is safe to remove from here.
 */
 DeclarationNode* Parser::parseCurrentDecl(){ 
-    // use if else to find the best parser for current node
-    // if(isThisTokenDataTypeOrPropToken(this->tokens[this->currentPos])){ // found some data type or prop
-        // call the parser fucntion with data type as first token
-        ASTNode** result = this->parseDataTypeFoundDeclaration();
-        // grab the first node from the returned array
-        if(result != nullptr && result[0] != nullptr){
-            return dynamic_cast<DeclarationNode*>(result[0]);
-        }
-    // }
+    // use if else to find the best parser for current node    
+    // call the parser fucntion with data type as first token
+    ASTNode** result = this->parseDataTypeFoundDeclaration();
+    // grab the first node from the returned array
+    if(result != nullptr && result[0] != nullptr){
+        return dynamic_cast<DeclarationNode*>(result[0]);
+    }    
     return nullptr;
 }
 
@@ -517,11 +515,8 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
         // parse the func name
         temp = currName.getVarName(currType , false, true);
 
-        
-        if(tempVarNameHolder != nullptr){ // what is happening here? 
-
-
-            // uint64_t orig = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.size();
+        // code 2-01
+        if(tempVarNameHolder != nullptr){           
 
             {
                 uint64_t tempVarNameSize = tempVarNameHolder->namePropArray.size();
@@ -531,23 +526,7 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
                         static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.push_back(tempVarNameHolder->namePropArray[i]);
                     }
                 }
-            }
-
-
-            // it had some td expansion logic, need to modify the varName accordingly
-
-            // varNameHolder* modifiedVarName = new varNameHolder(*tempVarNameHolder); // copy the tempVarNameHolder to the new modified one
-
-            // modifiedVarName->namePropArray[0] = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[0];
-
-            // if(orig != 1){
-            //     for(uint64_t i=1 ; i<orig ; i++){
-            //         // modifiedVarName->namePropArray.push_back(temp->varName.namePropArray[i]);
-            //         modifiedVarName->namePropArray.push_back(static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[i]);
-            //     }
-            // }
-
-            // static_cast<VariableDeclarationNode*>(temp)->varName = *modifiedVarName; // assign the modified var name back to temp
+            }            
 
             tempVarNameHolder = nullptr; 
             
@@ -569,10 +548,8 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
         // parse var name
         temp = currName.getVarName(currType , false, true);        
 
-        if(tempVarNameHolder != nullptr){ // what is happening here again?
-
-
-            // uint64_t orig = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.size();
+        // code 2-01
+        if(tempVarNameHolder != nullptr){ 
 
             {
                 uint64_t tempVarNameSize = tempVarNameHolder->namePropArray.size();
@@ -582,26 +559,7 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
                         static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.push_back(tempVarNameHolder->namePropArray[i]);
                     }
                 }
-            }
-
-
-            // it had some td expansion logic, need to modify the varName accordingly
-
-            // varNameHolder* modifiedVarName = new varNameHolder(*tempVarNameHolder); // copy the tempVarNameHolder to the new modified one
-
-            // modifiedVarName->namePropArray[0] = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[0];
-            
-
-            // if(orig != 1){
-            //     for(uint64_t i=1 ; i<orig ; i++){
-            //         // modifiedVarName->namePropArray.push_back(temp->varName.namePropArray[i]);
-            //         modifiedVarName->namePropArray.push_back(static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[i]);
-            //     }
-            // }
-
-            
-
-            // static_cast<VariableDeclarationNode*>(temp)->varName = *modifiedVarName; // assign the modified var name back to temp
+            }            
 
             tempVarNameHolder = nullptr; 
             
@@ -630,11 +588,8 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
         // parse name
         temp = currName.getVarName(currType , false, true);        
 
-        if(tempVarNameHolder != nullptr){ // again, what is going on here ???
-
-
-            // store the original size of varName array before modification
-            // uint64_t orig = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.size();
+        // code 2-01
+        if(tempVarNameHolder != nullptr){             
 
             {
                 uint64_t tempVarNameSize = tempVarNameHolder->namePropArray.size();
@@ -644,23 +599,7 @@ ASTNode** Parser::parseDataTypeFoundDeclaration(){
                         static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray.push_back(tempVarNameHolder->namePropArray[i]);
                     }
                 }
-            }            
-
-
-            // it had some td expansion logic, need to modify the varName accordingly
-
-            // varNameHolder* modifiedVarName = new varNameHolder(*tempVarNameHolder); // copy the tempVarNameHolder to the new modified one
-
-            // modifiedVarName->namePropArray[0] = static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[0];
-
-            // if(orig != 1){
-            //     for(uint64_t i=1 ; i<orig ; i++){
-            //         // modifiedVarName->namePropArray.push_back(temp->varName.namePropArray[i]);
-            //         modifiedVarName->namePropArray.push_back(static_cast<VariableDeclarationNode*>(temp)->varName.namePropArray[i]);
-            //     }
-            // }
-
-            // static_cast<VariableDeclarationNode*>(temp)->varName = *modifiedVarName; // assign the modified var name back to temp
+            }                        
 
             tempVarNameHolder = nullptr; 
             
@@ -1080,8 +1019,6 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
 
     }
 
-    
-
     if(tokens[currentPos].type != LBRACE){
         /*
             this may be sruct var decl or error, but definitely not struct definition.
@@ -1097,8 +1034,6 @@ ASTNode** Parser::parseStruct(dataTypeHolder* helperDeclName) {
 
     // block to store struct definitions
     BlockExpressionNode* structBlock = nullptr;
-
-    // this->typeRegisry[tagName.data] = "struct"; // might need tor revert it if the further code fails, take care !!!!!!!!!!!
 
     if(tagNameExist){ // if tagname exist, attach tagname to "struct" in type registry
         this->typeRegisry[tagName.data] = "struct";
@@ -1580,9 +1515,7 @@ ASTNode** Parser::parseUnion(dataTypeHolder* helperDeclName) {
     // if the control flow reaches here, it is union definition.
 
     // block to store union definitions
-    BlockExpressionNode* unionBlock = nullptr;
-
-    // this->typeRegisry[tagName.data] = "union"; // might need tor revert it if the further code fails, take care !!!!!!!!!!!
+    BlockExpressionNode* unionBlock = nullptr;    
 
     if(tagNameExist){ // if tagname exist, attach tagname to "union" in type registry
         this->typeRegisry[tagName.data] = "union";

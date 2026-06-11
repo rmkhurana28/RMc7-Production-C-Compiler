@@ -476,8 +476,7 @@ int dataTypeHolder::isCurrentTypeValid(){
 
             // mark as expanded
             this->tdExpanded[tdIndex] = -1;
-
-            // tempVarNameHolder = tdMap[tdIndex]->nameProp;
+            
             tempVarNameHolder = tdMap[typedefName][0].nameProp;
 
         }
@@ -705,9 +704,11 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
     if(isFuncParam){
         idFound = false;
         
+        // if finalHelper is true, save it's value in bool helper to restore whenever required
         if(finalHelper){
             finalHelperSaver = true;
 
+            // save values if not -1
             if(addAtTheEnd != -1){
                 addAtTheEndSaver = addAtTheEnd;
                 brackCountAtaddAtTheEndSaver = bracketStackCount;
@@ -804,18 +805,10 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
             }
             
             
-            { // what is this block doing exactly???
-                /*
-                    what is final helper helping with exactly? 
-                    find out proeprly
-                */
+            { // if * are present in the data type side of the decl, it needs to be added at the end, so this block does that (for first var only obv, but yet at the same time, working in nested situations perfetly)                
                 if(!finalHelper){ 
-                    if(indexIfExist == -1){ // base type doesnt alr exist in starData array
-                        
-                        // {   commenting out for now, 8th june, 2026
-                            // starData tempStarData({addStarCount , baseType}); // generate a starData object
-                            // typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array 
-                        // }
+                    if(indexIfExist == -1){ // base type doesnt alr exist in starData array, do nothing
+                                                
                     } else{ // base type alr exist in starData array
                     
                         if(addAtTheEnd != -1){ // store prev values to saver varaibles
@@ -827,24 +820,17 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                         addEndStack[paramStack] = typeHolder.starDataArray[indexIfExist].numOfStars;                    
 
                         addAtTheEnd = typeHolder.starDataArray[indexIfExist].numOfStars;      
-                        brackCountAtaddAtTheEnd = bracketStackCount;      
-
-                        // generate starData properly and push to typeHolder (came from fnc call itself)
-                        // { // ?????
-                            // starData tempStarData({addStarCount , baseType}); // generate a starData object
-                            // typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array
-                        // }                        
+                        brackCountAtaddAtTheEnd = bracketStackCount;                                                
                     }
                 }
 
-                //
+                // set final helper to be true
                 finalHelper = true;
 
             }
             
             
-            // updation is done on the data type side
-            // now need to update on the name side
+            // need to update stars on the name side
 
             checkAgain: // label used for pointor evaluatin jumps            
 
@@ -1128,6 +1114,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                         goto myNewHelperAgain;
                     }
 
+                    // adding stars here
                     varNameProp temp;
                     temp.type = POINTOR;
                     temp.numPointor = addStarCount;
@@ -1143,30 +1130,13 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
         } else if(current.type == RPAREN){ // found )     
 
             // for function parameters, checking this first
-            if(isFuncParam){
+            if(isFuncParam){                                
 
-                /*
-                    the control sequence is designed in such a way that when we call getVarName recursively, even when parsing params, isFuncParam will always be false as it should be, if it is true, and ) is found, it means it is the last param if that func call, return is required
-                */
-
-                /*
-                    here it is just getting returned if it is func param, it might lead to issues like if there is some stars in data type obj, which are currently not added in the name obj, it should be done, and it is suppsoed to be done at the end of the getVarName func, which it can NOT reach, find some solution to this or add some extra checks here
-
-                    also, isFuncParam is true, but do we need to modify it's value when entering into or out of the recursion phase?????
-                */
-
-                
-
-                if(addEndStack[paramStack] > 0){
-
-                    // {   
-                        // starData tempStarData({addAtTheEnd , baseType}); // generate a starData object
-                        // typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array
-                    // }
+                // if needed to add * here exactly, add
+                if(addEndStack[paramStack] > 0){                    
 
                     varNameProp temp;
-                    temp.type = POINTOR;
-                    // temp.numPointor = addAtTheEnd;
+                    temp.type = POINTOR;                    
                     temp.numPointor = addEndStack[paramStack];
                     
                     addEndStack[paramStack] = 0;                    
@@ -1175,7 +1145,7 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
                 } 
 
-                {
+                { // resetting the variables properly
                     if(finalHelperSaver == true){
 
 
@@ -1195,16 +1165,15 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
                     finalHelper = false;
                 }
 
-                // adding algo down         
                 
+                // it has to be 0
                 if(addEndStack[paramStack] != 0){
                     exit(2);
                 } 
 
-                addEndStack.pop_back();
-                // paramStack--;
-                
+                addEndStack.pop_back();                                
 
+                // return
                 return nullptr;
             } else if(bracketStackCount > 0){ // for recursion case                                   
                 // Don't add stars here - they're handled after recursion returns
