@@ -1273,24 +1273,15 @@ DeclarationNode* varNameHolder::getVarName(dataTypeHolder& typeHolder , bool isF
 
         }
 
-    }
+    }    
 
-    // && brackCountAtaddAtTheEnd == bracketStackCount ???
-
-    if(isFirstVar && bracketStackCount == 0 && addAtTheEnd != -1 && finalHelper && brackCountAtaddAtTheEnd != -1){
-
-        // {   
-            // starData tempStarData({addAtTheEnd , baseType}); // generate a starData object
-            // typeHolder.starDataArray.push_back(tempStarData); // add this object to starData array
-        // }
+    if(isFirstVar && bracketStackCount == 0 && addAtTheEnd != -1 && finalHelper && brackCountAtaddAtTheEnd != -1){        
 
         varNameProp temp;
         temp.type = POINTOR;
-        // temp.numPointor = addAtTheEnd;
         temp.numPointor = addEndStack[paramStack];
 
         addEndStack[paramStack] = 0;
-        // paramStack--;
         addEndStack.pop_back();
 
         this->namePropArray.push_back(temp);

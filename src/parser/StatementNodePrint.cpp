@@ -234,26 +234,24 @@ void DoWhileStatementNode::print(ofstream& out, const string& indent) {
 void ForStatementNode::print(ofstream& out, const string& indent) {
     out << indent << "For Statement:\n";
     out << indent << "  Init:\n";
-    if (forInit) {
-        // Try casting to different node types
-        ExpressionStatementNode* exprStmt = dynamic_cast<ExpressionStatementNode*>(forInit);
-        StatementNode* stmt = dynamic_cast<StatementNode*>(forInit);
-        DeclarationNode* decl = dynamic_cast<DeclarationNode*>(forInit);
-        
-        if (exprStmt) {
-            // It's an expression statement (e.g., i = 0;)
-            exprStmt->print(out, indent + "    ");
-        } else if (stmt) {
-            // It's some other statement type
-            stmt->print(out, indent + "    ");
-        } else if (decl) {
-            // It's a declaration (e.g., int i = 0;)
-            decl->print(out);
-        } else {
-            out << indent << "    [Unknown node type]\n";
-        }
-    } else {
+    if (forInits.empty()) {
         out << indent << "    (empty)\n";
+    } else {
+        for(ASTNode* node : forInits) {
+            ExpressionStatementNode* exprStmt = dynamic_cast<ExpressionStatementNode*>(node);
+            StatementNode* stmt = dynamic_cast<StatementNode*>(node);
+            DeclarationNode* decl = dynamic_cast<DeclarationNode*>(node);
+
+            if (exprStmt) {
+                exprStmt->print(out, indent + "    ");
+            } else if (stmt) {
+                stmt->print(out, indent + "    ");
+            } else if (decl) {
+                decl->print(out);
+            } else {
+                out << indent << "    [Unknown node type]\n";
+            }
+        }
     }
     out << indent << "  Condition:\n";
     if (forCond) {

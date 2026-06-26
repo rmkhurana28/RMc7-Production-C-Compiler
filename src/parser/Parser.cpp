@@ -680,7 +680,10 @@ StatementNode* Parser::parseIf() {
     if(tokens[currentPos].type == LBRACE){ // there is block of statements inside if
         ifBlock = parseBlock(*this); // parse block
     } else{ // single line statement inside if
-        ifStatements.push_back(startParsingOfCurrentToken()[0]); // parse the single statement
+        {
+            ASTNode** _tmp = startParsingOfCurrentToken();
+            for(int _i = 0; _tmp[_i] != nullptr; _i++) ifStatements.push_back(_tmp[_i]);
+        }
         ifBlock = new BlockExpressionNode(ifStatements); // make block ast containing only 1 ast 
     }
 
@@ -696,7 +699,10 @@ StatementNode* Parser::parseIf() {
             elseBlock = parseBlock(*this); // parse block
         } else{ // single line statement inside else
             vector<ASTNode*> elseStatements; 
-            elseStatements.push_back(startParsingOfCurrentToken()[0]); // parse the single statement
+            {
+                ASTNode** _tmp = startParsingOfCurrentToken();
+                for(int _i = 0; _tmp[_i] != nullptr; _i++) elseStatements.push_back(_tmp[_i]);
+            }
             elseBlock = new BlockExpressionNode(elseStatements); // make block ast containing only 1 ast 
         }
 
@@ -721,16 +727,18 @@ StatementNode* Parser::parseFor() {
 
     currentPos++; // skip (
 
-    // decl to store init part of for 
-    ASTNode* init = nullptr;
+    // collect all init nodes (supports multi-decl like: int a=0, b=1)
+    vector<ASTNode*> inits;
 
     if(tokens[currentPos].type != SEMICOLON){ // if there is some initialization statement
         if(isThisTokenDataTypeOrPropToken(tokens[currentPos]) || 
            (tokens[currentPos].type == ID && isThisStringPresentAsKeyInTdMap(tokens[currentPos].data))){ // checking if it is some kind of decl
-            // below , need to see if i can replcae "parseCurrentDecl()" with other func, since it is not used anywhere else
-            init = parseCurrentDecl(); // parse current decl (consumes ;)
+            ASTNode** result = parseDataTypeFoundDeclaration(); // parse decl (consumes ;)
+            for(int _i = 0; result != nullptr && result[_i] != nullptr; _i++){
+                inits.push_back(result[_i]);
+            }
         } else { // it is just expression and not decl
-            init = parseExpressionStatement(); // parse expression (consumes ;)
+            inits.push_back(parseExpressionStatement()); // parse expression (consumes ;)
         }
     } else{
         currentPos++; // skip ; (empty init)
@@ -769,12 +777,15 @@ StatementNode* Parser::parseFor() {
 
     if(tokens[currentPos].type == LBRACE){ // there is a block of statements under for 
         BlockExpressionNode* forBlock = parseBlock(*this); // parse block
-        return new ForStatementNode(init , cond , incr , forBlock); // return for ast
+        return new ForStatementNode(inits , cond , incr , forBlock); // return for ast
     } else{ // just one statement under for
         vector<ASTNode*> forStatements;
-        forStatements.push_back(startParsingOfCurrentToken()[0]); // parse 1 statement
+        {
+            ASTNode** _tmp = startParsingOfCurrentToken();
+            for(int _i = 0; _tmp[_i] != nullptr; _i++) forStatements.push_back(_tmp[_i]);
+        }
         BlockExpressionNode* forBlock = new BlockExpressionNode(forStatements); // generate block containing only 1 statement
-        return new ForStatementNode(init , cond , incr , forBlock); // return for ast
+        return new ForStatementNode(inits , cond , incr , forBlock); // return for ast
     }    
 
 }
@@ -810,7 +821,10 @@ StatementNode* Parser::parseWhile() {
     if(tokens[currentPos].type == LBRACE){ // there is block of statements inside while
         whileBlock = parseBlock(*this); // parse block
     } else{ // single line statement inside while
-        whileStatements.push_back(startParsingOfCurrentToken()[0]); // parse the single statement
+        {
+            ASTNode** _tmp = startParsingOfCurrentToken();
+            for(int _i = 0; _tmp[_i] != nullptr; _i++) whileStatements.push_back(_tmp[_i]);
+        }
         whileBlock = new BlockExpressionNode(whileStatements); // make block ast containing only 1 ast
     }
 
@@ -831,7 +845,10 @@ StatementNode* Parser::parseDoWhile() {
         doWhileBlock = parseBlock(*this); // parse block
     } else{ // single line statement inside do-while
         vector<ASTNode*> doWhileStatements;
-        doWhileStatements.push_back(startParsingOfCurrentToken()[0]); // parse the single statement
+        {
+            ASTNode** _tmp = startParsingOfCurrentToken();
+            for(int _i = 0; _tmp[_i] != nullptr; _i++) doWhileStatements.push_back(_tmp[_i]);
+        }
         doWhileBlock = new BlockExpressionNode(doWhileStatements); // make block ast containing only 1 ast
     }
 

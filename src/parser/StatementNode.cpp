@@ -38,11 +38,11 @@ DoWhileStatementNode::~DoWhileStatementNode() {
 }
 
 // ForStatementNode constructor and destructor
-ForStatementNode::ForStatementNode(ASTNode* init, ExpressionNode* cond, ExpressionNode* incr, BlockExpressionNode* blk)
-    : forInit(init), forCond(cond), forIncr(incr), forBlock(blk) {}
+ForStatementNode::ForStatementNode(vector<ASTNode*> inits, ExpressionNode* cond, ExpressionNode* incr, BlockExpressionNode* blk)
+    : forInits(inits), forCond(cond), forIncr(incr), forBlock(blk) {}
 
 ForStatementNode::~ForStatementNode() {
-    if(forInit) delete forInit;
+    for(ASTNode* node : forInits) delete node;
     if(forCond) delete forCond;
     if(forIncr) delete forIncr;
     delete forBlock;

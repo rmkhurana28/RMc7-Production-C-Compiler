@@ -500,26 +500,72 @@ void FunctionDefinitionNode::print(ofstream& out) {
     }
 
     out << "\n";
-    
+
+    // Print function name — same style as VariableDeclarationNode::print()
     out << "      Function Name: ";
     for(const auto& prop : funcName.namePropArray) {
         if(prop.type == VAR_NAME) {
             out << prop.varName;
+            break;
         }
     }
-    out << "\n";
-    
-    out << "      Parameters (" << paramsArray.size() << "):\n";
-    if(!paramsArray.empty()) {
-        printParametersRecursive(out, paramsArray, "        ");
-    } else {
-        out << "        (no parameters)\n";
+
+    // Print declarator sequence in brackets (identical to var decl)
+    out << " [";
+    for(size_t i = 0; i < funcName.namePropArray.size(); i++) {
+        if(i > 0) out << ", ";
+        const auto& prop = funcName.namePropArray[i];
+        switch(prop.type) {
+            case VAR_NAME:
+                out << "VAR_NAME";
+                break;
+            case POINTOR:
+                out << "POINTOR(" << prop.numPointor << ")";
+                break;
+            case ARRAY:
+                out << "ARRAY(";
+                if(prop.arrayExpr) {
+                    out << "index";
+                } else {
+                    out << "N/A";
+                }
+                out << ")";
+                break;
+            case FUNC:
+                out << "FUNC(";
+                if(!prop.funcParams.empty()) {
+                    out << prop.funcParams.size();
+                    if(prop.isVariadic) out << ", ...";
+                } else if(prop.isVariadic) {
+                    out << "...";
+                } else {
+                    out << "0";
+                }
+                out << ")";
+                break;
+        }
     }
-    
+    out << "]\n";
+
+    // Print parameters from each FUNC entry in funcName.namePropArray
+    // (mirrors VariableDeclarationNode::printParameters())
+    int funcIndex = 0;
+    for(const auto& prop : funcName.namePropArray) {
+        if(prop.type == FUNC) {
+            funcIndex++;
+            out << "      Parameters (" << prop.funcParams.size() << ") [FUNC #" << funcIndex << "]:\n";
+            if(!prop.funcParams.empty()) {
+                printParametersRecursive(out, prop.funcParams, "        ");
+            } else {
+                out << "        (no parameters)\n";
+            }
+        }
+    }
+
     if(isVariadic) {
         out << "      Variadic: Yes\n";
     }
-    
+
     out << "      Function Body (" << (funcBody ? funcBody->expressions.size() : 0) << " AST nodes):\n";
     if(funcBody && !funcBody->expressions.empty()) {
         for(size_t i = 0; i < funcBody->expressions.size(); i++) {

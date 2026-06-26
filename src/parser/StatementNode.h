@@ -73,12 +73,12 @@ public:
 
 class ForStatementNode : public StatementNode {
 public:
-    ASTNode* forInit;
+    vector<ASTNode*> forInits; // supports multi-declarator init (e.g. int a=0, b=1)
     ExpressionNode* forCond;
     ExpressionNode* forIncr;
     BlockExpressionNode* forBlock;
 
-    ForStatementNode(ASTNode* init, ExpressionNode* cond, ExpressionNode* incr, BlockExpressionNode* blk);
+    ForStatementNode(vector<ASTNode*> inits, ExpressionNode* cond, ExpressionNode* incr, BlockExpressionNode* blk);
     ~ForStatementNode();
     void print(ofstream& out, const string& indent = "");
 };
