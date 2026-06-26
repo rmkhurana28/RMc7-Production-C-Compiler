@@ -1,4 +1,9 @@
+#include "tests/newFile.h"
+
 #include "stdio.h"
-#include <math.h>
 
 
+
+
+
+void func(){};

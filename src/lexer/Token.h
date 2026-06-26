@@ -144,6 +144,7 @@ struct Token {
     int line;
     int column;
     string fileName;
+    string filePath;
 };
 
 // Helper function to convert TokenType to string

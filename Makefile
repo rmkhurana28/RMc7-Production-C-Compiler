@@ -3,6 +3,7 @@ CXXFLAGS = -std=c++17 -Wall -Wextra -g -I src
 TARGET = rmc7
 
 SOURCES = src/lexer/Lexer.cpp \
+          src/lexer/Preprocessor.cpp \
           src/parser/Parser.cpp \
           src/parser/Helper.cpp \
           src/parser/ASTNode.cpp \

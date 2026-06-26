@@ -12,6 +12,7 @@ typedef struct LexerConfig{
     size_t currentLine;
     size_t currentColumn;
     string currentFile;    
+    string currentFilePath;
 } LexerConfig;
 
 class Lexer {
@@ -23,7 +24,7 @@ private:
     // string currentFile; // storing name of the file being tokenized
 
     vector<LexerConfig> lexerStack; 
-    size_t lexerStackCount = 0;
+    size_t lastAddedInLexerStackIndex = 0;
     
     char getCurrentChar(); // return character at current position    
     char getNextChar(); // return character at just next position
@@ -63,7 +64,10 @@ private:
     Token evaluateBackSlash(); // evaluate token starting with BACKSLASH (\)
     Token evaluateNot(); // evaluate token starting with NOT (!)
     Token evaluatePowExp(); // evaluate token starting with EXP (^)
+
     
+    
+
     
 
     void skipWhiteSpaces();    
@@ -72,6 +76,7 @@ public:
     Lexer(const string& sourceCode , const string& fileName);
 
     vector<Token> startTokenization();
+    vector<Token> startPreprocessing(vector<Token>& tokens);
 };
 
 #endif

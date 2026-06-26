@@ -18,12 +18,14 @@ int main()
     file.close();
     
     Lexer obj = Lexer(sourceCode , "test_input.c");
-    vector<Token> tokens = obj.startTokenization();
+    vector<Token> rawTokens = obj.startTokenization();    
+    vector<Token> tokens = obj.startPreprocessing(rawTokens);
     
     ofstream outFile("output.txt");
     if (!outFile.is_open()) return 1;
     
     OutputWriter::writeTokensToFile(tokens, outFile);
+    // OutputWriter::writeTokensToFile(rawTokens, outFile);
     
     Parser myParser = Parser(tokens);
 
