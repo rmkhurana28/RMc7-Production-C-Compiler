@@ -10,14 +10,14 @@ Lexer::Lexer(const string& sourceCode , const string& fileName){
     LexerConfig* first = new LexerConfig{0,0,0,fileName};
     
     lexerStack.push_back(*first);
-    lexerStackCount++;
+    this->lexerStackCount++;
 
-    this->currentFile = fileName;
+    // this->currentFile = fileName;
 
     this->source = sourceCode;
-    this->currentPos = 0;
-    this->currentLine = 1;
-    this->currentColumn = 1;
+    // this->currentPos = 0;
+    // this->currentLine = 1;
+    // this->currentColumn = 1;
 }
 
 vector<Token> Lexer::startTokenization(){
@@ -36,7 +36,7 @@ vector<Token> Lexer::startTokenization(){
     while(this->lexerStack[this->lexerStackCount-1].currentPos < this->source.length()){
 
         if(this->lexerStack[this->lexerStackCount-1].currentPos > 0 && tokenList.back().type == PREP_INCLUDE){
-            cout << "Yes\n";
+            // cout << "Yes\n";
         }
 
         c = this->getCurrentChar(); // Update c to current character
@@ -71,6 +71,9 @@ vector<Token> Lexer::startTokenization(){
             tok.type = this->getTokenTypeOf(temp);
             tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
             tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
+
+            tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
+
 
             tokenList.push_back(tok);
 
@@ -162,6 +165,8 @@ Token Lexer::evaluateAlphabetOrUnderScore(){
     tok.type = this->getTokenTypeOf(temp);
     tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
     tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
+
+    tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
     
     return tok;
 }
@@ -179,6 +184,8 @@ Token Lexer::evaluateEqual(){
     tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
     tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
 
+    tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
+
     return tok;
 }
 
@@ -194,6 +201,8 @@ Token Lexer::evaluateMod(){
     tok.type = this->getTokenTypeOf(temp);
     tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
     tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
+
+    tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
 
     return tok;
 }
@@ -211,6 +220,8 @@ Token Lexer::evaluateNot(){
     tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
     tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
 
+    tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
+
     return tok;
 }
 
@@ -226,6 +237,8 @@ Token Lexer::evaluatePowExp(){
     tok.type = this->getTokenTypeOf(temp);
     tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
     tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
+
+    tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
 
     return tok;
 }
@@ -243,6 +256,8 @@ Token Lexer::evaluatePlus(){
     tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
     tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
 
+    tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
+
     return tok;
 }
 
@@ -258,6 +273,8 @@ Token Lexer::evaluateMinus(){
     tok.type = this->getTokenTypeOf(temp);
     tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
     tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
+
+    tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
 
     return tok;
 }
@@ -275,6 +292,8 @@ Token Lexer::evaluateStar(){
     tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
     tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
 
+    tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
+
     return tok;
 }
 
@@ -290,6 +309,8 @@ Token Lexer::evaluateDivide(){
     tok.type = this->getTokenTypeOf(temp);
     tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
     tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
+
+    tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
 
     return tok;
 }
@@ -307,6 +328,8 @@ Token Lexer::evaluateAnd(){
     tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
     tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
 
+    tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
+
     return tok;
 }
 
@@ -322,6 +345,8 @@ Token Lexer::evaluateOr(){
     tok.type = this->getTokenTypeOf(temp);
     tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
     tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
+
+    tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
 
     return tok;
 }
@@ -346,6 +371,8 @@ Token Lexer::evaluateLesser(){
     tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
     tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
 
+    tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
+
     return tok;
 }
 
@@ -368,6 +395,8 @@ Token Lexer::evaluateGreater(){
     tok.type = this->getTokenTypeOf(temp);
     tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
     tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
+
+    tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
 
     return tok;
 }
@@ -400,6 +429,8 @@ Token Lexer::evaluateSingleQuote(){
     tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
     tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
 
+    tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
+
     return tok;
 }
 
@@ -430,6 +461,8 @@ Token Lexer::evaluateDoubleQuote(){
     tok.type = this->getTokenTypeOf(temp);
     tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
     tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
+
+    tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
 
     return tok;
 }
@@ -529,6 +562,9 @@ Token Lexer::evaluateNumber(){
         tok.type = this->getTokenTypeOf(temp);
         tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
         tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
+
+        tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
+
         return tok;
     }
 
@@ -630,6 +666,8 @@ Token Lexer::evaluateNumber(){
     tok.type = this->getTokenTypeOf(temp);
     tok.line = this->lexerStack[this->lexerStackCount-1].currentLine;
     tok.column = this->lexerStack[this->lexerStackCount-1].currentColumn++;
+
+    tok.fileName = this->lexerStack[this->lexerStackCount-1].currentFile;
 
     return tok;
 }

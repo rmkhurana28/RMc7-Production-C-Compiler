@@ -17,10 +17,10 @@ typedef struct LexerConfig{
 class Lexer {
 private:
     string source; // entire code text
-    size_t currentPos; // current posistion of the pointor/index
-    size_t currentLine; // current line number
-    size_t currentColumn; // current column number in a line (resets everytime when a new line is countered)
-    string currentFile; // storing name of the file being tokenized
+    // size_t currentPos; // current posistion of the pointor/index
+    // size_t currentLine; // current line number
+    // size_t currentColumn; // current column number in a line (resets everytime when a new line is countered)
+    // string currentFile; // storing name of the file being tokenized
 
     vector<LexerConfig> lexerStack; 
     size_t lexerStackCount = 0;

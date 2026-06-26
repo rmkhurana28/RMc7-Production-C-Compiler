@@ -16,6 +16,7 @@ void OutputWriter::writeTokensToFile(const vector<Token>& tokens, ofstream& outF
         outFile << "  Data:   \"" << tokens[i].data << "\"\n";
         outFile << "  Line:   " << tokens[i].line << "\n";
         outFile << "  Column: " << tokens[i].column << "\n";
+        outFile << "  File:   " << tokens[i].fileName << "\n";
         outFile << "----------------------------------------\n";
     }
 }
