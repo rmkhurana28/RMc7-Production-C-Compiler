@@ -7,13 +7,23 @@
 
 using namespace std;
 
+typedef struct LexerConfig{
+    size_t currentPos;
+    size_t currentLine;
+    size_t currentColumn;
+    string currentFile;    
+} LexerConfig;
+
 class Lexer {
 private:
     string source; // entire code text
     size_t currentPos; // current posistion of the pointor/index
     size_t currentLine; // current line number
     size_t currentColumn; // current column number in a line (resets everytime when a new line is countered)
+    string currentFile; // storing name of the file being tokenized
 
+    vector<LexerConfig> lexerStack; 
+    size_t lexerStackCount = 0;
     
     char getCurrentChar(); // return character at current position    
     char getNextChar(); // return character at just next position
@@ -59,7 +69,7 @@ private:
     void skipWhiteSpaces();    
     
 public:
-    Lexer(const string& sourceCode);
+    Lexer(const string& sourceCode , const string& fileName);
 
     vector<Token> startTokenization();
 };

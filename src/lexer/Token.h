@@ -143,6 +143,7 @@ struct Token {
     string data;
     int line;
     int column;
+    string fileName;
 };
 
 // Helper function to convert TokenType to string

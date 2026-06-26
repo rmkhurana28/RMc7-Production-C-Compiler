@@ -17,26 +17,26 @@ int main()
     string sourceCode = buffer.str();
     file.close();
     
-    Lexer obj = Lexer(sourceCode);
+    Lexer obj = Lexer(sourceCode , "test_input.c");
     vector<Token> tokens = obj.startTokenization();
     
     ofstream outFile("output.txt");
     if (!outFile.is_open()) return 1;
     
-    // OutputWriter::writeTokensToFile(tokens, outFile);
+    OutputWriter::writeTokensToFile(tokens, outFile);
     
     Parser myParser = Parser(tokens);
 
     myStack.push_back(GLOBAL); // manually push GLOABL representing the starting point of phase-2
 
-    ProgramNode* myRootAST = myParser.startParsing();
+    // ProgramNode* myRootAST = myParser.startParsing();
     
-    if(myRootAST != nullptr) {
-        myRootAST->printAST(outFile);
-    }
+    // if(myRootAST != nullptr) {
+    //     myRootAST->printAST(outFile);
+    // }
     
     // Print expression statements
-    printStatementsToFile(outFile, myParser.getStatements());
+    // printStatementsToFile(outFile, myParser.getStatements());
     
     outFile.close();
     
