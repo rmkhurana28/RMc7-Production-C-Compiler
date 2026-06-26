@@ -62,7 +62,66 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
     } else if(tokens[evaluated].type == OP_HASH){
         if(evaluated+1 < tokens.size() && tokens[evaluated+1].type == PREP_INCLUDE){
             if(evaluated+2 < tokens.size() && tokens[evaluated+2].type == OP_LESS){
-                //
+                // #include <fileName.h>
+
+                // verify if file exists
+                // assuming it exists, lets proceed rn
+
+                for(size_t i=0 ; i<=this->lastAddedInLexerStackIndex ; i++){
+                    if(this->lexerStack[i].currentFile == tokens[evaluated+2].data){
+                        evaluated += 5;
+                        goto canContinueAgain;
+                    }
+                }
+
+                LexerConfig* file = new LexerConfig{0,1,1,tokens[evaluated+2].data,""};
+
+                lexerStack.push_back(*file);
+                this->lastAddedInLexerStackIndex++;
+
+                string newSource;
+                string filename = "";
+                size_t tempIdx = evaluated + 3;
+                while(tempIdx < tokens.size() && tokens[tempIdx].type != OP_GREATER) {
+                    filename += tokens[tempIdx].data;
+                    tempIdx++;
+                }
+
+                // add the code here gemini
+                bool found = false;
+                for (const string& path : includeSearchPaths) {
+                    string fullPath = path + "/" + filename;
+                    ifstream searchFile(fullPath);
+                    if (searchFile.is_open()) {
+                        stringstream buffer;
+                        buffer << searchFile.rdbuf();
+                        newSource = buffer.str();
+                        searchFile.close();
+                        cout << "CASE <> | Data copied to newSource from " << fullPath << "\n";
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found) {
+                    cout << "Error: Could not open " << filename << "\n";
+                    exit(1);
+                }
+                this->source = newSource;
+
+                vector<Token> newTokenList = this->startTokenization();
+
+                for(size_t i=0 ; i<newTokenList.size() ; i++){                    
+                    
+                    // cout << "Copied\n";
+                    processedTokens.push_back(newTokenList[i]);
+                    tokenCount++;
+                }
+
+                evaluated += 5;
+
+                goto canContinueAgain;
+                
             } else if(evaluated+2 < tokens.size() && tokens[evaluated+2].type == STRING_LITERAL){
                 // #include "fileName.h"
 
@@ -113,7 +172,7 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                             buffer << searchFile.rdbuf();
                             newSource = buffer.str();
                             searchFile.close();
-                            cout << "Data copied to newSource from " << fullPath << "\n";
+                            cout << "CASE \"\" | Data copied to newSource from " << fullPath << "\n";
                             found = true;
                             break;
                         }
