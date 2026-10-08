@@ -60,7 +60,7 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
         evaluated++;
         goto canContinueAgain;
     } else if(tokens[evaluated].type == OP_HASH){
-        if(evaluated+1 < tokens.size() && tokens[evaluated+1].type == PREP_INCLUDE){
+        if(evaluated+1 < tokens.size() && tokens[evaluated+1].type == PREP_INCLUDE){ // #include
             if(evaluated+2 < tokens.size() && tokens[evaluated+2].type == OP_LESS){
                 // #include <fileName.h>
 
@@ -86,8 +86,7 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                     filename += tokens[tempIdx].data;
                     tempIdx++;
                 }
-
-                // add the code here gemini
+                
                 bool found = false;
                 for (const string& path : includeSearchPaths) {
                     string fullPath = path + "/" + filename;

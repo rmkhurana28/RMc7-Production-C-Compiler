@@ -37,7 +37,7 @@ int main()
     //     myRootAST->printAST(outFile);
     // }
     
-    // Print expression statements
+    // // Print expression statements
     // printStatementsToFile(outFile, myParser.getStatements());
     
     outFile.close();

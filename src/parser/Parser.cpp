@@ -450,7 +450,7 @@ Token Parser::getCurrentToken(){
         return this->tokens[this->currentPos];
     } else{
         // return an invalid token if out of bounds
-        return Token{ERROR, "", -1, -1};
+        return Token{ERROR, "", -1, -1 , "",""};
     }
 }
 
