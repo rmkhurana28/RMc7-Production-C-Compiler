@@ -13,11 +13,15 @@ typedef struct LexerConfig{
     size_t currentColumn;
     string currentFile;    
     string currentFilePath;
+
+    // adding soruce also in the lexerConfig
+    string currentSource;
 } LexerConfig;
 
 class Lexer {
 private:
-    string source; // entire code text
+    // string source; // entire code text
+    
     // size_t currentPos; // current posistion of the pointor/index
     // size_t currentLine; // current line number
     // size_t currentColumn; // current column number in a line (resets everytime when a new line is countered)

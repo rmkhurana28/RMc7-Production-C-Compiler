@@ -7,14 +7,14 @@ using namespace std;
 
 Lexer::Lexer(const string& sourceCode , const string& fileName){
 
-    LexerConfig* first = new LexerConfig{0,1,1,fileName,""};
+    LexerConfig* first = new LexerConfig{0,1,1,fileName,"",sourceCode};
     
     lexerStack.push_back(*first);
     this->lastAddedInLexerStackIndex = 0;
 
     // this->currentFile = fileName;
 
-    this->source = sourceCode;
+    // this->lexerStack[this->lastAddedInLexerStackIndex].currentSource = sourceCode;
     // this->currentPos = 0;
     // this->currentLine = 1;
     // this->currentColumn = 1;
@@ -26,14 +26,14 @@ vector<Token> Lexer::startTokenization(){
     string temp;
     
     // Check if file is empty
-    if(this->source.empty()) {
+    if(this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.empty()) {
         return tokenList;
     }
     
-    char c = this->source[0]; // initialize to first character of the file
+    char c = this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[0]; // initialize to first character of the file
 
     // start the loop over the given code
-    while(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()){
+    while(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()){
 
         // if(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos > 0 && tokenList.back().type == PREP_INCLUDE){
         //     // cout << "Yes\n";
@@ -58,7 +58,7 @@ vector<Token> Lexer::startTokenization(){
         
         if(c == ' ') this->skipWhiteSpaces(); // skip all white spaces
         else if(isalpha(c) || c == '_') tokenList.push_back(this->evaluateAlphabetOrUnderScore());// a-z or A-Z or _
-        else if(isdigit(c) || (c == '.' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos + 1 < this->source.length() && isdigit(this->getNextChar()))){ // 0-9 or .5
+        else if(isdigit(c) || (c == '.' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos + 1 < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length() && isdigit(this->getNextChar()))){ // 0-9 or .5
             tokenList.push_back(this->evaluateNumber());
         } else if(c == '\'') tokenList.push_back(this->evaluateSingleQuote()); // store 'W' in the token
         else if(c == '\"') tokenList.push_back(this->evaluateDoubleQuote()); // store "WORD" in the token
@@ -102,18 +102,21 @@ vector<Token> Lexer::startTokenization(){
         }
     }
 
+    // this->lexerStack.pop_back();
+    // this->lastAddedInLexerStackIndex--;
+
     return tokenList;
 }
 
 char Lexer::getCurrentChar(){ // return character at current position
-    return this->source[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos];
+    return this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos];
 }
 
 char Lexer::getNextChar(){ // return character at just next position
-    if(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos + 1 >= this->source.length()) {
+    if(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos + 1 >= this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
         return '\0';
     }
-    return this->source[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos+1];
+    return this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos+1];
 }
 
 void Lexer::advanceOne(){ // increment the current position pointor/index by 1
@@ -127,24 +130,24 @@ void Lexer::advanceBy(int n){ // increment the current position pointor/index by
 }
 
 char Lexer::getCurrentCharAndAdvanceOne(){
-    if(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos >= this->source.length()) {
+    if(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos >= this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
         return '\0';
     }    
-    return this->source[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos++];
+    return this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos++];
 }
 
 char Lexer::getNextCharAndAdvanceOne(){
 
     this->lexerStack[this->lastAddedInLexerStackIndex].currentPos++;
     
-    if(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos >= this->source.length()) {
+    if(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos >= this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
         return '\0';
     }
-    return this->source[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos];
+    return this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos];
 }
 
 void Lexer::skipWhiteSpaces(){
-    while(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length() && this->source[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos] == ' '){
+    while(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length() && this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos] == ' '){
 
         this->lexerStack[this->lastAddedInLexerStackIndex].currentPos++;
     }
@@ -155,7 +158,7 @@ void Lexer::skipWhiteSpaces(){
 Token Lexer::evaluateAlphabetOrUnderScore(){
     string temp;
 
-    char c = this->source[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos]; // starting is either a-z or A-Z or _
+    char c = this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos]; // starting is either a-z or A-Z or _
 
     while(isalpha(c) || isdigit(c) || c == '_'){ // variable name or keyword can include a-z or A-Z or _ or 0-9
         temp += c;
@@ -424,18 +427,18 @@ Token Lexer::evaluateSingleQuote(){
     this->lexerStack[this->lastAddedInLexerStackIndex].currentPos++;
 
     // find the closing '
-    while(this->source[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos] != '\'' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()){
-        if(this->source[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos] == '\\' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()){ // found escape sequence starting point
+    while(this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos] != '\'' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()){
+        if(this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos] == '\\' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()){ // found escape sequence starting point
             temp += this->getCurrentCharAndAdvanceOne(); /* add \ */
             
             temp += this->getCurrentCharAndAdvanceOne(); // add next character, either \ or n or 0 or ' or "
         } else{            
-            temp += this->source[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos++];
+            temp += this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos++];
         }
     }
 
-    if(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()){
-        temp += this->source[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos++]; // add closing ' and advance by one
+    if(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()){
+        temp += this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos++]; // add closing ' and advance by one
     }
 
     Token tok;
@@ -458,18 +461,18 @@ Token Lexer::evaluateDoubleQuote(){
     this->lexerStack[this->lastAddedInLexerStackIndex].currentPos++;
 
     // find the closing "
-    while(this->source[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos] != '\"' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()){
-        if(this->source[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos] == '\\' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()){ // found escape sequence starting point
+    while(this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos] != '\"' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()){
+        if(this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos] == '\\' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()){ // found escape sequence starting point
             temp += this->getCurrentCharAndAdvanceOne(); /* add \ */     
             
             temp += this->getCurrentCharAndAdvanceOne(); // add next character, either \ or n or 0 or ' or "
         } else{            
-            temp += this->source[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos++];
+            temp += this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos++];
         }
     }
 
-    if(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()){
-        temp += this->source[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos++]; // add closing " and advance by one
+    if(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()){
+        temp += this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos++]; // add closing " and advance by one
     }
 
     Token tok;
@@ -485,11 +488,11 @@ Token Lexer::evaluateDoubleQuote(){
 }
 
 void Lexer::handleSingleComment(){
-    while(this->source[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos] != '\n' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()){
+    while(this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos] != '\n' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()){
         this->lexerStack[this->lastAddedInLexerStackIndex].currentPos++;
     }
 
-    if(this->source[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos] == '\n') this->lexerStack[this->lastAddedInLexerStackIndex].currentPos++;
+    if(this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos] == '\n') this->lexerStack[this->lastAddedInLexerStackIndex].currentPos++;
 
     return;
 }
@@ -499,7 +502,7 @@ void Lexer::handleMultiComment(){
     this->lexerStack[this->lastAddedInLexerStackIndex].currentPos = this->lexerStack[this->lastAddedInLexerStackIndex].currentPos + 2;
 
     find_star : 
-    while(this->getCurrentChar() != '*' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()){
+    while(this->getCurrentChar() != '*' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()){
         if(this->getCurrentChar() == '\n'){
 
             this->lexerStack[this->lastAddedInLexerStackIndex].currentLine++;
@@ -518,7 +521,7 @@ void Lexer::handleMultiComment(){
         }
         this->advanceOne(); // skip *
 
-        if(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()){
+        if(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()){
             if(this->getCurrentChar() == '/'){ // / also found, multi-comment closed
                 this->advanceOne(); // skip /
                 return;
@@ -543,29 +546,29 @@ Token Lexer::evaluateNumber(){
         temp += this->getCurrentCharAndAdvanceOne(); // consume '.'
 
         // Collect digits after decimal
-        while(isdigit(this->getCurrentChar()) && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+        while(isdigit(this->getCurrentChar()) && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
             temp += this->getCurrentCharAndAdvanceOne();
         }
 
         // Check for scientific notation (e or E)
         if((this->getCurrentChar() == 'e' || this->getCurrentChar() == 'E') &&
-           this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+           this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
             temp += this->getCurrentCharAndAdvanceOne(); // 'e' or 'E'
 
             // Optional +/-
             if((this->getCurrentChar() == '+' || this->getCurrentChar() == '-') &&
-               this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+               this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
                 temp += this->getCurrentCharAndAdvanceOne();
             }
 
             // Collect exponent digits
-            while(isdigit(this->getCurrentChar()) && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+            while(isdigit(this->getCurrentChar()) && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
                 temp += this->getCurrentCharAndAdvanceOne();
             }
         }
 
         // Collect suffixes (f, F, l, L, u, U in any order)
-        while(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+        while(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
             char c = this->getCurrentChar();
             if(c == 'f' || c == 'F' || c == 'l' || c == 'L' || c == 'u' || c == 'U') {
                 temp += this->getCurrentCharAndAdvanceOne();
@@ -594,34 +597,34 @@ Token Lexer::evaluateNumber(){
         // Collect hex digits (0-9, a-f, A-F)
         while((isdigit(this->getCurrentChar()) ||
                (tolower(this->getCurrentChar()) >= 'a' && tolower(this->getCurrentChar()) <= 'f')) &&
-              this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+              this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
             temp += this->getCurrentCharAndAdvanceOne();
         }
 
         // Check for hex float (decimal point)
-        if(this->getCurrentChar() == '.' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+        if(this->getCurrentChar() == '.' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
             temp += this->getCurrentCharAndAdvanceOne(); // '.'
 
             // Collect hex digits after decimal
             while((isdigit(this->getCurrentChar()) ||
                    (tolower(this->getCurrentChar()) >= 'a' && tolower(this->getCurrentChar()) <= 'f')) &&
-                  this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+                  this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
                 temp += this->getCurrentCharAndAdvanceOne();
             }
         }
 
         // Check for hex float exponent (p or P)
         if((this->getCurrentChar() == 'p' || this->getCurrentChar() == 'P') &&
-           this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+           this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
             temp += this->getCurrentCharAndAdvanceOne(); // 'p' or 'P'
 
             if((this->getCurrentChar() == '+' || this->getCurrentChar() == '-') &&
-               this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+               this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
                 temp += this->getCurrentCharAndAdvanceOne();
             }
 
             // Collect exponent digits
-            while(isdigit(this->getCurrentChar()) && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+            while(isdigit(this->getCurrentChar()) && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
                 temp += this->getCurrentCharAndAdvanceOne();
             }
         }
@@ -630,23 +633,23 @@ Token Lexer::evaluateNumber(){
     else if(first == '0' && isdigit(this->getNextChar()) && this->getNextChar() <= '7') {
         // Collect octal digits (0-7)
         while(isdigit(this->getCurrentChar()) && this->getCurrentChar() <= '7' &&
-              this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+              this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
             temp += this->getCurrentCharAndAdvanceOne();
         }
     }
     // DECIMAL mode (including decimal floats)
     else {
         // Collect decimal digits
-        while(isdigit(this->getCurrentChar()) && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+        while(isdigit(this->getCurrentChar()) && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
             temp += this->getCurrentCharAndAdvanceOne();
         }
 
         // Check for decimal point
-        if(this->getCurrentChar() == '.' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+        if(this->getCurrentChar() == '.' && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
             temp += this->getCurrentCharAndAdvanceOne(); // '.'
 
             // Collect digits after decimal (optional for cases like 5. or 5.e2)
-            while(isdigit(this->getCurrentChar()) && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+            while(isdigit(this->getCurrentChar()) && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
                 temp += this->getCurrentCharAndAdvanceOne();
             }
         }
@@ -654,23 +657,23 @@ Token Lexer::evaluateNumber(){
 
     // STEP 2: Check for scientific notation (e or E)
     if((this->getCurrentChar() == 'e' || this->getCurrentChar() == 'E') &&
-       this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+       this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
         temp += this->getCurrentCharAndAdvanceOne(); // 'e' or 'E'
 
         // Optional +/-
         if((this->getCurrentChar() == '+' || this->getCurrentChar() == '-') &&
-           this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+           this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
             temp += this->getCurrentCharAndAdvanceOne();
         }
 
         // Collect exponent digits
-        while(isdigit(this->getCurrentChar()) && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+        while(isdigit(this->getCurrentChar()) && this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
             temp += this->getCurrentCharAndAdvanceOne();
         }
     }
 
     // STEP 3: Collect suffixes (f, F, l, L, u, U in any order)
-    while(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->source.length()) {
+    while(this->lexerStack[this->lastAddedInLexerStackIndex].currentPos < this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.length()) {
         char c = this->getCurrentChar();
         if(c == 'f' || c == 'F' || c == 'l' || c == 'L' || c == 'u' || c == 'U') {
             temp += this->getCurrentCharAndAdvanceOne();

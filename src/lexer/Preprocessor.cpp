@@ -73,21 +73,44 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                 /*
                     currnetly it is bugged since it is hard-coded to skip 5 tokens, which can be wrong in some(many) cases
                 */
-                for(size_t i=0 ; i<=this->lastAddedInLexerStackIndex ; i++){
-                    if(this->lexerStack[i].currentFile == tokens[evaluated+2].data){
-                        evaluated += 5;
-                        goto canContinueAgain;
+                // for(size_t i=0 ; i<=this->lastAddedInLexerStackIndex ; i++){
+                //     if(this->lexerStack[i].currentFile == tokens[evaluated+2].data){
+                //         evaluated += 5;
+                //         goto canContinueAgain;
+                //     }
+                // }
+
+                {
+                    // 1. First, extract the full filename between < and >
+                    string filename = "";
+                    size_t tempIdx = evaluated + 3;
+                    while (tempIdx < tokens.size() && tokens[tempIdx].type != OP_GREATER) {
+                        filename += tokens[tempIdx++].data;
                     }
+
+                    // 2. Check if this actual filename is already in the stack
+                    for (size_t i = 0; i <= this->lastAddedInLexerStackIndex; i++) {
+                        if (this->lexerStack[i].currentFile == filename) {
+                            evaluated = tempIdx + 1; // skip past the closing '>'
+                            goto canContinueAgain;
+                        }
+                    }
+
+                    // 3. Store the actual filename in the new config (not tokens[evaluated+2].data)
+                    LexerConfig* file = new LexerConfig{0, 1, 1, filename, "", ""};
+                    lexerStack.push_back(*file);
+                    this->lastAddedInLexerStackIndex++;
+
                 }
 
                 // make a new lexerConfig objet to hold deatails of the new file
-                LexerConfig* file = new LexerConfig{0,1,1,tokens[evaluated+2].data,""};
+                // LexerConfig* file = new LexerConfig{0,1,1,tokens[evaluated+2].data,"",""};                
 
                 // push to lexer stack
-                lexerStack.push_back(*file);
+                // lexerStack.push_back(*file);
 
                 // increment lexer stack index
-                this->lastAddedInLexerStackIndex++;
+                // this->lastAddedInLexerStackIndex++;
 
                 // var potentially to hold the new source file raw (if found)
                 string newSource;
@@ -122,13 +145,30 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
 
                 // file not found, error
                 if (!found) {
-                    cout << "Error: Could not open " << filename << "\n";
-                    exit(1);
+                    cout << "Error < : Could not open " << filename << "\n";
+                    cout << "Skipping " << filename << endl;
+
+                    // keep updating file name it reaches > 
+                    while(evaluated < tokens.size() && tokens[evaluated].type != OP_GREATER) {
+                        evaluated++;
+                        // tempIdx++;
+                    }
+                    evaluated++;
+
+                    goto canContinueAgain;
+                    
+                    // exit(1);a
                 }
-                this->source = newSource;
+
+                
+                // this->source = newSource;
+                this->lexerStack[lastAddedInLexerStackIndex].currentSource = newSource;
 
                 // run the tokenization of the filename that was in #include
                 vector<Token> newTokenList = this->startTokenization();
+
+                // testing it here
+                newTokenList = this->startPreprocessing(newTokenList);
 
                 // copy the tokens in the final tokenList
                 for(size_t i=0 ; i<newTokenList.size() ; i++){                                        
@@ -138,7 +178,8 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                 }
 
                 // evaluated += 5;                
-                evaluated += tempIdx+1; // update evaluated for the current token list
+                // evaluated += tempIdx+1; // update evaluated for the current token list
+                evaluated = tempIdx+1; // update evaluated for the current token list
 
                 goto canContinueAgain;
                 
@@ -149,12 +190,13 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                 for(size_t i=0 ; i<=this->lastAddedInLexerStackIndex ; i++){
                     if(this->lexerStack[i].currentFile == tokens[evaluated+2].data){
                         evaluated += 3;
+                        // cout << "skipping in \" case\n";
                         goto canContinueAgain;
                     }
                 }
                 
                 // make a new lexerConfig objet to hold deatails of the new file
-                LexerConfig* file = new LexerConfig{0,1,1,tokens[evaluated+2].data,""};
+                LexerConfig* file = new LexerConfig{0,1,1,tokens[evaluated+2].data,"",""};
                 
                 // push to lexer stack
                 lexerStack.push_back(*file);
@@ -185,7 +227,7 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                     newSource = buffer.str();
                     inFile.close();
 
-                    cout << "Data copied to newSource\n";
+                    cout << "CASE \"\" | Direct file open | Data copied to newSource\n";
                 } else {
                     
                     // here try to find the file from the direct include locations specified in vector includeSearchPaths
@@ -199,26 +241,41 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                             newSource = buffer.str();
                             searchFile.close();
                             cout << "CASE \"\" | Data copied to newSource from " << fullPath << "\n";
+                            // cout << "Data = " << newSource << endl;
                             found = true;
                             break;
                         }
                     }
 
                     // file not found, error
-                    if (!found) {
-                        cout << "Error: Could not open " << filename << "\n";
-                        exit(1);
+                if (!found) {
+                    cout << "Error \" : Could not open " << filename << "\n";
+                    cout << "Skipping " << filename << endl;
+
+                    // keep updating file name it reaches > 
+                    while(evaluated < tokens.size() && tokens[evaluated].type != STRING_LITERAL) {
+                        evaluated++;
+                        // tempIdx++;
                     }
+                    evaluated++;
+
+                    goto canContinueAgain;
+                    
+                    // exit(1)
+                }
                 }
 
                 // update this->srouce since tokenization reads this->source to generate tokens
-                this->source = newSource;
+                // this->source = newSource;
+                this->lexerStack[lastAddedInLexerStackIndex].currentSource = newSource;
+                // cout << "Data = " << this->lexerStack[lastAddedInLexerStackIndex].currentSource << endl;
 
                 // perform tokenization on the new source
                 vector<Token> newTokenList = this->startTokenization();
                 
                 // testing it here
-                // newTokenList = this->startPreprocessing(newTokenList);
+                newTokenList = this->startPreprocessing(newTokenList);
+                // cout << "length of newTokenList = " << newTokenList.size() << endl;
 
                 // copy the tokens in the final tokenList
                 for(size_t i=0 ; i<newTokenList.size() ; i++){                                        
@@ -239,6 +296,13 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                 cout << "Invalid token in preprocessing\n";
                 exit(1);
             }
+        }
+        else {
+            // push to token array for now
+            processedTokens.push_back(tokens[evaluated]);
+            tokenCount++;
+            evaluated++;
+            goto canContinueAgain;
         }
     } else{
         // do nothing

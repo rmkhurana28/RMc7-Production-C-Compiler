@@ -110,8 +110,9 @@ A complete reference for all supported syntax, declarators, types, operators, an
 ## 🏗️ Compiler Architecture
 
 ### **Pipeline Phases:**
+0. **Preprocessing** - Directive handling & file inclusion (In Progress)
 1. **Lexical Analysis** - Tokenization 
-2. **Syntax Analysis** - Parsing & AST generation (In Progress)
+2. **Syntax Analysis** - Parsing & AST generation (Frozen)
 3. **Semantic Analysis** - Type checking & symbol tables
 4. **Intermediate Code Generation** - Three-Address Code
 5. **Optimization** - Multiple optimization passes
@@ -122,6 +123,10 @@ A complete reference for all supported syntax, declarators, types, operators, an
 
 ## 🚀 Current Status
 
+**Phase 0 - Preprocessing:** 🟡 IN PROGRESS
+- ✅ `#include <file.h>` and `#include "file.h"` (cross-platform include path search)
+- ✅ Nested includes with duplicate/circular include protection
+
 **Phase 1 - Lexical Analysis:** ✅ COMPLETE
 - Full tokenization for all C syntax (~140 token types)
 - All operators (single & multi-character)
@@ -130,7 +135,9 @@ A complete reference for all supported syntax, declarators, types, operators, an
 - Comments (single & multi-line)
 - Line/column tracking
 
-**Phase 2 - Syntax Analysis (Parser):** 🟡 IN PROGRESS (~98%)
+**Phase 2 - Syntax Analysis (Parser):** 🧊 FROZEN (~98%)
+> 🧊 Parser is stable and currently frozen while Phase 0 (Preprocessing) is in progress.
+
 - ✅ Type collection algorithm (storage classes, qualifiers, sign/size modifiers)
 - ✅ Type validation system with compatibility rules (87 test cases, 100% pass rate)
 - ✅ Typedef expansion (recursive resolution)
@@ -182,7 +189,8 @@ RMc7/
 │   ├── lexer/
 │   │   ├── Token.h          # Token definitions (~140 types)
 │   │   ├── Lexer.h          # Lexer interface
-│   │   └── Lexer.cpp        # Lexer implementation (complete)
+│   │   ├── Lexer.cpp        # Lexer implementation (complete)
+│   │   └── Preprocessor.cpp # Preprocessor (#include complete, others in progress)
 │   ├── parser/
 │   │   ├── Parser.h         # Parser interface
 │   │   ├── Parser.cpp       # Parser implementation (in progress)
