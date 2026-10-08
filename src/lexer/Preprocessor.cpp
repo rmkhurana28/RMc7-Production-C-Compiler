@@ -32,7 +32,7 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
     // this func is called when # is encountered in a file, it is a preprocessor 
 
     
-    
+    // this vector will contain the final tokens after preprocessing
     vector<Token> processedTokens;
     
     size_t tokenCount = 0;
@@ -59,14 +59,20 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
         tokenCount++;
         evaluated++;
         goto canContinueAgain;
+
     } else if(tokens[evaluated].type == OP_HASH){
-        if(evaluated+1 < tokens.size() && tokens[evaluated+1].type == PREP_INCLUDE){ // #include
+
+        // #include case
+        if(evaluated+1 < tokens.size() && tokens[evaluated+1].type == PREP_INCLUDE){ 
+
+            // #include <
             if(evaluated+2 < tokens.size() && tokens[evaluated+2].type == OP_LESS){
-                // #include <fileName.h>
+                // #include <fileName.h>                
 
-                // verify if file exists
-                // assuming it exists, lets proceed rn
-
+                // check if alr included, skip if yes
+                /*
+                    currnetly it is bugged since it is hard-coded to skip 5 tokens, which can be wrong in some(many) cases
+                */
                 for(size_t i=0 ; i<=this->lastAddedInLexerStackIndex ; i++){
                     if(this->lexerStack[i].currentFile == tokens[evaluated+2].data){
                         evaluated += 5;
@@ -74,19 +80,31 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                     }
                 }
 
+                // make a new lexerConfig objet to hold deatails of the new file
                 LexerConfig* file = new LexerConfig{0,1,1,tokens[evaluated+2].data,""};
 
+                // push to lexer stack
                 lexerStack.push_back(*file);
+
+                // increment lexer stack index
                 this->lastAddedInLexerStackIndex++;
 
+                // var potentially to hold the new source file raw (if found)
                 string newSource;
+
+                // var to store filename that is inside < and >
                 string filename = "";
+
+                // move tempIdx to token just after < 
                 size_t tempIdx = evaluated + 3;
+
+                // keep updating file name it reaches > 
                 while(tempIdx < tokens.size() && tokens[tempIdx].type != OP_GREATER) {
-                    filename += tokens[tempIdx].data;
-                    tempIdx++;
+                    filename += tokens[tempIdx++].data;
+                    // tempIdx++;
                 }
                 
+                // look for the file from the hardcoded possible locations, and update found booleon
                 bool found = false;
                 for (const string& path : includeSearchPaths) {
                     string fullPath = path + "/" + filename;
@@ -102,56 +120,65 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                     }
                 }
 
+                // file not found, error
                 if (!found) {
                     cout << "Error: Could not open " << filename << "\n";
                     exit(1);
                 }
                 this->source = newSource;
 
+                // run the tokenization of the filename that was in #include
                 vector<Token> newTokenList = this->startTokenization();
 
-                for(size_t i=0 ; i<newTokenList.size() ; i++){                    
-                    
+                // copy the tokens in the final tokenList
+                for(size_t i=0 ; i<newTokenList.size() ; i++){                                        
                     // cout << "Copied\n";
                     processedTokens.push_back(newTokenList[i]);
                     tokenCount++;
                 }
 
-                evaluated += 5;
+                // evaluated += 5;                
+                evaluated += tempIdx+1; // update evaluated for the current token list
 
                 goto canContinueAgain;
                 
             } else if(evaluated+2 < tokens.size() && tokens[evaluated+2].type == STRING_LITERAL){
-                // #include "fileName.h"
+                // #include "fileName.h"                
 
-                // verify if file exists
-                // assuming it exists, lets proceed rn
-
-
-                // check if this file is alr included in the stack                
-            
+                // check if this file is alr included in the stack to avoid double include                           
                 for(size_t i=0 ; i<=this->lastAddedInLexerStackIndex ; i++){
                     if(this->lexerStack[i].currentFile == tokens[evaluated+2].data){
                         evaluated += 3;
                         goto canContinueAgain;
                     }
                 }
-
                 
+                // make a new lexerConfig objet to hold deatails of the new file
                 LexerConfig* file = new LexerConfig{0,1,1,tokens[evaluated+2].data,""};
                 
+                // push to lexer stack
                 lexerStack.push_back(*file);
+
+                // increment lexerStack index
                 this->lastAddedInLexerStackIndex++;
 
                 // generate new source file copying the content of new header file into the sring and update it to the source vector 
 
+                // var potentially to hold the new source file raw (if found)
                 string newSource;
-                string filename = tokens[evaluated+2].data;
+
+                // get the filename
+                string filename = tokens[evaluated+2].data; 
+
+                // remove " from filename if needed
                 if (filename.length() >= 2 && filename.front() == '"' && filename.back() == '"') {
                     filename = filename.substr(1, filename.length() - 2);
                 }
                 
+                // try to open the file directly
                 ifstream inFile(filename);
+
+                // if file is opened directly, copy it to newSource in raw form
                 if (inFile.is_open()) {
                     stringstream buffer;
                     buffer << inFile.rdbuf();
@@ -177,23 +204,30 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                         }
                     }
 
+                    // file not found, error
                     if (!found) {
                         cout << "Error: Could not open " << filename << "\n";
                         exit(1);
                     }
                 }
 
+                // update this->srouce since tokenization reads this->source to generate tokens
                 this->source = newSource;
 
+                // perform tokenization on the new source
                 vector<Token> newTokenList = this->startTokenization();
+                
+                // testing it here
+                // newTokenList = this->startPreprocessing(newTokenList);
 
-                for(size_t i=0 ; i<newTokenList.size() ; i++){                    
-                    
+                // copy the tokens in the final tokenList
+                for(size_t i=0 ; i<newTokenList.size() ; i++){                                        
                     // cout << "Copied\n";
                     processedTokens.push_back(newTokenList[i]);
                     tokenCount++;
                 }
 
+                // update evaluated for the current token list
                 evaluated += 3;
 
                 goto canContinueAgain;

@@ -27,6 +27,7 @@ int main()
     OutputWriter::writeTokensToFile(tokens, outFile);
     // OutputWriter::writeTokensToFile(rawTokens, outFile);
     
+    // Parser myParser = Parser(rawTokens);
     Parser myParser = Parser(tokens);
 
     myStack.push_back(GLOBAL); // manually push GLOABL representing the starting point of phase-2
