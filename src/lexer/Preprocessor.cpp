@@ -2,34 +2,97 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <unordered_map>
 
 using namespace std;
 
+// vector<string> includeSearchPaths = {
+//     "/usr/include",
+//     "/usr/local/include",
+//     "/opt/include",
+//     "/opt/local/include",
+
+//     "/usr/include/x86_64-linux-gnu",
+//     "/usr/include/aarch64-linux-gnu",
+//     "/usr/include/arm-linux-gnueabihf",
+//     "/usr/include/i386-linux-gnu",
+
+//     "/opt/homebrew/include",
+
+//     "/Library/Developer/CommandLineTools/usr/include",
+//     "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include",
+
+//     "C:/msys64/mingw64/include",
+//     "C:/msys64/mingw32/include",
+//     "C:/msys64/usr/include",
+//     "C:/mingw64/include",
+//     "C:/mingw/include"
+// };
+
 vector<string> includeSearchPaths = {
+    // ==========================================
+    // 1. Linux Standard System Include Paths
+    // ==========================================
     "/usr/include",
     "/usr/local/include",
     "/opt/include",
     "/opt/local/include",
 
+    // Linux Multiarch Paths
     "/usr/include/x86_64-linux-gnu",
     "/usr/include/aarch64-linux-gnu",
     "/usr/include/arm-linux-gnueabihf",
     "/usr/include/i386-linux-gnu",
 
-    "/opt/homebrew/include",
+    // ==========================================
+    // 2. Linux GCC Internal Headers (stddef.h, stdarg.h, stdbool.h, limits.h)
+    // ==========================================
+    "/usr/lib/gcc/x86_64-linux-gnu/14/include",
+    "/usr/lib/gcc/x86_64-linux-gnu/13/include",
+    "/usr/lib/gcc/x86_64-linux-gnu/12/include",
+    "/usr/lib/gcc/x86_64-linux-gnu/11/include",
+    "/usr/lib/gcc/x86_64-linux-gnu/10/include",
+    "/usr/lib/gcc/x86_64-linux-gnu/14/include-fixed",
+    "/usr/lib/gcc/x86_64-linux-gnu/13/include-fixed",
+    "/usr/lib/gcc/x86_64-linux-gnu/12/include-fixed",
 
+    // ARM Linux GCC Internal Headers (Raspberry Pi / ARM Servers)
+    "/usr/lib/gcc/aarch64-linux-gnu/14/include",
+    "/usr/lib/gcc/aarch64-linux-gnu/13/include",
+    "/usr/lib/gcc/aarch64-linux-gnu/12/include",
+    "/usr/lib/gcc/aarch64-linux-gnu/11/include",
+
+    // Linux Clang/LLVM Builtin Headers
+    "/usr/lib/clang/18/include",
+    "/usr/lib/clang/17/include",
+    "/usr/lib/clang/16/include",
+    "/usr/lib/clang/15/include",
+
+    // ==========================================
+    // 3. macOS Include Paths
+    // ==========================================
+    "/opt/homebrew/include", // Apple Silicon Homebrew
     "/Library/Developer/CommandLineTools/usr/include",
     "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include",
+    "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/usr/include", // Full Xcode
 
-    "C:/msys64/mingw64/include",
-    "C:/msys64/mingw32/include",
-    "C:/msys64/usr/include",
-    "C:/mingw64/include",
-    "C:/mingw/include"
+    // ==========================================
+    // 4. Windows (MSYS2 & MinGW) Include Paths
+    // ==========================================
+    "C:/msys64/ucrt64/include",  // Modern MSYS2 UCRT64 (Recommended default)
+    "C:/msys64/mingw64/include", // MSYS2 MinGW64
+    "C:/msys64/clang64/include", // MSYS2 Clang64
+    "C:/msys64/mingw32/include", // MSYS2 MinGW32
+    "C:/msys64/usr/include",     // MSYS2 POSIX
+    "C:/mingw64/include",        // Standalone MinGW64
+    "C:/mingw/include"           // Standalone MinGW32
 };
 
 vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
     // this func is called when # is encountered in a file, it is a preprocessor 
+
+    // hashmap to store values for the #define
+    unordered_map<string,string> defMap;
 
     
     // this vector will contain the final tokens after preprocessing
@@ -137,7 +200,7 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                         buffer << searchFile.rdbuf();
                         newSource = buffer.str();
                         searchFile.close();
-                        cout << "CASE <> | Data copied to newSource from " << fullPath << "\n";
+                        // cout << "CASE <> | Data copied to newSource from " << fullPath << "\n";
                         found = true;
                         break;
                     }
@@ -145,8 +208,8 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
 
                 // file not found, error
                 if (!found) {
-                    cout << "Error < : Could not open " << filename << "\n";
-                    cout << "Skipping " << filename << endl;
+                    // cout << "Error < : Could not open " << filename << "\n";
+                    // cout << "Skipping " << filename << endl;
 
                     // keep updating file name it reaches > 
                     while(evaluated < tokens.size() && tokens[evaluated].type != OP_GREATER) {
@@ -227,7 +290,7 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                     newSource = buffer.str();
                     inFile.close();
 
-                    cout << "CASE \"\" | Direct file open | Data copied to newSource\n";
+                    // cout << "CASE \"\" | Direct file open | Data copied to newSource\n";
                 } else {
                     
                     // here try to find the file from the direct include locations specified in vector includeSearchPaths
@@ -240,7 +303,7 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                             buffer << searchFile.rdbuf();
                             newSource = buffer.str();
                             searchFile.close();
-                            cout << "CASE \"\" | Data copied to newSource from " << fullPath << "\n";
+                            // cout << "CASE \"\" | Data copied to newSource from " << fullPath << "\n";
                             // cout << "Data = " << newSource << endl;
                             found = true;
                             break;
@@ -249,8 +312,8 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
 
                     // file not found, error
                 if (!found) {
-                    cout << "Error \" : Could not open " << filename << "\n";
-                    cout << "Skipping " << filename << endl;
+                    // cout << "Error \" : Could not open " << filename << "\n";
+                    // cout << "Skipping " << filename << endl;
 
                     // keep updating file name it reaches > 
                     while(evaluated < tokens.size() && tokens[evaluated].type != STRING_LITERAL) {
@@ -296,6 +359,15 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                 cout << "Invalid token in preprocessing\n";
                 exit(1);
             }
+        }
+        else if(evaluated+1 < tokens.size() && tokens[evaluated+1].type == PREP_DEFINE){
+            // #define name value
+
+            // push to token array for now
+            processedTokens.push_back(tokens[evaluated]);
+            tokenCount++;
+            evaluated++;
+            goto canContinueAgain;
         }
         else {
             // push to token array for now

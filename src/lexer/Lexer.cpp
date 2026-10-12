@@ -29,6 +29,39 @@ vector<Token> Lexer::startTokenization(){
     if(this->lexerStack[this->lastAddedInLexerStackIndex].currentSource.empty()) {
         return tokenList;
     }
+
+    // remove the line splicing chaaracters if needed
+    // considering \n and \r\n 
+    {
+        string& src = this->lexerStack[this->lastAddedInLexerStackIndex].currentSource;
+        string cleanSource = "";
+        cleanSource.reserve(src.length());
+
+        size_t i = 0;
+        while (i < src.length()) {
+            if (src[i] == '\\') {
+                // Check for Windows CRLF: \ + \r + \n
+                if (i + 2 < src.length() && src[i + 1] == '\r' && src[i + 2] == '\n') {
+                    i += 3; // skip '\', '\r', '\n'
+                    continue;
+                }
+                // Check for Unix LF: \ + \n
+                else if (i + 1 < src.length() && src[i + 1] == '\n') {
+                    i += 2; // skip '\', '\n'
+                    continue;
+                }
+            }
+            cleanSource += src[i];
+            i++;
+        }
+
+        src = cleanSource;
+
+        // If file became empty after splicing
+        if (src.empty()) {
+            return tokenList;
+        }
+    }
     
     char c = this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[0]; // initialize to first character of the file
 
