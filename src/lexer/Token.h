@@ -145,6 +145,14 @@ struct Token {
     int column;
     string fileName;
     string filePath;
+
+    bool operator==(const Token& other) const {
+        return type == other.type && data == other.data;
+    }
+
+    bool operator!=(const Token& other) const {
+        return !(*this == other);
+    }
 };
 
 // Helper function to convert TokenType to string

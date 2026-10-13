@@ -44,6 +44,8 @@ private:
     void handleSingleComment();
     void handleMultiComment();
 
+    string isTokenValidDefineName(const Token& token);
+
     bool isSingleCharToken(char c);
 
     Token evaluateAlphabetOrUnderScore(); // evalute token starting with alphabet (a-z) or (A-Z) or (_)

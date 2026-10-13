@@ -6,6 +6,9 @@
 
 using namespace std;
 
+// hashmap to store values for the #define
+unordered_map<string,vector<Token>> defMap;
+
 // vector<string> includeSearchPaths = {
 //     "/usr/include",
 //     "/usr/local/include",
@@ -91,8 +94,7 @@ vector<string> includeSearchPaths = {
 vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
     // this func is called when # is encountered in a file, it is a preprocessor 
 
-    // hashmap to store values for the #define
-    unordered_map<string,string> defMap;
+    
 
     
     // this vector will contain the final tokens after preprocessing
@@ -363,11 +365,77 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
         else if(evaluated+1 < tokens.size() && tokens[evaluated+1].type == PREP_DEFINE){
             // #define name value
 
-            // push to token array for now
-            processedTokens.push_back(tokens[evaluated]);
-            tokenCount++;
-            evaluated++;
+            // this string will contain define value
+            string defValue = "";
+
+            // check if the name is valid to be used a define
+            // if yes, this func will return the name as string
+            // if no, this func will return ""
+            string nameValue = isTokenValidDefineName(tokens[evaluated+2]);
+
+            // name is invalid
+            if(nameValue == ""){
+                cout << "Preprocessing #define name error\n";
+                cout << "Preprocessing name is invalid\n";
+                exit(1);
+            } 
+
+            // name is valid now, proceed
+            
+            // check for empty value
+            if(evaluated+3 < tokens.size() && tokens[evaluated+3].line != tokens[evaluated+2].line){
+                // it is #define without value
+                // #define name
+
+                // check if it alr exists with something in value, if yes, show error, if not, add it
+                if(defMap.count(nameValue) > 0){
+                    if(!defMap[nameValue].empty()){
+                        cout << "Redefinition (different) of " << nameValue << endl;
+                        exit(1);
+                    } 
+                }
+
+                // insert the defMap in the map, but keep the value vector as empty
+                defMap[nameValue] = {};
+                
+                // skip # and define and name
+                evaluated += 3;
+                goto canContinueAgain;
+            }
+
+            // now it is #define name value
+
+            int nxtIdx = 1;
+            vector<Token> helperVector;
+            while(evaluated+2+nxtIdx < tokens.size() && tokens[evaluated+2+nxtIdx].line == tokens[evaluated+2].line){
+
+                // push token to the vector
+                helperVector.push_back(tokens[evaluated+2+nxtIdx++]);
+            }
+
+            // check if the defName alr exists or not
+            // if exists, it must have same value, if not, show the error
+            if(defMap.count(nameValue) > 0){
+                if(defMap[nameValue] != helperVector) {
+                // if(1) {
+                    cout << "Redefinition (different) of " << nameValue << endl;
+                    exit(1);
+                } else{
+                    evaluated += 2 + nxtIdx;
+                    goto canContinueAgain;
+                }
+            } 
+
+            // now, nameValue doesnt alr exists in defMap, add it
+            defMap[nameValue] = helperVector;
+            evaluated += 2 + nxtIdx;
             goto canContinueAgain;
+
+            // push to token array for now
+            // processedTokens.push_back(tokens[evaluated]);
+            // tokenCount++;
+            // evaluated++;
+            // goto canContinueAgain;
         }
         else {
             // push to token array for now

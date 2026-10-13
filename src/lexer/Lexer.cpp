@@ -141,6 +141,36 @@ vector<Token> Lexer::startTokenization(){
     return tokenList;
 }
 
+string Lexer::isTokenValidDefineName(const Token& token){
+
+    string retValue = "";
+
+    // 1. Regular Identifiers
+    if (token.type == ID) {
+        string test = token.data;
+
+        // Rule 2 & Rule 3: Reject forbidden & built-in macros
+        if (test == "defined" ||
+            test == "__LINE__" || 
+            test == "__FILE__" ||
+            test == "__DATE__" || 
+            test == "__TIME__" ||
+            test == "__STDC__" ||
+            test == "__STDC_VERSION__") {
+            return retValue; // Invalid name
+        }
+
+        return test; // Valid identifier name
+    }
+    // 2. C Keywords (allowed to be redefined in preprocessor)
+    else if (token.type >= KEYWORD_INT && token.type <= KEYWORD_RESTRICT) {
+        return token.data; // Valid keyword name (e.g., int, return, goto, bool)
+    }
+
+    // 3. Operators, numbers, literals, delimiters are rejected (returns "")
+    return retValue;
+}
+
 char Lexer::getCurrentChar(){ // return character at current position
     return this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos];
 }
