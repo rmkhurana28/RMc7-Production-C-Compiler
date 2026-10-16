@@ -254,7 +254,7 @@ Token Lexer::evaluateAlphabetOrUnderScore(){
             if(c == '('){
                 // it is func-like macro, add in the set
                 funcLikeMacroSet.insert(tok.fileName + ":" + to_string(tok.line));
-                cout << "Added " << tok.data << endl;
+                // cout << "Added " << tok.data << endl;
             } 
 
             wasPrevTokenDefine = false;

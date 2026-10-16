@@ -69,15 +69,17 @@ int main()
         cout << "#define " << name << "(";
         
         // Print arguments
-        if (config.args.empty()) {
-            cout << "";
-        } else {
+        if (!config.args.empty()) {
             bool first = true;
             for (const auto& arg : config.args) {
                 if (!first) cout << ", ";
                 cout << arg;
                 first = false;
             }
+        }
+        if (config.isVariadic) {
+            if (!config.args.empty()) cout << ", ";
+            cout << "...";
         }
         cout << ") -> ";
 

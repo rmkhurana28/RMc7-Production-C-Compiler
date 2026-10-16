@@ -89,70 +89,76 @@
 // }
 
 // ========================================================
-// 1. Zero Arguments
+
+// ========================================================
+// 1. OBJECT-LIKE MACROS (Constants, Expressions, Flags)
+// ========================================================
+#define BUFFER_SIZE 1024
+#define PI 3.14159
+#define APP_NAME "RMc7 Production Compiler"
+#define NEWLINE '\n'
+#define GLUED 5*5
+#define DEBUG_MODE_FLAG
+#define MULTI_LINE_CONST 10 + \
+                         20 + \
+                         30
+
+// ========================================================
+// 2. STANDARD FUNCTION-LIKE MACROS (Fixed Arguments)
 // ========================================================
 #define ZERO_ARGS() 42
 #define EMPTY_ZERO_ARGS()
-
-// ========================================================
-// 2. Single Argument (Identity, Expressions & Stringizing)
-// ========================================================
-#define IDENTITY(x) x
 #define SQUARE(x) ((x) * (x))
-#define STRINGIFY(s) #s
-
-// ========================================================
-// 3. Multi-Arguments (2, 3, and 5 Parameters)
-// ========================================================
 #define ADD(a, b) ((a) + (b))
-#define CLAMP(val, min_val, max_val) (((val) < (min_val)) ? (min_val) : (((val) > (max_val)) ? (max_val) : (val)))
-#define SUM5(a, b, c, d, e) ((a) + (b) + (c) + (d) + (e))
-
-// ========================================================
-// 4. Empty Body with Arguments (e.g. Debug Logging)
-// ========================================================
-#define LOG_DEBUG(msg)
-#define IGNORE_TWO(x, y)
-
-// ========================================================
-// 5. C Keywords as Names and Parameters
-// ========================================================
-#define inline(func) static inline func
-#define TYPE_CONVERT(int, double) (int + double)
-
-// ========================================================
-// 6. Token Pasting (##) in Body
-// ========================================================
-#define CONCAT(x, y) x ## y
-#define MAKE_VAR(prefix, id) prefix##_##id
-
-// ========================================================
-// 7. Multi-line Function Macro with Line Continuation (\)
-// ========================================================
-#define MULTI_LINE_MACRO(x, \
-                         y) \
-    ((x) * 10 + \
-     (y) * 20)
-
-// ========================================================
-// 8. Comments (Inline & Trailing must NOT leak into body/args)
-// ========================================================
-#define COMMENTED(a /* first */, b /* second */) ((a) + (b)) // trailing comment
-
-// ========================================================
-// 9. Benign Redefinition (Exact same arguments and tokens)
-// ========================================================
-#define REPEAT_ME(x, y) ((x) ^ (y))
-#define REPEAT_ME(x, y) ((x) ^ (y))
-
-// ========================================================
-// 10. Complex Statements & Blocks in Body
-// ========================================================
+#define SUM3(a, b, c) ((a) + (b) + (c))
 #define SWAP(a, b) { int temp = a; a = b; b = temp; }
+#define CONCAT(x, y) x ## y
+#define EMPTY_BODY_FN(x, y)
+
+// ========================================================
+// 3. VARIADIC MACROS (C99 ... and __VA_ARGS__)
+// ========================================================
+// A. Pure Variadic (Only ...)
+#define LOG_RAW(...) printf(__VA_ARGS__)
+#define EMPTY_VARIADIC(...)
+
+// B. Fixed Parameters + Variadic
+#define LOG_FMT(fmt, ...) printf(fmt, __VA_ARGS__)
+#define WRAP_DEBUG(level, prefix, ...) fprintf(stderr, prefix, __VA_ARGS__, level)
+
+// C. Variadic Macro that ignores __VA_ARGS__ (Valid in C!)
+#define IGNORE_EXTRAS(fmt, ...) printf(fmt)
+
+// D. Multi-line Variadic
+#define MULTI_LINE_LOG(tag, \
+                       ...) \
+    printf(tag, \
+           __VA_ARGS__)
+
+// ========================================================
+// 4. BENIGN REDEFINITIONS (Exact same tokens & variadic flag)
+// ========================================================
+#define SAFE_REDEF(a, b) ((a) ^ (b))
+#define SAFE_REDEF(a, b) ((a) ^ (b))
+
+#define SAFE_VARIADIC_REDEF(fmt, ...) printf(fmt, __VA_ARGS__)
+#define SAFE_VARIADIC_REDEF(fmt, ...) printf(fmt, __VA_ARGS__)
 
 int main() {
     return 0;
 }
+
+// ========================================================
+// NEGATIVE TESTS (Uncomment ONE by ONE to verify errors):
+// ========================================================
+// #define BAD_VA_USE(x) (x + __VA_ARGS__)      // Error: __VA_ARGS__ not allowed for non-variadic
+// #define BAD_VA_NOT_LAST(..., a) (a)           // Error: Variadic macro func error (... must be last)
+// #define BAD_VA_TRAILING(a, ..., b) (a + b)    // Error: Variadic macro func error
+// #define DUP_PARAM(x, x) (x + x)               // Error: Duplicate macro parameter: x
+// #define CONFLICT(x) (x + 1)
+// #define CONFLICT(x) (x + 2)                   // Error: Redefinition of fnc macro
+// #define CONFLICT_VA(x) (x)
+// #define CONFLICT_VA(x, ...) (x)               // Error: Redefinition of fnc macro
 
 // ========================================================
 // NEGATIVE TESTS (Uncomment ONE by ONE to verify errors):

@@ -25,8 +25,10 @@ typedef struct FuncMacroConfig{
     vector<string> args;
     vector<Token> tokList;
 
+    bool isVariadic = false;
+
     bool operator==(const FuncMacroConfig& other) const {
-        return args == other.args && tokList == other.tokList;
+        return isVariadic == other.isVariadic && args == other.args && tokList == other.tokList;
     }
     bool operator!=(const FuncMacroConfig& other) const {
         return !(*this == other);

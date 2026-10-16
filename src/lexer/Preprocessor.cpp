@@ -365,7 +365,7 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
         }
         else if(evaluated+1 < tokens.size() && tokens[evaluated+1].type == PREP_DEFINE){
 
-            cout << "Reached here atleast " << tokens[evaluated+2].data << endl;
+            // cout << "Reached here atleast " << tokens[evaluated+2].data << endl;
 
             // used to check the func define name validity 
             string macroKey = tokens[evaluated+2].fileName + ":" + to_string(tokens[evaluated+2].line);
@@ -373,7 +373,7 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
 
             // #define func(args) value
             if(evaluated+2 < tokens.size() && funcLikeMacroSet.count(macroKey) > 0){
-                cout << "Reached inside also\n";
+                // cout << "Reached inside also\n";
 
                 // it is a func like macro, deal it accordingly
 
@@ -395,6 +395,18 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                 if(evaluated+3+idx < tokens.size() && tokens[evaluated+4].type == RPAREN){
                     idx++;
                     goto skip_args;
+                } else if(evaluated+3+idx < tokens.size() && tokens[evaluated+3+idx].type == OP_DOT){ // checking for variadic func as first param
+                    // check for 3 conseqetive dots, if not, print error
+
+                    // next tokens after first . strictly MUST be ..)
+                    if(evaluated+3+idx+3 >= tokens.size() || tokens[evaluated+3+idx+1].type != OP_DOT || tokens[evaluated+3+idx+2].type != OP_DOT || tokens[evaluated+3+idx+3].type != RPAREN){
+                        cout << "Variadic macro func error\n";
+                        exit(1);
+                    }
+
+                    config.isVariadic = true;
+                    idx += 4;
+                    goto skip_args;
                 }
 
                 while(evaluated+3+idx < tokens.size() && tokens[evaluated+3+idx].line == tokens[evaluated+2].line){
@@ -406,7 +418,7 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                     //     exit(1);
                     // }
 
-                        for (const string& existingArg : config.args) {
+                    for (const string& existingArg : config.args) {
                         if (existingArg == helperStr) {
                             cout << "Duplicate macro parameter: " << helperStr << "\n";
                             exit(1);
@@ -421,6 +433,23 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                     config.args.push_back(helperStr);
 
                     if(evaluated+3+idx+1 < tokens.size() && tokens[evaluated+3+idx+1].type == COMMA) {
+
+                        // Check if the token right after comma is '.'
+                        if (evaluated+3+idx+2 < tokens.size() && tokens[evaluated+3+idx+2].type == OP_DOT) {
+                            // Must be followed by ..)
+                            if (evaluated+3+idx+5 >= tokens.size() || 
+                                tokens[evaluated+3+idx+3].type != OP_DOT || 
+                                tokens[evaluated+3+idx+4].type != OP_DOT || 
+                                tokens[evaluated+3+idx+5].type != RPAREN) {
+                                cout << "Variadic macro func error\n";
+                                exit(1);
+                            }
+                            config.isVariadic = true;
+                            idx += 6; // skips arg, comma, . . . and )
+                            break;
+                        }
+
+
                         // skip current token and ,
                         idx += 2;
                         continue;
@@ -428,7 +457,22 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                         // skip current token and )
                         idx += 2;
                         break;
-                    } else{
+                    } 
+                    // else if(evaluated+3+idx+1 < tokens.size() && tokens[evaluated+3+idx+1].type == OP_DOT){
+                    //     //
+
+                    //     // next tokens after first . strictly MUST be ..)
+                    //     if(evaluated+3+idx+3+1 >= tokens.size() || tokens[evaluated+3+idx+1+1].type != OP_DOT || tokens[evaluated+3+idx+2+1].type != OP_DOT || tokens[evaluated+3+idx+3+1].type != RPAREN){
+                    //         cout << "Variadic macro func error\n";
+                    //         exit(1);
+                    //     }
+
+                    //     config.isVariadic = true;
+
+                    //     idx += 4;
+                    //     break;
+                    // } 
+                    else{
                         // syntax error, neither , nor )
                         cout << "Func define parameter error\n";
                         exit(1);
@@ -439,6 +483,10 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
 
                 // insert tokens 
                 while(evaluated+3+idx < tokens.size() && tokens[evaluated+3+idx].line == tokens[evaluated+2].line){
+                    if(!config.isVariadic && tokens[evaluated+3+idx].data == "__VA_ARGS__"){
+                        cout << "__VA_ARGS__ not allowed for non-variadic macro func decl\n";
+                        exit(1);
+                    }
                     config.tokList.push_back(tokens[evaluated+3+idx++]);
                 }
 
