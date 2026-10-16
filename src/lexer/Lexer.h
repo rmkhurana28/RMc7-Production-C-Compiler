@@ -4,8 +4,11 @@
 #include <string>
 #include <vector>
 #include "Token.h"
+#include <unordered_set>
 
 using namespace std;
+
+extern unordered_set<string> funcLikeMacroSet;
 
 typedef struct LexerConfig{
     size_t currentPos;
@@ -17,6 +20,19 @@ typedef struct LexerConfig{
     // adding soruce also in the lexerConfig
     string currentSource;
 } LexerConfig;
+
+typedef struct FuncMacroConfig{
+    vector<string> args;
+    vector<Token> tokList;
+
+    bool operator==(const FuncMacroConfig& other) const {
+        return args == other.args && tokList == other.tokList;
+    }
+    bool operator!=(const FuncMacroConfig& other) const {
+        return !(*this == other);
+    }
+    
+} FuncMacroConfig;
 
 class Lexer {
 private:

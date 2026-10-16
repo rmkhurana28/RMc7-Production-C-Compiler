@@ -8,6 +8,7 @@ using namespace std;
 
 // hashmap to store values for the #define
 unordered_map<string,vector<Token>> defMap;
+unordered_map<string, FuncMacroConfig> funcDefMap;
 
 // vector<string> includeSearchPaths = {
 //     "/usr/include",
@@ -363,6 +364,105 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
             }
         }
         else if(evaluated+1 < tokens.size() && tokens[evaluated+1].type == PREP_DEFINE){
+
+            cout << "Reached here atleast " << tokens[evaluated+2].data << endl;
+
+            // used to check the func define name validity 
+            string macroKey = tokens[evaluated+2].fileName + ":" + to_string(tokens[evaluated+2].line);
+
+
+            // #define func(args) value
+            if(evaluated+2 < tokens.size() && funcLikeMacroSet.count(macroKey) > 0){
+                cout << "Reached inside also\n";
+
+                // it is a func like macro, deal it accordingly
+
+                // hold the funcName
+                string funcNameValue = isTokenValidDefineName(tokens[evaluated+2]);
+
+                // name is invalid
+                if(funcNameValue == ""){
+                    cout << "Preprocessing #define funcName error\n";
+                    cout << "Preprocessing funcName is invalid\n";
+                    exit(1);
+                } 
+
+                FuncMacroConfig config;                
+                
+                int idx = 1;
+
+                // check for empty parameters
+                if(evaluated+3+idx < tokens.size() && tokens[evaluated+4].type == RPAREN){
+                    idx++;
+                    goto skip_args;
+                }
+
+                while(evaluated+3+idx < tokens.size() && tokens[evaluated+3+idx].line == tokens[evaluated+2].line){
+
+                    string helperStr = isTokenValidDefineName(tokens[evaluated+3+idx]);
+
+                    // if (config.args.count(helperStr) > 0) {
+                    //     cout << "Duplicate macro parameter: " << helperStr << "\n";
+                    //     exit(1);
+                    // }
+
+                        for (const string& existingArg : config.args) {
+                        if (existingArg == helperStr) {
+                            cout << "Duplicate macro parameter: " << helperStr << "\n";
+                            exit(1);
+                        }
+                    }
+
+                    if(helperStr == ""){
+                        cout << "Func Arg Error in macro\n";
+                        exit(1);
+                    }
+
+                    config.args.push_back(helperStr);
+
+                    if(evaluated+3+idx+1 < tokens.size() && tokens[evaluated+3+idx+1].type == COMMA) {
+                        // skip current token and ,
+                        idx += 2;
+                        continue;
+                    } else if(evaluated+3+idx+1 < tokens.size() && tokens[evaluated+3+idx+1].type == RPAREN){
+                        // skip current token and )
+                        idx += 2;
+                        break;
+                    } else{
+                        // syntax error, neither , nor )
+                        cout << "Func define parameter error\n";
+                        exit(1);
+                    }
+                }
+
+                skip_args:
+
+                // insert tokens 
+                while(evaluated+3+idx < tokens.size() && tokens[evaluated+3+idx].line == tokens[evaluated+2].line){
+                    config.tokList.push_back(tokens[evaluated+3+idx++]);
+                }
+
+                // check for dublicates now
+                if(funcDefMap.count(funcNameValue) > 0){
+                    if(config != funcDefMap[funcNameValue]){
+                        cout << "Redefinition of fnc macro\n";
+                        exit(1);
+                    } 
+                    else {
+                        // it alr exists, just skip it
+                        evaluated += 3 + idx;
+                    }
+                } else{
+                    funcDefMap[funcNameValue] = config;
+                    evaluated += 3 + idx;
+                }
+
+                goto canContinueAgain;
+                
+            }
+
+            // here, it is obj-like macor, deal it accordingly
+
             // #define name value
 
             // this string will contain define value

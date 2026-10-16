@@ -5,6 +5,8 @@
 
 using namespace std;
 
+unordered_set<string> funcLikeMacroSet;
+
 Lexer::Lexer(const string& sourceCode , const string& fileName){
 
     LexerConfig* first = new LexerConfig{0,1,1,fileName,"",sourceCode};
@@ -221,6 +223,8 @@ void Lexer::skipWhiteSpaces(){
 Token Lexer::evaluateAlphabetOrUnderScore(){
     string temp;
 
+    static bool wasPrevTokenDefine = false;
+
     char c = this->lexerStack[this->lastAddedInLexerStackIndex].currentSource[this->lexerStack[this->lastAddedInLexerStackIndex].currentPos]; // starting is either a-z or A-Z or _
 
     while(isalpha(c) || isdigit(c) || c == '_'){ // variable name or keyword can include a-z or A-Z or _ or 0-9
@@ -231,11 +235,38 @@ Token Lexer::evaluateAlphabetOrUnderScore(){
     Token tok;
     tok.data = temp;
     tok.type = this->getTokenTypeOf(temp);
+
     tok.line = this->lexerStack[this->lastAddedInLexerStackIndex].currentLine;
     tok.column = this->lexerStack[this->lastAddedInLexerStackIndex].currentColumn++;
 
     tok.fileName = this->lexerStack[this->lastAddedInLexerStackIndex].currentFile;
     tok.filePath = this->lexerStack[this->lastAddedInLexerStackIndex].currentFilePath;
+
+    {
+        // check if tok is of define or not
+
+        if(wasPrevTokenDefine){
+            // check if current character is space or not
+            // if it is space,then it is obj-like macro, do NOTHING
+            // if it NOT space, and it is ( , then it is func-like macro, add in the set            
+
+            c = this->getCurrentChar();
+            if(c == '('){
+                // it is func-like macro, add in the set
+                funcLikeMacroSet.insert(tok.fileName + ":" + to_string(tok.line));
+                cout << "Added " << tok.data << endl;
+            } 
+
+            wasPrevTokenDefine = false;
+        }
+        
+        if(tok.type == PREP_DEFINE){
+            // now check the next token and then again check if there is space after the token
+            wasPrevTokenDefine = true;
+        } 
+    }
+
+    
     
     return tok;
 }
