@@ -101,6 +101,8 @@ public:
 
     vector<Token> startTokenization();
     vector<Token> startPreprocessing(vector<Token>& tokens);
+
+    void handleDefine(vector<Token>& tokens , vector<Token>& processedTokens , Token& currToken , size_t& tokenCount , size_t& evaluated);
 };
 
 #endif

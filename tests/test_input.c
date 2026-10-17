@@ -1,186 +1,60 @@
-#define max 128\
-129
-
-// #include "stdio.h"
-
-// // ==========================================
-// // 1. Basic Literals & Constants
-// // ==========================================
-// #define BUFFER_SIZE 1024
-// #define PI 3.14159
-// #define STATUS_OK 0
-// #define APP_NAME "RMc7 Compiler"
-// #define NEWLINE '\n'
-
-// // ==========================================
-// // 2. Expressions & Glued / Spaced Tokens
-// // ==========================================
-// #define GLUED 5*5
-// #define SPACED 5 * 5
-// #define CALC_AREA 2 * PI * 10
-// #define COMPLEX_EXPR (5 + 3) * (10 - 2)
-
-// // ==========================================
-// // 3. Empty / Flag Macros
-// // ==========================================
-// #define DEBUG_MODE
-// #define __USE_EXTENSIONS__
-
-// // ==========================================
-// // 4. Comments (Must NOT enter defMap)
-// // ==========================================
-// #define MAX_USERS 500 // maximum active sessions
-// #define TIMEOUT /* wait duration */ 60 /* seconds */
-
-// // ==========================================
-// // 5. Multi-Statement Macros
-// // ==========================================
-// #define RESET_COORDS x = 0; y = 0;
-
-// // ==========================================
-// // 6. Identifier Variety & C Keywords
-// // ==========================================
-// #define _INTERNAL_FLAG 1
-// #define __CUSTOM_SYS_H__ 1
-// #define REG_32BIT 0x20
-// #define VAR_A1_B2 99
-
-// // C keywords as macro names (allowed in C preprocessor)
-// #define goto 125
-// #define inline
-// #define auto 77
-
-// // ==========================================
-// // 7. Benign Redefinition (Exact same tokens)
-// // ==========================================
-// #define LIMIT 100
-// #define LIMIT 100
-
-// // ==========================================
-// // 8. Line Continuation (\)
-// // ==========================================
-// #define LONG_FORMULA 10 + \
-//                      20 + \
-//                      30
-
-// #define INIT_ARRAY { \
-//     1, 2, 3, \
-//     4, 5, 6  \
-// }
-
-// // Dummy main function so downstream parser has valid code to inspect
-// int main() {
-//     int x = 0;
-//     int y = 0;
-//     return 0;
-// }
-
-// 1. Multi-argument expression
-// #define ADD(a, b) ((a) + (b))
-
-// // 2. Zero-argument function macro
-// #define GET_TEN() 10
-
-// // 3. Empty-body function macro
-// #define LOG(msg)
-
-// int main() {
-//     return 0;
-// }
-
 // ========================================================
-
-// ========================================================
-// 1. OBJECT-LIKE MACROS (Constants, Expressions, Flags)
+// 1. MACRO DEFINITIONS
 // ========================================================
 #define BUFFER_SIZE 1024
 #define PI 3.14159
-#define APP_NAME "RMc7 Production Compiler"
+#define GREETING "Hello, RMc7!"
 #define NEWLINE '\n'
-#define GLUED 5*5
-#define DEBUG_MODE_FLAG
-#define MULTI_LINE_CONST 10 + \
-                         20 + \
-                         30
+
+// Multi-token mathematical expression
+#define EXPR (10 + 20 * 2)
+
+// Chained / Nested Macros (Macro inside another macro)
+#define BASE_VAL 10
+#define STEP_VAL (BASE_VAL * 2)
+#define TOTAL_VAL (STEP_VAL + 5)
+
+// Self-referencing macro (Infinite loop guard check)
+#define x (x + 1)
+
+// Mutual / Indirect recursion (Loop guard check)
+#define ALPHA (BETA + 1)
+#define BETA (ALPHA + 1)
+
+// Empty macro
+#define EMPTY_MODIFIER
 
 // ========================================================
-// 2. STANDARD FUNCTION-LIKE MACROS (Fixed Arguments)
+// 2. CODE INVOCATIONS (Where expansion should happen)
 // ========================================================
-#define ZERO_ARGS() 42
-#define EMPTY_ZERO_ARGS()
-#define SQUARE(x) ((x) * (x))
-#define ADD(a, b) ((a) + (b))
-#define SUM3(a, b, c) ((a) + (b) + (c))
-#define SWAP(a, b) { int temp = a; a = b; b = temp; }
-#define CONCAT(x, y) x ## y
-#define EMPTY_BODY_FN(x, y)
-
-// ========================================================
-// 3. VARIADIC MACROS (C99 ... and __VA_ARGS__)
-// ========================================================
-// A. Pure Variadic (Only ...)
-#define LOG_RAW(...) printf(__VA_ARGS__)
-#define EMPTY_VARIADIC(...)
-
-// B. Fixed Parameters + Variadic
-#define LOG_FMT(fmt, ...) printf(fmt, __VA_ARGS__)
-#define WRAP_DEBUG(level, prefix, ...) fprintf(stderr, prefix, __VA_ARGS__, level)
-
-// C. Variadic Macro that ignores __VA_ARGS__ (Valid in C!)
-#define IGNORE_EXTRAS(fmt, ...) printf(fmt)
-
-// D. Multi-line Variadic
-#define MULTI_LINE_LOG(tag, \
-                       ...) \
-    printf(tag, \
-           __VA_ARGS__)
-
-// ========================================================
-// 4. BENIGN REDEFINITIONS (Exact same tokens & variadic flag)
-// ========================================================
-#define SAFE_REDEF(a, b) ((a) ^ (b))
-#define SAFE_REDEF(a, b) ((a) ^ (b))
-
-#define SAFE_VARIADIC_REDEF(fmt, ...) printf(fmt, __VA_ARGS__)
-#define SAFE_VARIADIC_REDEF(fmt, ...) printf(fmt, __VA_ARGS__)
-
 int main() {
+    // 1. Basic constants
+    int size = BUFFER_SIZE;
+    float pi_val = PI;
+    char* str = GREETING;
+    char nl = NEWLINE;
+
+    // 2. Multi-token expression
+    int calc = EXPR;
+
+    // 3. Chained expansion (TOTAL_VAL -> STEP_VAL -> BASE_VAL)
+    int chain = TOTAL_VAL;
+
+    // 4. Self-referencing (Must expand ONCE to (x + 1) and STOP)
+    int x = 5;
+    int self_ref = x;
+
+    // 5. Mutual recursion (ALPHA -> BETA -> ALPHA, must STOP)
+    int mutual = ALPHA;
+
+    // 6. Empty macro (EMPTY_MODIFIER should vanish)
+    EMPTY_MODIFIER int empty_test = 100;
+
+    // 7. Non-expansion checks (These must NOT be replaced!):
+    //    - Inside string literals:
+    char* literal_test = "BUFFER_SIZE is not a macro here";
+    //    - As part of longer variable names:
+    int BUFFER_SIZE_MAX = 2048;
+
     return 0;
 }
-
-// ========================================================
-// NEGATIVE TESTS (Uncomment ONE by ONE to verify errors):
-// ========================================================
-// #define BAD_VA_USE(x) (x + __VA_ARGS__)      // Error: __VA_ARGS__ not allowed for non-variadic
-// #define BAD_VA_NOT_LAST(..., a) (a)           // Error: Variadic macro func error (... must be last)
-// #define BAD_VA_TRAILING(a, ..., b) (a + b)    // Error: Variadic macro func error
-// #define DUP_PARAM(x, x) (x + x)               // Error: Duplicate macro parameter: x
-// #define CONFLICT(x) (x + 1)
-// #define CONFLICT(x) (x + 2)                   // Error: Redefinition of fnc macro
-// #define CONFLICT_VA(x) (x)
-// #define CONFLICT_VA(x, ...) (x)               // Error: Redefinition of fnc macro
-
-// ========================================================
-// NEGATIVE TESTS (Uncomment ONE by ONE to verify errors):
-// ========================================================
-// #define DUP_PARAM(x, x) (x + x)              // Error: Duplicate macro parameter: x
-// #define NUM_PARAM(1, y) (1 + y)              // Error: Func Arg Error in macro
-// #define OP_PARAM(x, +) (x + 1)               // Error: Func Arg Error in macro
-// #define NO_COMMA(x y) (x + y)                // Error: Func define parameter error
-// #define TRAILING_COMMA(a, b,) (a + b)        // Error: Func Arg Error in macro
-// #define CONFLICT(x) (x + 1)
-// #define CONFLICT(x) (x + 2)                  // Error: Redefinition of fnc macro
-
-// =======================================================
-// NEGATIVE TESTS (Uncomment ONE by ONE to verify errors):
-// =======================================================
-// #define __LINE__ 50       // Error: Cannot redefine built-in __LINE__
-// #define defined 1         // Error: 'defined' cannot be used as macro name
-// #define 123BAD 456        // Error: Invalid macro name starting with digit
-// #define + 10              // Error: Operator '+' cannot be macro name
-// #define LIMIT 200         // Error: Conflicting redefinition of LIMIT (was 100)
-
-
-
-
-void func(){};

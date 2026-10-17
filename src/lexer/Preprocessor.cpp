@@ -107,7 +107,11 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
     canContinueAgain:
 
     // copy the tokens blindly untill # or ID is found (# for obv preprocessors, and ID for pre-defined macros, they are currently stored as ID in rawTokenStream)
-    while(evaluated < tokens.size() && tokens[evaluated].type != OP_HASH && tokens[evaluated].type != ID){
+    /*
+        addition: since the name of the #define can be anything, including some reserved keywords also, so we need to check if the token can be a valid #define name or not
+        isTokenValidDefineName(tokens[evaluated]) == "" means the token can NOT be a #define name
+    */
+    while(evaluated < tokens.size() && tokens[evaluated].type != OP_HASH && tokens[evaluated].type != ID && isTokenValidDefineName(tokens[evaluated]) == ""){
         processedTokens.push_back(tokens[evaluated]);
         tokenCount++;
         evaluated++;
@@ -117,16 +121,7 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
     
     if(evaluated == tokens.size()) return processedTokens;
     
-    if(tokens[evaluated].type == ID){
-        //
-
-        // push to token array for now
-        processedTokens.push_back(tokens[evaluated]);
-        tokenCount++;
-        evaluated++;
-        goto canContinueAgain;
-
-    } else if(tokens[evaluated].type == OP_HASH){
+    if(tokens[evaluated].type == OP_HASH){
 
         // #include case
         if(evaluated+1 < tokens.size() && tokens[evaluated+1].type == PREP_INCLUDE){ 
@@ -592,9 +587,83 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
             evaluated++;
             goto canContinueAgain;
         }
-    } else{
-        // do nothing
+    } else if(isTokenValidDefineName(tokens[evaluated]) != ""){
+        /* 
+            now it can be a #define name, so we need to check if it is or not, 
+            if it is not, add it to the processed tokens vector and move on
+            if it is , then expand it accoridngly
+        */
+
+        handleDefine(tokens, processedTokens , tokens[evaluated] , tokenCount , evaluated);
+        
+        goto canContinueAgain;
+
+        
+    }     
+    else{        
+        // push to token array for now
+        processedTokens.push_back(tokens[evaluated]);
+        tokenCount++;
+        evaluated++;
+        goto canContinueAgain;
     }
 
     return processedTokens;
+}
+
+void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens , Token& currToken , size_t& tokenCount , size_t& evaluated){
+    // here, currToken = tokens[evaluated]
+
+    static unordered_set<string> nested_set;
+
+    if(nested_set.count(currToken.data) > 0) {
+        processedTokens.push_back(currToken);
+        tokenCount++;
+        // if(nested_set.size() == 1) evaluated++;
+        
+        return;
+    }
+    
+    nested_set.insert(currToken.data);
+
+    if((defMap.count(currToken.data) > 0 && funcDefMap.count(currToken.data) == 0)
+        || (defMap.count(currToken.data) > 0 && funcDefMap.count(currToken.data) > 0 && (evaluated+1 < tokens.size() || tokens[evaluated+1].type != LPAREN))){
+        // it is in defMap and not in func def map, hence it is obj expansion          
+        // it is in defMap and also in func def map, but doesnt have ( just after name, hence it is obj expansion       
+
+        for(auto repToken : defMap[currToken.data]){
+            if(isTokenValidDefineName(repToken) != ""){
+                handleDefine(tokens,processedTokens,repToken, tokenCount , evaluated);
+            } else{
+                processedTokens.push_back(repToken);
+                tokenCount++;                                            
+            }
+        }
+
+        if(nested_set.size() == 1) evaluated++;
+        
+        
+    } else if(defMap.count(currToken.data) == 0 && funcDefMap.count(currToken.data) > 0 && evaluated+1 < tokens.size() && tokens[evaluated+1].type == LPAREN) {
+        // it is not in defMap, it is in func def map, and also has ( right after name (next token), hence it is func expansion
+
+        // push to token array for now
+        processedTokens.push_back(currToken);
+        tokenCount++;
+        if(nested_set.size() == 1) evaluated++;
+        return;
+
+    } else{
+        // it is just a simple token, ignore it and add to processed token , thats it
+        // push to token array for now
+        processedTokens.push_back(currToken);
+        tokenCount++;
+        if(nested_set.size() == 1) evaluated++;
+
+        nested_set.erase(currToken.data);
+
+        return;
+    }
+
+    nested_set.erase(currToken.data);
+    return;
 }
