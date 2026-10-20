@@ -105,6 +105,8 @@ public:
     void handleDefine(vector<Token>& tokens , vector<Token>& processedTokens , Token& currToken , size_t& tokenCount , size_t& evaluated);
 
     bool isValuePartValid(vector<Token>& list);
+
+    int indexOfStringIfExist(vector<string>& args , string value);
 };
 
 #endif

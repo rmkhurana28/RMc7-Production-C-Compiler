@@ -119,7 +119,7 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
 
     // now we found # or ID
     
-    if(evaluated == tokens.size()) return processedTokens;
+    if(evaluated >= tokens.size()) return processedTokens;
     
     if(tokens[evaluated].type == OP_HASH){
 
@@ -623,8 +623,16 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
 }
 
 void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens , Token& currToken , size_t& tokenCount , size_t& evaluated){
+
+    cout << "Handle define called\n";
+
     // here, currToken = tokens[evaluated]
 
+    /*
+        currently this func is kind of handling nested obj-expansion, but not plannig to support 100% nested coverage of func macro expansion in current version of rmc7, will be added in future versions
+    */
+
+    
     static unordered_set<string> nested_set;
 
     if(nested_set.count(currToken.data) > 0) {
@@ -637,6 +645,7 @@ void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens 
     
     nested_set.insert(currToken.data);
 
+    // obj-expansion
     if((defMap.count(currToken.data) > 0 && funcDefMap.count(currToken.data) == 0)
         || (defMap.count(currToken.data) > 0 && funcDefMap.count(currToken.data) > 0 && (evaluated+1 < tokens.size() || tokens[evaluated+1].type != LPAREN))){
         // it is in defMap and not in func def map, hence it is obj expansion          
@@ -654,15 +663,128 @@ void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens 
         if(nested_set.size() == 1) evaluated++;
         
         
-    } else if(defMap.count(currToken.data) == 0 && funcDefMap.count(currToken.data) > 0 && evaluated+1 < tokens.size() && tokens[evaluated+1].type == LPAREN) {
+    } 
+    // func expansion
+    else if(defMap.count(currToken.data) == 0 && funcDefMap.count(currToken.data) > 0 && evaluated+1 < tokens.size() && tokens[evaluated+1].type == LPAREN) {
         // it is not in defMap, it is in func def map, and also has ( right after name (next token), hence it is func expansion
 
+        cout << "Inside func expansion at " << currToken.data << " \n";        
+
+        int bracCount = 0;
+
+        auto configHelper = funcDefMap[currToken.data];
+        
+        evaluated += 2; // skip func name and opening (
+
+        int idx = 0;
+
+        vector<vector<Token>> replacement;
+
+        // parse arguments till closing ) when bracCount is also 0
+        while(tokens[evaluated+idx].type != RPAREN || bracCount != 0){
+            
+            vector<Token> helperList;
+            while((tokens[evaluated+idx].type != COMMA || bracCount != 0) && (tokens[evaluated+idx].type != RPAREN || bracCount != 0)){
+                if(tokens[evaluated+idx].type == LPAREN) bracCount++;
+                if(tokens[evaluated+idx].type == RPAREN) bracCount--;
+                
+                helperList.push_back(tokens[evaluated+idx++]);
+            }
+
+            replacement.push_back(helperList);
+            helperList.clear();
+
+            if(tokens[evaluated+idx].type == COMMA) idx++; // skip ,
+        }
+
+        idx++; // skip closing )
+
+        // number of arguments actually passed must be equal to number of expected arguments
+        if(replacement.size() != configHelper.args.size()){
+            cout << "number of arguments not matching\n";
+            exit(1);
+        }
+
+        // now we have the arguments saved in sequence in replacement, that is a vector of vector
+        // now we will replace it if required
+
+        // go through all tokens in value part and replace if arguments are matched
+        for(size_t i=0 ; i<configHelper.tokList.size() ; i++){            
+            
+
+            // single hash case, convert arg to string
+            if(configHelper.tokList[i].type == OP_HASH && indexOfStringIfExist(configHelper.args , configHelper.tokList[i+1].data) != -1){
+                
+
+                // index of parameter needs to be replaced and also converted to string
+                int helperIdx = indexOfStringIfExist(configHelper.args , configHelper.tokList[i+1].data);
+
+                string myStr = "\"";
+
+                // go through all corresponding index vector of tokens that needs to be replaced
+                for(size_t j=0 ; j<replacement[helperIdx].size() ; j++){
+
+                    // if it is not string literal, copy it directly
+                    if(replacement[helperIdx][j].type != STRING_LITERAL){
+                        myStr += replacement[helperIdx][j].data;
+                    } else{                        
+                        myStr += "\\"; // add \ to avoid syntax error
+                        myStr += replacement[helperIdx][j].data; // add the entire string literal data
+                        myStr.pop_back(); // remove the last "
+                        myStr += "\\"; // insert another \ to avoid syntax error
+                        myStr += "\""; // add closing " back to validate the string
+                    }
+                }
+                
+                myStr += "\"";
+                
+                Token newTok = tokens[evaluated];
+                newTok.type = STRING_LITERAL;
+                newTok.data = myStr;
+
+                processedTokens.push_back(newTok);
+                tokenCount++;
+
+                i++; // for skiping 1 extra token, that is parameter name
+
+                continue;
+            } else {
+                if(configHelper.tokList[i+1].type == OP_HASH && configHelper.tokList[i+2].type == OP_HASH){
+                    // next token is ##, hence current token and the next token after ## will be merged
+                } else{
+                    // normal token case, now evaluate if it is arg or not
+
+                    int index = indexOfStringIfExist(configHelper.args , configHelper.tokList[i].data);
+
+                    if(index == -1){ // this is not a argument
+                        processedTokens.push_back(configHelper.tokList[i]);
+                        tokenCount++;
+                    } else{
+                        // it is argument, replace the tokens now
+
+                        // go through all tokens of corresponding index vector of tokens taht need to be replaced
+                        for(size_t j=0 ; j<replacement[index].size() ; j++){
+                            processedTokens.push_back(replacement[index][j]);
+                            tokenCount++;
+                        }
+                    }
+
+                    continue;
+                }
+
+                
+            }
+
+            
+        }
+
+        evaluated += idx;
         
 
         // push to token array for now
-        processedTokens.push_back(currToken);
-        tokenCount++;
-        if(nested_set.size() == 1) evaluated++;
+        // processedTokens.push_back(currToken);
+        // tokenCount++;
+        // if(nested_set.size() == 1) evaluated++;
         return;
 
     } else{
@@ -708,4 +830,13 @@ bool Lexer::isValuePartValid(vector<Token>& list){
     }
 
     return true;
+}
+
+int Lexer::indexOfStringIfExist(vector<string>& args , string value){
+    
+    for(size_t i=0 ; i<args.size() ; i++){
+        if(value == args[i]) return i;
+    }
+
+    return -1;
 }

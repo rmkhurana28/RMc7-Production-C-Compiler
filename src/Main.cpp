@@ -127,7 +127,7 @@ int main()
     // // Print expression statements
     // printStatementsToFile(outFile, myParser.getStatements());
     
-    outFile.close();
+    outFile.close();    
     
     return 0;
 }
