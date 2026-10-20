@@ -552,8 +552,19 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
             vector<Token> helperVector;
             while(evaluated+2+nxtIdx < tokens.size() && tokens[evaluated+2+nxtIdx].line == tokens[evaluated+2].line){
 
+                /*
+                    here, need to check if the token that we r adding to the value part is valid or not, we can do it either for each token as we add it or we can do it direclty by calling a checker func after all the tokens are added, 
+                    checking after adding all will be btr since it will save the func-call stack calls as func will be called only once
+                */
+
                 // push token to the vector
                 helperVector.push_back(tokens[evaluated+2+nxtIdx++]);
+            }
+
+            // check if the tokens added in the value part is valid or not
+            if(!isValuePartValid(helperVector)){
+                cout << "Value part is NOT valid\n";
+                exit(1);
             }
 
             // check if the defName alr exists or not
@@ -646,6 +657,8 @@ void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens 
     } else if(defMap.count(currToken.data) == 0 && funcDefMap.count(currToken.data) > 0 && evaluated+1 < tokens.size() && tokens[evaluated+1].type == LPAREN) {
         // it is not in defMap, it is in func def map, and also has ( right after name (next token), hence it is func expansion
 
+        
+
         // push to token array for now
         processedTokens.push_back(currToken);
         tokenCount++;
@@ -666,4 +679,33 @@ void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens 
 
     nested_set.erase(currToken.data);
     return;
+}
+
+
+bool Lexer::isValuePartValid(vector<Token>& list){
+    // single # not allowed
+    // double ## not allowed at extremes
+    // consequtive double hashes #### not allowed without tokens bw them
+    // __VA_ARGS__ and __VA_OPT__ not allowed
+    
+    for(size_t i=0 ; i<list.size() ; i++){
+        
+        if((i == 0 && list[i].type == OP_HASH )|| // prevents # as first token, hence avoids ## at left-extreme
+            (i == list.size()-1 && list[i].type == OP_HASH)){// prevents # as last token, hence avoides ## at right-extreme         
+                return false;
+        }
+
+        if(list[i].type == OP_HASH){
+            // must be a double hash
+            if(list[i-1].type != OP_HASH && list[i+1].type != OP_HASH) return false; // no need to do boundary check since both extreme cases are alr covered
+
+            // must not be a 3 or more consequtive hashes
+            if(list[i-1].type == OP_HASH && list[i+1].type == OP_HASH) return false; // reject if left and right both are hashes
+
+        }
+
+        if(list[i].data == "__VA_ARGS__" || list[i].data == "__VA_OPT__") return false;
+    }
+
+    return true;
 }
