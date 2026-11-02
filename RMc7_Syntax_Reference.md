@@ -1,6 +1,6 @@
 # RMc7 Syntax Reference
 
-**Version:** Phase 1 Complete | Phase 2 In Progress (~98%)  
+**Version:** Phase 0 In Progress | Phase 1 Complete | Phase 2 Frozen (~98%)  
 **Target:** 90-95% ISO C Core Features
 
 ---
@@ -804,26 +804,103 @@ void do_nothing() {             // Void function
 
 ## 7. Preprocessor
 
-➡️ **Planned after Phase 2**
+🟡 **In Progress**
 
-The RMc7 preprocessor will be implemented after Phase 2.  
 The goal is to support full ISO C preprocessing, including:
 
-### Planned Features
-➡️ #define object-like macros  
-➡️ #define function-like macros  
-➡️ Macro expansion and rescan  
-➡️ #include with full system and local search paths  
+### 7.1 #include Directive
+✅ `#include <header.h>` (System include path resolution across standard directories)  
+✅ `#include "header.h"` (Local relative path resolution)  
+✅ Nested header inclusion across multi-file structures  
+✅ Circular and duplicate include protection (visited path tracking)  
+
+**Examples:**
+```c
+#include <stdio.h>
+#include "custom_header.h"
+```
+
+### 7.2 #define Object-Like Macros
+✅ Simple constant value substitutions  
+✅ Empty / flag macros (`#define FLAG`)  
+✅ Multi-token object macro replacements  
+✅ Chained object macro expansions across multiple levels  
+✅ Self-recursion inhibition guard (prevents infinite recursive expansion)  
+
+**Examples:**
+```c
+#define BUFFER_SIZE 1024
+#define BASE 5
+#define TOTAL (BASE + 10)   // Expands to (5 + 10)
+#define x (x + 1)           // Self-recursion safely inhibited: expands to (x + 1)
+```
+
+### 7.3 #define Function-Like Macros
+✅ Parameterized macro definitions and expansions  
+✅ Parenthesis-protected argument parsing (commas inside nested parens do not split arguments)  
+✅ Multi-invocation safety (same macro can be called repeatedly across the translation unit)  
+
+> **Note:** Nested function macro calls (such as passing a function macro as an argument `ADD(DOUBLE(5), 10)` or invoking a function macro inside another macro's body) are currently not supported in this version and will be added later.
+
+**Examples:**
+```c
+#define ADD(a, b) ((a) + (b))
+#define MULT(a, b) ((a) * (b))
+
+int x = ADD(10, 20);            // Expands to ((10) + (20))
+int y = ADD(30, 40);            // Repeated invocation supported
+int z = ADD((1, 2), 7);         // Nested parens protect the comma: a = (1, 2), b = 7
+```
+
+### 7.4 Stringification Operator (#)
+✅ Stringizing function macro parameters (`#param`)  
+✅ Automatic quote escaping (inner string literal quotes escaped to `\"`)  
+
+**Examples:**
+```c
+#define TO_STR(x) #x
+
+char *s1 = TO_STR(hello_world); // Expands to "hello_world"
+char *s2 = TO_STR("quoted");     // Expands to "\"quoted\""
+```
+
+### 7.5 Token Pasting Operator (##)
+✅ Identifier concatenation (`a ## b` -> `ab`)  
+✅ Integer / literal concatenation (`12 ## 34` -> `1234`)  
+✅ Operator synthesis (`op ## =` with `+` -> `+=`)  
+✅ Post-merge lexical validation via `isCombinedStringValid()`  
+
+**Examples:**
+```c
+#define CONCAT(a, b) a ## b
+#define MAKE_OP(op) op ## =
+
+int CONCAT(my_, var) = 100;     // Expands to: int my_var = 100;
+int num = CONCAT(12, 34);        // Expands to: int num = 1234;
+x MAKE_OP(+) 5;                  // Expands to: x += 5;
+```
+
+### 7.6 Variadic Macros (... and __VA_ARGS__)
+✅ Standard ISO C `...` parameter bundling  
+✅ Substitution of `__VA_ARGS__` preserving arguments and separating commas  
+✅ Stringification of variadic arguments (`#__VA_ARGS__`)  
+
+**Examples:**
+```c
+#define LOG(fmt, ...) printf(fmt, __VA_ARGS__)
+#define VAR_STR(...) #__VA_ARGS__
+
+LOG("result: %d, %d", 1, 2);    // Expands to: printf("result: %d, %d", 1, 2);
+char *s = VAR_STR(a, b, c);     // Expands to: "a,b,c"
+```
+
+### 7.7 Upcoming Preprocessor Features
 ➡️ #if / #ifdef / #ifndef / #elif / #else / #endif  
-➡️ Stringizing (#) and token pasting (##)  
 ➡️ Multi-line macros using backslash continuation  
 ➡️ #line directive  
+➡️ #undef directive  
+➡️ #pragma directive  
 ➡️ Built-in macros (__FILE__, __LINE__, etc.)
-
-### Design Notes
-- Preprocessing will occur before lexical analysis and produce a normalized token stream.  
-- #if constant-expression evaluation will reuse the main expression parser.  
-- No GNU or MSVC extensions are planned for Phase 1 of the preprocessor.
 
 ---
 
@@ -875,8 +952,8 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 - ✅ Typedef system (complete)
 - ✅ Number literal formats (hex, octal, scientific, suffixes, hex floats)
 - ✅ Character & string escape sequences (complete ISO C set)
+- 🟡 Preprocessor (in progress)
 - 🟡 Diagnostic Engine (in progress)
-- ➡️ Preprocessor
 
 ---
 
@@ -887,11 +964,11 @@ RMc7 will include a dedicated diagnostic system added after Phase 2.
 - ✅ **Phase 2 (98%):** Type system, declarators, expressions, statements, function definitions, struct parsing, union parsing, enum parsing, typedef parsing, number literal formats, escape sequences
 
 **In Progress:**
+- 🟡 Preprocessor (in progress)
 - 🟡 Diagnostic Engine
 
 **Upcoming:**
 - ➡️ Position-validity rules (semantic context checks)
-- ➡️ Preprocessor
 - ➡️ Semantic analysis
 - ➡️ IR generation
 - ➡️ Optimization

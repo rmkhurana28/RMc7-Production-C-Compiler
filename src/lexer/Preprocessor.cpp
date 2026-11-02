@@ -649,7 +649,12 @@ void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens 
     if((defMap.count(currToken.data) > 0 && funcDefMap.count(currToken.data) == 0)
         || (defMap.count(currToken.data) > 0 && funcDefMap.count(currToken.data) > 0 && (evaluated+1 < tokens.size() || tokens[evaluated+1].type != LPAREN))){
         // it is in defMap and not in func def map, hence it is obj expansion          
-        // it is in defMap and also in func def map, but doesnt have ( just after name, hence it is obj expansion       
+        // it is in defMap and also in func def map, but doesnt have ( just after name, hence it is obj expansion     
+        
+        /*
+            whats happenig here is pretty straight forward
+            when expnding the obj-macro, i m checking the new word to be a macro or not, if it is, call expansion as nested, if not, add it to the processed tokens
+        */
 
         for(auto repToken : defMap[currToken.data]){
             if(isTokenValidDefineName(repToken) != ""){
@@ -699,10 +704,37 @@ void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens 
 
         idx++; // skip closing )
 
-        // number of arguments actually passed must be equal to number of expected arguments
-        if(replacement.size() != configHelper.args.size()){
-            cout << "number of arguments not matching\n";
-            exit(1);
+        // check argument count: exact match for normal macros, at least named arguments for variadic macros
+        if(!configHelper.isVariadic){
+            if(replacement.size() != configHelper.args.size()){
+                cout << "number of arguments not matching\n";
+                exit(1);
+            }
+        } else {
+            if(replacement.size() < configHelper.args.size()){
+                cout << "too few arguments for variadic macro\n";
+                exit(1);
+            }
+
+            size_t namedCount = configHelper.args.size();
+            vector<Token> vaTokens;
+
+            for(size_t k = namedCount; k < replacement.size(); k++){
+                if(k > namedCount){
+                    Token commaTok = tokens[evaluated];
+                    commaTok.type = COMMA;
+                    commaTok.data = ",";
+                    vaTokens.push_back(commaTok);
+                }
+
+                for(const auto& tok : replacement[k]){
+                    vaTokens.push_back(tok);
+                }
+            }
+
+            replacement.resize(namedCount);
+            replacement.push_back(vaTokens);
+            configHelper.args.push_back("__VA_ARGS__");
         }
 
         // now we have the arguments saved in sequence in replacement, that is a vector of vector
@@ -751,6 +783,117 @@ void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens 
             } else {
                 if(configHelper.tokList[i+1].type == OP_HASH && configHelper.tokList[i+2].type == OP_HASH){
                     // next token is ##, hence current token and the next token after ## will be merged
+
+                    /*
+                        before we attach the 2 tokens together, need to check if they (as independent tokens) are matching some arg or not
+                        if yes, then replace them first and then proceed to attach them
+                        if not, ignore it
+                    */
+
+                    string str1 = configHelper.tokList[i].data;
+                    string str2 = configHelper.tokList[i+3].data;
+
+                    vector<Token> pushLater;
+
+                    {
+                        int leftIdx = indexOfStringIfExist(configHelper.args , configHelper.tokList[i].data); 
+                        int rightIdx = indexOfStringIfExist(configHelper.args , configHelper.tokList[i+3].data);
+                    
+                        if(leftIdx == -1 && rightIdx == -1) goto notAnArg;
+
+                        if(leftIdx != -1) {
+                            // replace i(th) index token with the tokens of replacement at that index and treat the last index as the one that will be attached
+
+                            if (replacement[leftIdx].empty()) str1 = "";
+                            else{
+                                for(size_t j=0 ; j<replacement[leftIdx].size() ; j++){
+                                    if(j == replacement[leftIdx].size()-1){
+                                        // this is the last token in the replacement list, this will be attached 
+
+                                        str1 = replacement[leftIdx][j].data;                                    
+
+                                        continue;
+                                    }
+
+                                    processedTokens.push_back(replacement[leftIdx][j]);
+                                    tokenCount++;                                
+                                    continue;
+                                }
+                            }
+                            
+                            
+                        }
+
+                        if(rightIdx != -1){
+                            // replace i+3(rd) index token with the tokens of replacement at that index and treat the first index as the one that will be attached
+
+                            if(replacement[rightIdx].empty()) str2 = "";
+                            else{
+                                for(size_t j=replacement[rightIdx].size()-1 ; j>0 ; j--){
+                                    
+
+                                    // processedTokens.push_back(replacement[rightIdx][j]);
+                                    // tokenCount++;
+                                    pushLater.push_back(replacement[rightIdx][j]);
+                                    continue;
+                                }
+
+                                // this is the first token in replacemnent list, this will be attached
+                                str2 = replacement[rightIdx][0].data;
+                            }
+
+                            
+                                
+                            
+                        }
+
+                    }
+
+                    notAnArg:
+                    
+                    // store the data of token before ##
+                    string strMerge = str1;
+                    
+                    // add the data of token after ##
+                    strMerge += str2;
+
+                    /*
+                        now, we need to validate this new strMerge to check if it is allowed string or not and what type is it and allocate it accordingly
+                    */
+
+                    // validation part comes below
+                    /* <Validation algo/func here> */
+                    TokenType merTokType = isCombinedStringValid(strMerge);
+                    if(merTokType == ERROR){
+                        cout << "String combined wiht ## is NOT valid\n";
+                        exit(1);
+                    } 
+
+                    // now, its valid                    
+                    
+
+                    /*
+                        again, in currnet version of RMc7, it is not getting checked if the combined token is a obj-macro or not, will be added in the future versions
+                    */
+
+                    Token newTok = tokens[evaluated];
+                    newTok.type = merTokType;
+                    newTok.data = strMerge;
+
+                    // add to processed tokens
+                    processedTokens.push_back(newTok);
+                    tokenCount++;
+
+                    while(!pushLater.empty()){
+                        processedTokens.push_back(pushLater.back());
+                        pushLater.pop_back();
+                        tokenCount++;                        
+                    }
+
+                    i += 3; // skip 2 tokens to compensate (+1 will be alr done as part of for loop)
+                    continue;
+                    
+                    
                 } else{
                     // normal token case, now evaluate if it is arg or not
 
@@ -785,6 +928,7 @@ void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens 
         // processedTokens.push_back(currToken);
         // tokenCount++;
         // if(nested_set.size() == 1) evaluated++;
+        nested_set.erase(currToken.data);
         return;
 
     } else{
@@ -839,4 +983,59 @@ int Lexer::indexOfStringIfExist(vector<string>& args , string value){
     }
 
     return -1;
+}
+
+TokenType Lexer::isCombinedStringValid(string mergedStr){
+    // checking if the stirng made from merging using ## is valid or not
+
+
+    if(mergedStr.empty()) return ERROR;
+
+    TokenType type = this->getTokenTypeOf(mergedStr);
+
+    // 1. Valid keywords, operators, delimiters, and preprocessor keywords
+    if((type >= KEYWORD_INT && type <= KEYWORD_RESTRICT) ||
+       (type >= OP_PLUS && type <= COMMA) ||
+       (type >= PREP_INCLUDE && type <= PREP_PRAGMA)){
+        return type;
+    }
+
+    // 2. Identifiers: must be a strictly valid C identifier
+    if(type == ID){
+        if(!isalpha(mergedStr[0]) && mergedStr[0] != '_') return ERROR;
+        for(size_t i = 1; i < mergedStr.length(); i++){
+            if(!isalnum(mergedStr[i]) && mergedStr[i] != '_') return ERROR;
+        }
+        return ID;
+    }
+
+    // 3. Numbers: ensure all characters are valid numeric characters
+    if(type == INT_LITERAL || type == FLOAT_LITERAL || type == DOUBLE_LITERAL){
+        bool isHex = (mergedStr.length() > 2 && mergedStr[0] == '0' && (mergedStr[1] == 'x' || mergedStr[1] == 'X'));
+        size_t start = isHex ? 2 : 0;
+
+        for(size_t i = start; i < mergedStr.length(); i++){
+            char c = mergedStr[i];
+            if(isHex){
+                if(!isxdigit(c) && c != '.' && c != 'p' && c != 'P' && 
+                   c != 'u' && c != 'U' && c != 'l' && c != 'L' && c != 'f' && c != 'F') {
+                    return ERROR;
+                }
+            } else {
+                if(!isdigit(c) && c != '.' && c != 'e' && c != 'E' && 
+                   c != 'u' && c != 'U' && c != 'l' && c != 'L' && c != 'f' && c != 'F' &&
+                   c != '+' && c != '-') {
+                    return ERROR;
+                }
+            }
+        }
+        return type;
+    }
+
+    // 4. Character and string literals
+    if(type == CHAR_LITERAL || type == STRING_LITERAL){
+        return type;
+    }
+
+    return ERROR;
 }

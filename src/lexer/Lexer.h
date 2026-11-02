@@ -88,8 +88,6 @@ private:
     Token evaluateBackSlash(); // evaluate token starting with BACKSLASH (\)
     Token evaluateNot(); // evaluate token starting with NOT (!)
     Token evaluatePowExp(); // evaluate token starting with EXP (^)
-
-    
     
 
     
@@ -107,6 +105,8 @@ public:
     bool isValuePartValid(vector<Token>& list);
 
     int indexOfStringIfExist(vector<string>& args , string value);
+
+    TokenType isCombinedStringValid(string mergedStr);
 };
 
 #endif
