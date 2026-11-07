@@ -358,7 +358,7 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
                 exit(1);
             }
         }
-        else if(evaluated+1 < tokens.size() && tokens[evaluated+1].type == PREP_DEFINE){
+        else if(evaluated+1 < tokens.size() && tokens[evaluated+1].type == PREP_DEFINE){ // #define case
 
             // cout << "Reached here atleast " << tokens[evaluated+2].data << endl;
 
@@ -591,6 +591,19 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
             // evaluated++;
             // goto canContinueAgain;
         }
+        else if(evaluated+1 < tokens.size() && tokens[evaluated+1].type == PREP_UNDEF){ // #undef case
+            string removeName = tokens[evaluated+2].data;
+            defMap.erase(removeName);
+            funcDefMap.erase(removeName);
+            evaluated += 3;
+            goto canContinueAgain;
+        }
+        // else if(evaluated+1 < tokens.size() && tokens[evaluated+1].type == PREP_IFDEF) { // #ifdef case 
+        //     // 
+
+        //     handleMacroIf(tokens , evaluated , evaluated+2);
+
+        // }
         else {
             // push to token array for now
             processedTokens.push_back(tokens[evaluated]);
@@ -1039,3 +1052,30 @@ TokenType Lexer::isCombinedStringValid(string mergedStr){
 
     return ERROR;
 }
+
+// vector<Token> Lexer::handleMacroIf(vector<Token>& parentTokens , size_t& evaluated , size_t currIndex){
+    
+
+//     // static counter to keep track of how many nested levels of if macro are we dealing with
+//     static unsigned long ifStackCount = 0;
+
+//     ifStackCount++;
+
+//     vector<Token> retVector;
+
+//     if(defMap.count(parentTokens[currIndex].data) > 0){
+//         // macro is defined
+
+//         currIndex++; // skip the macro name
+
+//         while(currIndex < parentTokens.size() && parentTokens[currIndex].type != PREP_ELSE && parentTokens[currIndex].type != PREP_ENDIF){
+//             retVector.push_back(parentTokens[currIndex++]);
+//         }
+
+//         retVector = startPreprocessing(retVector);
+//     } else{
+//         //
+//     }
+
+//     return retVector;
+// }
