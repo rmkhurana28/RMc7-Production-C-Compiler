@@ -598,12 +598,12 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
             evaluated += 3;
             goto canContinueAgain;
         }
-        // else if(evaluated+1 < tokens.size() && tokens[evaluated+1].type == PREP_IFDEF) { // #ifdef case 
-        //     // 
+        else if(evaluated+1 < tokens.size() && tokens[evaluated+1].type == PREP_IFDEF) { // #ifdef case 
+            // 
 
-        //     handleMacroIf(tokens , evaluated , evaluated+2);
+            handleMacroIf(tokens , evaluated , evaluated+2);
 
-        // }
+        }
         else {
             // push to token array for now
             processedTokens.push_back(tokens[evaluated]);
@@ -618,7 +618,9 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
             if it is , then expand it accoridngly
         */
 
-        handleDefine(tokens, processedTokens , tokens[evaluated] , tokenCount , evaluated);
+        vector<Token> mySecondArray = handleDefine(tokens, tokens[evaluated] , evaluated);
+        addSecondAfterFirstVector(processedTokens,mySecondArray);
+        tokenCount += mySecondArray.size();
         
         goto canContinueAgain;
 
@@ -635,9 +637,11 @@ vector<Token> Lexer::startPreprocessing(vector<Token>& tokens){
     return processedTokens;
 }
 
-void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens , Token& currToken , size_t& tokenCount , size_t& evaluated){
+vector<Token> Lexer::handleDefine(vector<Token>& tokens , Token& currToken , size_t& evaluated){
 
     cout << "Handle define called\n";
+
+    vector<Token> retVector;
 
     // here, currToken = tokens[evaluated]
 
@@ -649,11 +653,12 @@ void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens 
     static unordered_set<string> nested_set;
 
     if(nested_set.count(currToken.data) > 0) {
-        processedTokens.push_back(currToken);
-        tokenCount++;
+        // processedTokens.push_back(currToken);
+        retVector.push_back(currToken);
+        // tokenCount++;
         // if(nested_set.size() == 1) evaluated++;
         
-        return;
+        return retVector;
     }
     
     nested_set.insert(currToken.data);
@@ -671,10 +676,12 @@ void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens 
 
         for(auto repToken : defMap[currToken.data]){
             if(isTokenValidDefineName(repToken) != ""){
-                handleDefine(tokens,processedTokens,repToken, tokenCount , evaluated);
+                vector<Token> mySecondArray = handleDefine(tokens , repToken, evaluated);
+                addSecondAfterFirstVector(retVector , mySecondArray);
             } else{
-                processedTokens.push_back(repToken);
-                tokenCount++;                                            
+                // processedTokens.push_back(repToken);
+                retVector.push_back(repToken);
+                // tokenCount++;                                            
             }
         }
 
@@ -787,8 +794,9 @@ void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens 
                 newTok.type = STRING_LITERAL;
                 newTok.data = myStr;
 
-                processedTokens.push_back(newTok);
-                tokenCount++;
+                // processedTokens.push_back(newTok);
+                retVector.push_back(newTok);
+                // tokenCount++;
 
                 i++; // for skiping 1 extra token, that is parameter name
 
@@ -828,8 +836,9 @@ void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens 
                                         continue;
                                     }
 
-                                    processedTokens.push_back(replacement[leftIdx][j]);
-                                    tokenCount++;                                
+                                    // processedTokens.push_back(replacement[leftIdx][j]);
+                                    retVector.push_back(replacement[leftIdx][j]);
+                                    // tokenCount++;                                
                                     continue;
                                 }
                             }
@@ -894,13 +903,15 @@ void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens 
                     newTok.data = strMerge;
 
                     // add to processed tokens
-                    processedTokens.push_back(newTok);
-                    tokenCount++;
+                    // processedTokens.push_back(newTok);
+                    retVector.push_back(newTok);
+                    // tokenCount++;
 
                     while(!pushLater.empty()){
-                        processedTokens.push_back(pushLater.back());
+                        // processedTokens.push_back(pushLater.back());
+                        retVector.push_back(pushLater.back());
                         pushLater.pop_back();
-                        tokenCount++;                        
+                        // tokenCount++;                        
                     }
 
                     i += 3; // skip 2 tokens to compensate (+1 will be alr done as part of for loop)
@@ -913,15 +924,17 @@ void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens 
                     int index = indexOfStringIfExist(configHelper.args , configHelper.tokList[i].data);
 
                     if(index == -1){ // this is not a argument
-                        processedTokens.push_back(configHelper.tokList[i]);
-                        tokenCount++;
+                        // processedTokens.push_back(configHelper.tokList[i]);
+                        retVector.push_back(configHelper.tokList[i]);
+                        // tokenCount++;
                     } else{
                         // it is argument, replace the tokens now
 
                         // go through all tokens of corresponding index vector of tokens taht need to be replaced
                         for(size_t j=0 ; j<replacement[index].size() ; j++){
-                            processedTokens.push_back(replacement[index][j]);
-                            tokenCount++;
+                            // processedTokens.push_back(replacement[index][j]);
+                            retVector.push_back(replacement[index][j]);
+                            // tokenCount++;
                         }
                     }
 
@@ -942,22 +955,23 @@ void Lexer::handleDefine(vector<Token>& tokens , vector<Token>& processedTokens 
         // tokenCount++;
         // if(nested_set.size() == 1) evaluated++;
         nested_set.erase(currToken.data);
-        return;
+        return retVector;
 
     } else{
         // it is just a simple token, ignore it and add to processed token , thats it
         // push to token array for now
-        processedTokens.push_back(currToken);
-        tokenCount++;
+        // processedTokens.push_back(currToken);
+        retVector.push_back(currToken);
+        // tokenCount++;
         if(nested_set.size() == 1) evaluated++;
 
         nested_set.erase(currToken.data);
 
-        return;
+        return retVector;
     }
 
     nested_set.erase(currToken.data);
-    return;
+    return retVector;
 }
 
 
@@ -1053,29 +1067,30 @@ TokenType Lexer::isCombinedStringValid(string mergedStr){
     return ERROR;
 }
 
-// vector<Token> Lexer::handleMacroIf(vector<Token>& parentTokens , size_t& evaluated , size_t currIndex){
+vector<Token> Lexer::handleMacroIf(vector<Token>& parentTokens , size_t& evaluated , size_t currIndex){
     
 
-//     // static counter to keep track of how many nested levels of if macro are we dealing with
-//     static unsigned long ifStackCount = 0;
+    // static counter to keep track of how many nested levels of if macro are we dealing with
+    static unsigned long ifStackCount = 0;
 
-//     ifStackCount++;
+    ifStackCount++;
 
-//     vector<Token> retVector;
+    vector<Token> retVector;
 
-//     if(defMap.count(parentTokens[currIndex].data) > 0){
-//         // macro is defined
+    if(defMap.count(parentTokens[currIndex].data) > 0){
+        // macro is defined
 
-//         currIndex++; // skip the macro name
+        currIndex++; // skip the macro name
 
-//         while(currIndex < parentTokens.size() && parentTokens[currIndex].type != PREP_ELSE && parentTokens[currIndex].type != PREP_ENDIF){
-//             retVector.push_back(parentTokens[currIndex++]);
-//         }
+        while(currIndex < parentTokens.size() && parentTokens[currIndex].type != PREP_ELSE && parentTokens[currIndex].type != PREP_ENDIF){
+            retVector.push_back(parentTokens[currIndex++]);
+        }
 
-//         retVector = startPreprocessing(retVector);
-//     } else{
-//         //
-//     }
+        retVector = startPreprocessing(retVector);
+    } else{
+        //
+    }
 
-//     return retVector;
-// }
+    return retVector;
+}
+

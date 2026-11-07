@@ -2,6 +2,7 @@
 #define TOKEN_H
 
 #include <string>
+#include <vector>
 using namespace std;
 
 enum TokenType {
@@ -291,5 +292,14 @@ inline string tokenTypeToString(TokenType type) {
         default: return "UNKNOWN";
     }
 }
+
+inline void addSecondAfterFirstVector(vector<Token>& first , vector<Token>& second){
+    for(size_t i=0 ; i<second.size() ; i++){
+        first.push_back(second[i]);
+    }    
+
+    return;
+}
+
 
 #endif
