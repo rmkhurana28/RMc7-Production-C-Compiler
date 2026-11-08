@@ -647,6 +647,8 @@ vector<Token> Lexer::handleDefine(vector<Token>& tokens , Token& currToken , siz
 
     /*
         currently this func is kind of handling nested obj-expansion, but not plannig to support 100% nested coverage of func macro expansion in current version of rmc7, will be added in future versions
+
+        UPDATE: nested func macro support added in preprocessor_v1.3
     */
 
     
@@ -948,13 +950,17 @@ vector<Token> Lexer::handleDefine(vector<Token>& tokens , Token& currToken , siz
         }
 
         evaluated += idx;
+
+        nested_set.erase(currToken.data);
         
+        // Rescan the assembled body to expand any nested macro calls
+        retVector = startPreprocessing(retVector);
 
         // push to token array for now
         // processedTokens.push_back(currToken);
         // tokenCount++;
         // if(nested_set.size() == 1) evaluated++;
-        nested_set.erase(currToken.data);
+        
         return retVector;
 
     } else{

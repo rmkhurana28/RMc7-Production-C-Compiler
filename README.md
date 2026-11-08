@@ -126,8 +126,8 @@ A complete reference for all supported syntax, declarators, types, operators, an
 **Phase 0 - Preprocessing:** 🟡 IN PROGRESS
 - ✅ `#include <file.h>` and `#include "file.h"` (cross-platform include path search)
 - ✅ Nested includes with duplicate/circular include protection
-- ✅ `#define` object-like and function-like macros (single-pass expansion, stringification `#`, token pasting `##`, and variadic `...` / `__VA_ARGS__`)
-  > **Note:** Nested function macro calls (pre-expansion of macro arguments and nested macro calls inside macro bodies) are not supported in the current version and will be added later.
+- ✅ `#define` object-like and function-like macros (nested expansions, argument pre-expansion, stringification `#`, token pasting `##`, and variadic `...` / `__VA_ARGS__`)
+- ✅ `#undef` directive
 
 **Phase 1 - Lexical Analysis:** ✅ COMPLETE
 - Full tokenization for all C syntax (~140 token types)
@@ -192,7 +192,7 @@ RMc7/
 │   │   ├── Token.h          # Token definitions (~140 types)
 │   │   ├── Lexer.h          # Lexer interface
 │   │   ├── Lexer.cpp        # Lexer implementation (complete)
-│   │   └── Preprocessor.cpp # Preprocessor (#include complete, #define v1.2 complete, others in progress)
+│   │   └── Preprocessor.cpp # Preprocessor (#include, #define, #undef complete, conditionals in progress)
 │   ├── parser/
 │   │   ├── Parser.h         # Parser interface
 │   │   ├── Parser.cpp       # Parser implementation (in progress)

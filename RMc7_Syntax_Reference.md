@@ -839,17 +839,21 @@ The goal is to support full ISO C preprocessing, including:
 ✅ Parameterized macro definitions and expansions  
 ✅ Parenthesis-protected argument parsing (commas inside nested parens do not split arguments)  
 ✅ Multi-invocation safety (same macro can be called repeatedly across the translation unit)  
-
-> **Note:** Nested function macro calls (such as passing a function macro as an argument `ADD(DOUBLE(5), 10)` or invoking a function macro inside another macro's body) are currently not supported in this version and will be added later.
+✅ Nested macro calls inside arguments (argument pre-expansion)  
+✅ Nested macro calls within macro bodies (body rescanning)  
 
 **Examples:**
 ```c
 #define ADD(a, b) ((a) + (b))
 #define MULT(a, b) ((a) * (b))
+#define DOUBLE(x) ((x) * 2)
+#define QUAD(x) DOUBLE(DOUBLE(x))
 
 int x = ADD(10, 20);            // Expands to ((10) + (20))
 int y = ADD(30, 40);            // Repeated invocation supported
 int z = ADD((1, 2), 7);         // Nested parens protect the comma: a = (1, 2), b = 7
+int n1 = ADD(DOUBLE(5), 10);    // Macro in argument: expands to ((5) * 2) + 10
+int n2 = QUAD(5);               // Nested body call: expands to ((((5) * 2)) * 2)
 ```
 
 ### 7.4 Stringification Operator (#)
@@ -894,11 +898,27 @@ LOG("result: %d, %d", 1, 2);    // Expands to: printf("result: %d, %d", 1, 2);
 char *s = VAR_STR(a, b, c);     // Expands to: "a,b,c"
 ```
 
-### 7.7 Upcoming Preprocessor Features
+### 7.7 #undef Directive
+✅ Undefining object-like macros (`#undef MACRO`)  
+✅ Undefining function-like macros (`#undef FN_MACRO`)  
+✅ Safe no-op behavior when undefining non-existent identifiers  
+✅ Removal from active macro lookup tables to restore original identifier semantics  
+
+**Examples:**
+```c
+#define TEMP 100
+int a = TEMP;       // Expands to 100
+
+#undef TEMP
+int TEMP = 200;     // Valid C variable identifier (macro definition erased)
+
+#undef UNKNOWN_NAME // Safe no-op
+```
+
+### 7.8 Upcoming Preprocessor Features
 ➡️ #if / #ifdef / #ifndef / #elif / #else / #endif  
 ➡️ Multi-line macros using backslash continuation  
 ➡️ #line directive  
-➡️ #undef directive  
 ➡️ #pragma directive  
 ➡️ Built-in macros (__FILE__, __LINE__, etc.)
 

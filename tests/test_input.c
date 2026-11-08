@@ -6,8 +6,10 @@
 #define CHAIN_EXP (CHAIN_BASE + 10)
 #define x (x + 1)
 
-// 2. Function-like macros (Basic, Nested parens, Multi-call)
+// 2. Function-like macros (Basic, Nested parens, Multi-call, Nested definitions)
 #define ADD(a, b) a + b
+#define DOUBLE(x) ((x) * 2)
+#define QUAD(x) DOUBLE(DOUBLE(x))
 
 // 3. Stringification (#)
 #define TO_STR(s) #s
@@ -56,6 +58,12 @@ int main() {
     int t1 = TEMP_VAL;
 #undef TEMP_VAL
     int TEMP_VAL = 99;
+
+    // Test 9: Macro call inside argument
+    int nested_arg = ADD(DOUBLE(5), 10);
+
+    // Test 10: Nested macro call in body
+    int nested_body = QUAD(5);
 
     return 0;
 }
